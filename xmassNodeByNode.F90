@@ -1,0 +1,60 @@
+!******************        GIMRT98     ************************
+ 
+! Code converted using TO_F90 by Alan Miller
+! Date: 2000-07-27  Time: 10:11:19
+ 
+!************** (C) COPYRIGHT 1995,1998,1999 ******************
+!*******************     C.I. Steefel      *******************
+!                    All Rights Reserved
+
+!  GIMRT98 IS PROVIDED "AS IS" AND WITHOUT ANY WARRANTY EXPRESS OR IMPLIED.
+!  THE USER ASSUMES ALL RISKS OF USING GIMRT98. THERE IS NO CLAIM OF THE
+!  MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+!  YOU MAY MODIFY THE SOURCE CODE FOR YOUR OWN USE, BUT YOU MAY NOT
+!  DISTRIBUTE EITHER THE ORIGINAL OR THE MODIFIED CODE TO ANY OTHER
+!  WORKSTATIONS
+!**********************************************************************
+
+SUBROUTINE xmassNodeByNode(jx,jy,jz,ncomp,nspec)
+USE crunchtype
+USE runtime
+USE params
+USE concentration
+USE temperature
+
+IMPLICIT NONE
+
+!  External variables and arrays
+
+INTEGER(I4B), INTENT(IN)                                        :: jx
+INTEGER(I4B), INTENT(IN)                                        :: jy
+INTEGER(I4B), INTENT(IN)                                        :: jz
+INTEGER(I4B), INTENT(IN)                                        :: ncomp
+INTEGER(I4B), INTENT(IN)                                        :: nspec
+
+!  Internal variables and arrays
+
+
+INTEGER(I4B)                                                    :: ik
+
+REAL(DP)                                                        :: totmass
+REAL(DP)                                                        :: MeanSaltConcentration
+
+IF (DensityModule /= 'temperature') THEN
+! Calculate the correction for the mass fraction of water:  kg_solution/kg_water
+  
+        MeanSaltConcentration = 0.001*(wtaq(MeanSalt(1))*sn(MeanSalt(1),jx,jy,jz) +   &
+            wtaq(MeanSalt(2))*sn(MeanSalt(2),jx,jy,jz)) 
+        xgram(jx,jy,jz) = 1.0/(1.0 + MeanSaltConcentration)
+
+ELSE
+  xgram(jx,jy,jz) = 1.0d0
+END IF
+
+RETURN
+END SUBROUTINE xmassNodeByNode
+
+
+
+

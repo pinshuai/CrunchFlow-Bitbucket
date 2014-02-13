@@ -1,0 +1,190 @@
+MODULE mineral
+
+  USE crunchtype
+  USE params
+
+  LOGICAL(LGT)                                     :: JacobianNumerical
+  INTEGER(I4B), PARAMETER                          :: mlen=mls
+  INTEGER(I4B)                                     :: nreactmax
+  INTEGER(I4B)                                     :: nradmax
+
+  INTEGER(I4B)                                     :: ikCa
+  INTEGER(I4B)                                     :: ikCO3
+  INTEGER(I4B)                                     :: ik234U
+  INTEGER(I4B)                                     :: ik238U
+  INTEGER(I4B)                                     :: ikAl
+  INTEGER(I4B)                                     :: kUCalcite
+  INTEGER(I4B)                                     :: kMarineCalcite
+  INTEGER(I4B)                                     :: kUPlag
+
+  REAL(DP)                                         :: vdissmax
+  REAL(DP)                                         :: vpptmax
+  REAL(DP)                                         :: DistributionCalcite
+  
+  REAL(DP)                                         :: IntervalBelowEquilibrium
+    REAL(DP)                                         :: IntervalAboveEquilibrium
+
+! Temporary arrays used in the initialization (can be deallocated)
+
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: keqmin_tmp
+  REAL(DP), DIMENSION(:), ALLOCATABLE              :: surfcharge_init
+  REAL(DP), DIMENSION(:), ALLOCATABLE              :: LogPotential_tmp
+
+  CHARACTER (LEN=mlen), DIMENSION(:,:,:), ALLOCATABLE :: namdep_nyf
+
+! Permanent arrays, but can be reallocated to smaller size
+
+  CHARACTER (LEN=mls), DIMENSION(:), ALLOCATABLE   :: umin
+  CHARACTER (LEN=mls), DIMENSION(:,:), ALLOCATABLE :: rlabel
+  CHARACTER (LEN=mls), DIMENSION(:,:), ALLOCATABLE :: crossaff
+  CHARACTER (LEN=mls), DIMENSION(:), ALLOCATABLE   :: namAssociate
+
+  REAL(DP), DIMENSION(:), ALLOCATABLE              :: surf
+  REAL(DP), DIMENSION(:), ALLOCATABLE              :: volmol
+  REAL(DP), DIMENSION(:), ALLOCATABLE              :: wtmin
+  REAL(DP), DIMENSION(:), ALLOCATABLE              :: alnk
+  REAL(DP), DIMENSION(:), ALLOCATABLE              :: sumrd
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: volb
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE          :: dependex
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE          :: dependsurf
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE          :: mumin
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE          :: jac_rmin
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: areain
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: volin
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: MineralMoles
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: si
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: sat1
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: sat2
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: Ea
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: rate0
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: silog
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: siln
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: snorm
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: thresh
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: actenergy
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: pre_rmin
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: rmin
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE          :: depend
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE          :: halfsat
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE          :: rinhibit
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: site_density
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: specific
+  REAL(DP), DIMENSION(:), ALLOCATABLE              :: surfcharge
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: AffinityDepend1
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: AffinityDepend2  
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: AffinityDepend3
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: voltemp
+
+! biomass
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: BQ_min
+  REAL(DP), DIMENSION(:), ALLOCATABLE              :: BQ_kin
+! biomass end
+
+  LOGICAL(LGT), DIMENSION(:), ALLOCATABLE          :: LocalEquilibrium
+  LOGICAL(LGT), DIMENSION(:), ALLOCATABLE          :: MineralAssociate
+
+  INTEGER(I4B), DIMENSION(:), ALLOCATABLE          :: MineralID
+  INTEGER(I4B), DIMENSION(:), ALLOCATABLE          :: ivolume
+  INTEGER(I4B), DIMENSION(:), ALLOCATABLE          :: lenmin
+  INTEGER(I4B), DIMENSION(:,:), ALLOCATABLE        :: ndependex
+  INTEGER(I4B), DIMENSION(:,:), ALLOCATABLE        :: ndependsurf
+  INTEGER(I4B), DIMENSION(:,:,:), ALLOCATABLE      :: ixdepend
+  INTEGER(I4B), DIMENSION(:,:,:), ALLOCATABLE      :: isdepend
+  INTEGER(I4B), DIMENSION(:), ALLOCATABLE          :: nreactmin
+  INTEGER(I4B), DIMENSION(:,:), ALLOCATABLE        :: imintype
+  INTEGER(I4B), DIMENSION(:,:), ALLOCATABLE        :: ndepend
+  INTEGER(I4B), DIMENSION(:,:), ALLOCATABLE        :: nmonod
+  INTEGER(I4B), DIMENSION(:,:), ALLOCATABLE        :: ninhibit
+  INTEGER(I4B), DIMENSION(:,:), ALLOCATABLE        :: kcrossaff
+  INTEGER(I4B), DIMENSION(:,:,:), ALLOCATABLE      :: idepend
+  INTEGER(I4B), DIMENSION(:,:,:), ALLOCATABLE      :: imonod
+  INTEGER(I4B), DIMENSION(:,:,:), ALLOCATABLE      :: kmonod
+  INTEGER(I4B), DIMENSION(:,:,:), ALLOCATABLE      :: inhibit
+  INTEGER(I4B), DIMENSION(:,:,:), ALLOCATABLE      :: itot_min
+  INTEGER(I4B), DIMENSION(:,:,:), ALLOCATABLE      :: itot_monod
+  INTEGER(I4B), DIMENSION(:,:,:), ALLOCATABLE      :: itot_inhibit
+  INTEGER(I4B), DIMENSION(:,:), ALLOCATABLE        :: iarea
+  INTEGER(I4B), DIMENSION(:), ALLOCATABLE          :: iedl
+  INTEGER(I4B), DIMENSION(:), ALLOCATABLE          :: ispot
+  
+!! Hyperbolic Inhibition Term
+!! Kformation(np,nkin),HyperbolicInhibitionName(np,nkin),HyperbolicInhibitionDepend(np,nkin)
+  LOGICAL(LGT), DIMENSION(:,:), ALLOCATABLE          :: HyperbolicInhibition
+  INTEGER(I4B), DIMENSION(:,:), ALLOCATABLE          :: HyperbolicInhibitionPointer
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE              :: Kformation
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE              :: HyperbolicInhibitionDepend
+  CHARACTER (LEN=mlen), DIMENSION(:,:), ALLOCATABLE  :: HyperbolicInhibitionName
+  
+! biomass
+  INTEGER(I4B), DIMENSION(:,:), ALLOCATABLE        :: chi_min
+  INTEGER(I4B), DIMENSION(:,:), ALLOCATABLE        :: direction_min
+  INTEGER(I4B), DIMENSION(:), ALLOCATABLE          :: chi_kin
+  INTEGER(I4B), DIMENSION(:), ALLOCATABLE          :: direction_kin
+! biomass end
+
+!  Allocatable arrays dimensioned over spatial domain
+
+  REAL(DP), DIMENSION(:,:,:,:,:,:), ALLOCATABLE    :: mumin_decay
+  REAL(DP), DIMENSION(:,:,:,:,:), ALLOCATABLE      :: keqmin
+  REAL(DP), DIMENSION(:,:,:,:,:), ALLOCATABLE      :: volSaveByTimeStep
+  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE        :: volSave
+  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE        :: volfx
+  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE        :: dppt
+  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE        :: area
+  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE        :: LogPotential
+  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE        :: VolumeLastTimeStep
+  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE        :: rminSaveForDePaolo
+
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE          :: muUranium234
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE          :: muUranium238
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE          :: muCalcium
+
+
+  REAL(DP), DIMENSION(:), ALLOCATABLE              :: muUranium234Boundary
+  REAL(DP), DIMENSION(:), ALLOCATABLE              :: muUranium238Boundary
+  REAL(DP), DIMENSION(:), ALLOCATABLE              :: muCalciumBoundary
+
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE          :: muUranium234Bulk
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE          :: muUranium238Bulk
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE          :: muCalciumBulk
+
+
+!  Allocatable arrays dimensioned locally (not over spatial domain)
+
+! biomass
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE          :: muminTMP
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: keqminTMP
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: mukinTMP
+  REAL(DP), DIMENSION(:), ALLOCATABLE              :: keqkinTMP
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: LagTimeMineral
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: RampTimeMineral
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: ThresholdConcentrationMineral
+  REAL(DP), DIMENSION(:), ALLOCATABLE              :: LagTimeAqueous
+  REAL(DP), DIMENSION(:), ALLOCATABLE              :: RampTimeAqueous
+  REAL(DP), DIMENSION(:), ALLOCATABLE              :: ThresholdConcentrationAqueous
+
+  integer(i4b),dimension(:,:),allocatable          :: SubstrateForLagMineral
+  integer(i4b),dimension(:),allocatable            :: SubstrateForLagAqueous
+
+  logical(lgt),dimension(:,:),allocatable          :: UseMetabolicLagMineral
+  logical(lgt),dimension(:),allocatable            :: UseMetabolicLagAqueous
+
+  REAL(DP), DIMENSION(:,:,:,:,:), ALLOCATABLE        :: tauZeroMineral
+  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE          :: tauZeroAqueous
+  REAL(DP), DIMENSION(:,:,:,:,:), ALLOCATABLE        :: MetabolicLagMineral
+  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE          :: MetabolicLagAqueous
+  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE          :: SatLog
+
+  INTEGER(I4B)                                     :: nMonodBiomassMineral
+  INTEGER(I4B)                                     :: nMonodBiomassAqueous
+
+  integer(i4b),dimension(:),allocatable            :: ibiomass_kin
+  integer(i4b),dimension(:),allocatable            :: ibiomass_min
+  integer(i4b),dimension(:),allocatable            :: p_cat_min
+  integer(i4b),dimension(:),allocatable            :: p_cat_kin
+  integer(i4b),dimension(:,:),allocatable          :: biomass_decay ! added for decay
+! biomass end
+
+  REAL(DP), dimension(4,31)                        :: rate0Prime
+
+END MODULE mineral
