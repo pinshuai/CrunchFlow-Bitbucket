@@ -2,26 +2,41 @@ MODULE CrunchFunctions
 
 CONTAINS
 
-!!  *******************************************
+#ifdef __GNUC__
 
-!!  PURE FUNCTION jnum (string)
-!!  USE CrunchType
-!!  USE params
-!!  IMPLICIT NONE
-!!  CHARACTER (LEN=mls), INTENT(IN)          :: string
-!!  INTEGER(I4B)                           :: jnum
-!!  READ(string, *) jnum
-!!  END FUNCTION jnum
+!!  *******************************************
+  PURE FUNCTION jnum (string)
+  USE CrunchType
+  USE params
+  IMPLICIT NONE
+  CHARACTER (LEN=mls), INTENT(IN)          :: string
+  INTEGER(I4B)                           :: jnum
+  READ(string, *) jnum
+  END FUNCTION jnum
 !! **********************************************
-!!  PURE FUNCTION dnum (string)
-!!  USE CrunchType
-!!  USE params
-!!  IMPLICIT NONE
-!!  CHARACTER (LEN=mls), INTENT(IN)          :: string
-!!  REAL(DP)                               :: dnum
-!!  READ(string, *) dnum
-!!  END FUNCTION dnum
+  PURE FUNCTION dnum (string)
+  USE CrunchType
+  USE params
+  IMPLICIT NONE
+  CHARACTER (LEN=mls), INTENT(IN)          :: string
+  REAL(DP)                               :: dnum
+  READ(string, *) dnum
+  END FUNCTION dnum
 !! **********************************************
+  PURE FUNCTION cosd (degrees)
+  USE CrunchType
+  IMPLICIT NONE
+  REAL(DP),INTENT(IN)                  :: degrees
+  REAL(DP)                             :: cosd
+  real(dp)                             :: pi
+  real(dp)                             :: rad
+  pi = dacos(-1.0d0)
+  rad = degrees * pi / 180.0d0
+  cosd = dcos(rad)
+  END FUNCTION cosd
+!! **********************************************
+#endif
+
   PURE FUNCTION IntegerToCharacter (i)
   USE CrunchType
   USE params

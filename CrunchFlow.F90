@@ -32,6 +32,7 @@ USE io
 USE ReadFlow
 USE modflowModule
 !!USE fparser
+USE CrunchFunctions, ONLY: cosd
 
 IMPLICIT NONE
 

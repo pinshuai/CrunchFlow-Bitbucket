@@ -23,6 +23,7 @@ USE medium
 USE transport
 USE temperature, ONLY: ro
 USE flow
+USE CrunchFunctions, ONLY: cosd
 
 IMPLICIT NONE
 

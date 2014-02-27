@@ -144,7 +144,7 @@ IF(ls /= 0) THEN
   CALL PrimarySpeciesCheck(ncomp,NPestSurface,PestSurfaceList)
 
 501 FORMAT('pif @')
-502 FORMAT(a2,a2,a<ls>,a<lchar>,a1,a4)
+!!__GNUC__ 502 FORMAT(a2,a2,a<ls>,a<lchar>,a1,a4)
 
   INQUIRE(FILE=PestSurfaceOutputFile,OPENED=FileOpen)
   IF (FileOpen) THEN

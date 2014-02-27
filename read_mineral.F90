@@ -22,6 +22,7 @@ USE params
 USE mineral
 USE concentration
 USE strings
+USE CrunchFunctions, ONLY: dnum
 
 IMPLICIT NONE
 
