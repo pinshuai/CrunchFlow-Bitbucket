@@ -55,6 +55,7 @@ use mineral, only:     umin,      &
 USE strings
 
 use io
+USE CrunchFunctions
 
 IMPLICIT NONE
 
