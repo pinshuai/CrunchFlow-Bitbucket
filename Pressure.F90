@@ -26,7 +26,7 @@ USE medium
 USE transport
 USE temperature
 USE flow
-USE CrunchFunctions, only: cosd
+USE CrunchFunctions
 
 IMPLICIT NONE
 
