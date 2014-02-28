@@ -247,8 +247,8 @@ DO jy = 1,ny
         
     IF (nrct > 0) THEN
       CALL reaction(ncomp,nkin,nrct,nspec,nexchange,nsurf,ndecay,jx,jy,jz,delt,time)
-      round = 1
-      CALL jacmin(ncomp,nspec,nexchange,nsurf,nkin,nrct,jx,jy,jz,time,round)
+!!      round = 1
+      CALL jacmin(ncomp,nspec,nexchange,nsurf,nkin,nrct,jx,jy,jz,time) !!,round)
     END IF
     
     IF (ikin > 0) THEN

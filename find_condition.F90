@@ -501,6 +501,11 @@ IF (found) THEN
           areain(k,nchem) = voltemp(k,nchem)*specific(k,nchem)*wtmin(k)/volmol(k)
         END IF
       ELSE                             !!  Bulk surface area specified
+
+        if (mintype(k) == 1) then ! biomass - convert to mol/m3-bulk from mol/L-H2O
+          volin(k,nchem) = volin(k,nchem) * 1.d3 * porcond(nchem)
+        end if
+
         IF (volin(k,nchem) /= 0.0) THEN
           specific(k,nchem) = areain(k,nchem)*volmol(k)/(volin(k,nchem)*wtmin(k))
         ELSE

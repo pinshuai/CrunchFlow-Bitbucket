@@ -4708,7 +4708,7 @@ DO jz = 1,nz
         volfx(k,jx,jy,jz) = volin(k,jinit(jx,jy,jz))
         VolumeLastTimeStep(k,jx,jy,jz) = volfx(k,jx,jy,jz)
         area(k,jx,jy,jz) = areain(k,jinit(jx,jy,jz))
-        sum = sum + volfx(k,jx,jy,jz)
+        if (mintype(k) == 0) sum = sum + volfx(k,jx,jy,jz)
       END DO
 
       IF (Duan) THEN

@@ -56,9 +56,9 @@ DO jz = 1,nz
         vinit = volin(k,jinit(jx,jy,jz))
         IF (vinit == 0.0) THEN
           area(k,jx,jy,jz) = areain(k,jinit(jx,jy,jz))*(volfx(k,jx,jy,jz)/0.01)**0.66666
-          sum = sum + volfx(k,jx,jy,jz)
+          if (mintype(k) == 0) sum = sum + volfx(k,jx,jy,jz)
         ELSE
-          sum = sum + volfx(k,jx,jy,jz)
+          if (mintype(k) == 0) sum = sum + volfx(k,jx,jy,jz)
           area(k,jx,jy,jz) = areain(k,jinit(jx,jy,jz))* (volfx(k,jx,jy,jz)/vinit)**0.6666
         END IF
       END DO

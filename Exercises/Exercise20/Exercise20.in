@@ -1,0 +1,151 @@
+TITLE
+Exercise 20 CrunchFlow Short Course based on Column2 of SESBenchmark
+END
+
+RUNTIME
+time_units         days
+timestep_max       0.1
+timestep_init      1.E-10
+time_tolerance     0.05
+hindmarsh          true
+correction_max     2.0
+debye-huckel       true
+database_sweep     false
+speciate_only      false
+graphics           tecplot
+master             H+
+database           benchmark.dbs
+database_format    new
+coordinates        rectangular
+gimrt              true
+screen_output      1
+END
+
+OUTPUT
+time_units            days
+spatial_profile       20.  40.  60.  80.  100. 
+time_series           effluent.out  100  1  1
+time_series_print     pH Acetate  HCO3- Cr+++ CrO4-- NO3- NO2- NH4+ N2(aq) C5H7O2NNO3 decay_b_no3 
+time_series_interval  10
+END
+
+DISCRETIZATION
+distance_units   centimeters
+xzones           100  0.1
+END 
+
+FLOW
+distance_units      centimeters
+time_units          minutes
+constant_flow       0.006
+END
+
+POROSITY
+Fix_porosity 0.40
+END
+
+TRANSPORT
+distance_units           centimeters
+time_units               second
+fix_diffusion            1.0e-05
+dispersivity             0.0d0
+END
+
+PRIMARY_SPECIES
+H+
+Na+
+Ca++
+Cl-
+HCO3-
+Acetate
+NO3-
+NO2-
+N2(aq)
+NH4+
+O2(aq)
+CrO4--
+Cr+++
+C5H7O2NNO3
+decay_b_no3
+END
+
+SECONDARY_SPECIES
+OH-
+CO2(aq)
+CO3--
+CaOH+
+CaCO3(aq)
+CaCl+
+CaHCO3+
+CaCH3COO+
+Ca(CH3COO)2(aq)
+NH3(aq)
+Cr(OH)2+    
+Cr(OH)3(aq) 
+Cr(OH)4-    
+Cr2(OH)2++++
+Cr2O7--     
+Cr3(OH)4(5+)
+CrCl++      
+CrCl2+
+CrOH++
+Acetic_acid(aq)
+END
+
+GASES
+CO2(g)
+O2(g)
+END
+
+MINERALS
+!!Cr(OH)3(s)           -label  default -rate  -9.0
+C5H7O2NNO3(s)        -label  default -rate   2.0   -biomass
+!!Calcite              -label  default -rate  -5.18
+!!decay_b_no3(s)       -label  default -rate  -4.0   -associate  C5H7O2NNO3(s)  -biomass
+END
+
+AQUEOUS_KINETICS
+! microbially mediated reaction rates are in mol-reaction/mol-biomass/yr
+AceNO3HCO3NO2        -pathway AceNO3HCO3NO2   0.60  -pathway C5H7O2N_RCH2_Ace_NH4  0.40    -rate 1261.44
+AceNO2HCO3N2         -pathway AceNO2HCO3N2    0.60  -pathway C5H7O2N_RCH2_Ace_NH4  0.40    -rate 630.72
+END
+
+TEMPERATURE
+set_temperature  25.0
+END
+
+condition initial
+units            mmol/kg            
+temperature      25.0         
+pH               7.0
+Na+              5.25
+Ca++             1.6
+Cl-              charge
+HCO3-            1.25
+Acetate          1.5
+NO3-             1.5
+NO2-             0.0
+N2(aq)           0.0
+NH4+             0.25
+O2(aq)           1.0e-10
+CrO4--           5.0e-3
+Cr+++            0.0
+C5H7O2NNO3       1.0E-12
+decay_b_no3      1.0E-12
+!
+!!Cr(OH)3(s)       1.0E-10    specific_surface_area  1.0e4
+!!Cr(OH)3(s)       1.0E-10       bulk_surface_area  9.281
+C5H7O2NNO3(s)      5.0e-5     
+! biomass units in mol/L-H2O 
+!!Calcite          0.1        bulk_surface_area      100.0
+!!decay_b_no3(s)   1.0d+9
+END
+
+INITIAL_CONDITIONS
+initial 1-100
+END                                    
+                                    
+BOUNDARY_CONDITIONS
+x_begin     initial     flux
+x_end       initial     flux
+END                                 

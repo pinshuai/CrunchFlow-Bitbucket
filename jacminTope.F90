@@ -1,4 +1,4 @@
-SUBROUTINE jacmin(ncomp,nspec,nexchange,nsurf,nkin,nrct,jx,jy,jz,time,round)
+SUBROUTINE jacmin(ncomp,nspec,nexchange,nsurf,nkin,nrct,jx,jy,jz,time)!!,round)
 USE crunchtype
 USE runtime
 USE params
@@ -83,7 +83,7 @@ INTEGER(I4B), INTENT(IN)                             :: jx
 INTEGER(I4B), INTENT(IN)                             :: jy
 INTEGER(I4B), INTENT(IN)                             :: jz
 REAL(DP), INTENT(IN)                                 :: time
-INTEGER(I4B), INTENT(IN)                             :: round
+!!INTEGER(I4B), INTENT(IN)                             :: round
 
 !  Internal variables and arrays
 

@@ -606,8 +606,12 @@ END IF
   DO jx = 1,nx
     sum = 0.0
     DO k = 1,nrct
-      dvolpr(k) = 100*volfx(k,jx,jy,jz)
-      sum = sum + volfx(k,jx,jy,jz)
+      if (mintype(k) == 0) then
+        dvolpr(k) = 100*volfx(k,jx,jy,jz)
+        sum = sum + volfx(k,jx,jy,jz)
+      else if (mintype(k) == 1) then
+        dvolpr(k) = volfx(k,jx,jy,jz)
+      end if
     END DO
     porprt = (1.0-sum)*100.0
     WRITE(8,184) x(jx)*OutputDistanceScale,(dvolpr(k),k=1,nrct)
