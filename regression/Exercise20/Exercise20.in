@@ -15,6 +15,7 @@ speciate_only      false
 graphics           tecplot
 master             H+
 database           benchmark.dbs
+kinetic_database   benchmark.dbsx
 database_format    new
 coordinates        rectangular
 gimrt              true

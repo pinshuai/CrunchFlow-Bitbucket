@@ -275,19 +275,26 @@ allocate(SubstrateForLagAqueous(mpre))
 
 !!str_endkin = 'End of aqueous kinetics'
 
-INQUIRE(FILE='AqueousControl.ant',EXIST=ext)
-IF (EXT) THEN          !!  Aqueous Control file exists, so read input filename from it rather than prompting user
-  OPEN(113,FILE='AqueousControl.ant',STATUS='old',ERR=708)
-  READ(113,'(a)') filename2
-  CLOSE(113,STATUS='keep')
-ELSE
-  INQUIRE(FILE=trim(adjustl(data1))//'x',EXIST=ext)
-  IF (EXT) then          !! try with the name of the database + and 'x' at the end
-    filename2 = trim(adjustl(data1))//'x'
+if (data1 == ' ') then
+
+  INQUIRE(FILE='AqueousControl.ant',EXIST=ext)
+  IF (EXT) THEN          !!  Aqueous Control file exists, so read input filename from it rather than prompting user
+    OPEN(113,FILE='AqueousControl.ant',STATUS='old',ERR=708)
+    READ(113,'(a)') filename2
+    CLOSE(113,STATUS='keep')
+  !! ELSE
+  !! INQUIRE(FILE=trim(adjustl(data1))//'x',EXIST=ext)
+  !! IF (EXT) then          !! try with the name of the database + and 'x' at the end
+  !!  filename2 = trim(adjustl(data1))//'x'
   ELSE                   !!  No AqueousControl.ant file, so just use "aqueous.dbs"
     filename2 = 'aqueous.dbs'
   END IF
-END IF
+  !! END IF
+else 
+ 
+  filename2 = data1
+  
+end if 
 
 OPEN(UNIT=112,FILE=filename2,STATUS='old')
 REWIND nout

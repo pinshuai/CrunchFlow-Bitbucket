@@ -499,6 +499,9 @@ CHARACTER (LEN=12)                                            :: dumm2
 CHARACTER (LEN=12)                                            :: dumm3
 INTEGER(I4B), DIMENSION(8)                                    :: curr_time
 
+CHARACTER (LEN=mls)                                           :: data2
+CHARACTER (LEN=mls)                                           :: data3
+
 ALLOCATE(realmult(100))
 
 pi = DACOS(-1.0d0)
@@ -745,6 +748,26 @@ IF (found) THEN
     data1 = ' '             ! Use default
   ELSE
     data1 = dumstring
+  END IF
+
+  parchar = 'kinetic_database'
+  parfind = ' '
+  data2 = ' '
+  CALL readCaseSensitive(nout,lchar,parchar,parfind,dumstring,section)
+  IF (parfind == ' ') THEN  ! 
+    data2 = ' '             ! Use default
+  ELSE
+    data2 = dumstring
+  END IF
+
+  parchar = 'catabolic_database'
+  parfind = ' '
+  data3 = ' '
+  CALL readCaseSensitive(nout,lchar,parchar,parfind,dumstring,section)
+  IF (parfind == ' ') THEN  ! 
+    data3 = ' '             ! Use default
+  ELSE
+    data3 = dumstring
   END IF
 
   IF (NumInputFiles > 1) THEN
@@ -3313,7 +3336,7 @@ IF (found) THEN
 
   WRITE(*,*) ' Aqueous kinetics block found'
   !!CALL read_kinetics(nout,ncomp,nspec,nrct,ikin,data1)
-  CALL read_kinetics_Bio(nout,ncomp,nspec,nrct,ikin,nkin,data1)
+  CALL read_kinetics_Bio(nout,ncomp,nspec,nrct,ikin,nkin,data2)
 
 !  If radioactive decay equations are present, check minerals for corresponding 
 !    radiogenic isotopes
@@ -4131,7 +4154,7 @@ END IF
 CALL REALLOCATE(ncomp,nspec,nrct,nkin,ngas,nsurf,nexchange,ikin,nexch_sec,nsurf_sec)
 
 ! biomass
-call read_CatabolicPath(ncomp,nkin,ikin)
+call read_CatabolicPath(ncomp,nkin,ikin,data3)
 ! biomass end
 
 IF (genericrates) THEN
