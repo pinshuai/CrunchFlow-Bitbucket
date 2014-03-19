@@ -1,0 +1,4 @@
+# parameters for regression tests
+
+testcf = beaker.out = Time (days), Ca++, Ca44++, pH = 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6 = beaker.benchmark = absolute, time
+testcf = volume1.out = CalciteRif, Calcite44R = 1.0e-6, 1.0e-6 = volume1.benchmark = absolute, space
