@@ -49,8 +49,8 @@ END IF
 
 call MatCreateSeqBAIJ(PETSC_COMM_SELF,neqn,np,np,linefil,PETSC_NULL_INTEGER,amatpetsc,ierr)
 call MatSetOption(amatpetsc,MAT_ROW_ORIENTED,PETSC_FALSE,ierr)
-call VecCreateSeqWithArray(PETSC_COMM_SELF,np,fxx,bvec,ierr)
-call VecCreateSeqWithArray(PETSC_COMM_SELF,np,xn,xvec,ierr)
+call VecCreateSeqWithArray(PETSC_COMM_SELF,np,np,fxx,bvec,ierr)
+call VecCreateSeqWithArray(PETSC_COMM_SELF,np,np,xn,xvec,ierr)
 call KSPCreate(PETSC_COMM_SELF,ksp,ierr)
 call KSPSetFromOptions(ksp,ierr)
 call KSPGetPC(ksp,pc,ierr)

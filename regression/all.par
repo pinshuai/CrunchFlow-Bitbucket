@@ -4,3 +4,4 @@ executablecf = CrunchTope, root
 
 testcf = Exercise20, Exercise20
 testcf = RifleBatch, RifleIsotopesBatch
+testcf = CrushedCalcite, CrushedCalcite

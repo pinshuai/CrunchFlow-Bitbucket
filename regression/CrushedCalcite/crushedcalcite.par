@@ -1,0 +1,5 @@
+# parameters for regression tests
+
+testcf = timeseries.out = Time (days), pH, Ca++ = 1.0e-6, 1.0e-6, 1.0e-6 = timeseries.benchmark = absolute, time
+testcf = pH3.out = pH = 1.0e-6 = pH3.benchmark = absolute, space
+testcf = totcon3.out = H+, CO2(aq) = 1.0e-6, 1.0e-6 = totcon3.benchmark = absolute, space
