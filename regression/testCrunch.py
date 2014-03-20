@@ -97,7 +97,7 @@ class CrunchTest:
         return words
 
     def _read_params(self):
-        
+
         paramFileName = self.name + '.par'
         paramFileName = os.path.join(self.path,paramFileName)
 
@@ -144,11 +144,15 @@ class CrunchTest:
         
     def _compare(self):
 
+        print 'read params'
+
         self._read_params()
 
         failed = 0
 
         for subtest in self.subtests:
+
+           print subtest
                   
            filename  = subtest[0]
            variables = subtest[1]
@@ -156,12 +160,14 @@ class CrunchTest:
            benchmark  = subtest[3] 
            typetest   = subtest[4]
         
-           calc = TecplotFile(filename,self.path)
+           calc = TecplotFile(filename,self.path)           
+           print 'tecplot file output',filename
            calc = np.array(calc.get_values(variables))
           
            print 'past calc read'
 
            gold = TecplotFile(benchmark,self.path)
+           print 'tecplot file benchmark',filename
            gold = np.array(gold.get_values(variables))
 
            print 'past gold read'
@@ -227,7 +233,7 @@ class CrunchTest:
                
         err = self._run_CrunchFlow()
 
-        failed = self._compare()  
+        failed = self._compare()
 
         self._clean()
 
