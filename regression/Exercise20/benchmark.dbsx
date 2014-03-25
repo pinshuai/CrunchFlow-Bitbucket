@@ -9,26 +9,11 @@
 ! -------------------------------------------------------------------------------------------------
 
 &Aqueous
-  name          = 'AceNO3HCO3NO2'
-  type          = 'catabolic'
-  stoichiometry = 0.125 'H+'  0.250 'HCO3-'  -0.125 'Acetate'  -0.500 'NO3-'  0.500 'NO2-'
-  keq           = 12.8969
-/
-
-&Aqueous
   name          = 'AceNO2HCO3N2'
   type          = 'catabolic'
-  stoichiometry = -0.20833333333333 'H+'       0.16666666666667 'H2O'        0.25000000000000 'HCO3-'
-                  -0.12500000000000 'Acetate'  0.16666666666667 'N2(aq)'  -0.33333333333333 'NO2-'
+  stoichiometry = -0.20833333333333 'H+'          0.16666666666667 'H2O'         0.25000000000000 'HCO3-'
+                  -0.12500000000000 'Acetate'     0.16666666666667 'N2(aq)'     -0.33333333333333 'NO2-'
   keq           = 21.8209
-/
-
-&Aqueous
-  name          = 'AceNO2HCO3NH4'
-  type          = 'catabolic'
-  stoichiometry = -0.20833333333333 'H+'       0.16666666666667 'H2O'        0.25000000000000 'HCO3-'
-                  -0.12500000000000 'Acetate'  0.16666666666667 'NH4+'      -0.16666666666667 'NO2-'
-  keq           = 11.3684
 /
 
 &Aqueous
@@ -41,19 +26,470 @@
 &Aqueous
   name          = 'C5H7O2N_RCH2_Ace_NO2'
   type          = 'anabolic'
-  stoichiometry = -0.105769230769  'H+'          -0.125           'Acetate'  -0.038461538462  'NO2-'
-                   0.0384615384615 'C5H7O2NNO3'   0.0576923076923 'HCO3-'     0.0769230769231 'H2O'
+  stoichiometry = -0.105769230769  'H+'          -0.125           'Acetate'     -0.038461538462  'NO2-'
+                   0.0384615384615 'C5H7O2NNO3'   0.0576923076923 'HCO3-'        0.0769230769231 'H2O'
   keq           = 0.0
 /
 
 &Aqueous
   name          = 'AceCrO42HCO3Cr3'
   type          = 'catabolic'
-  stoichiometry = -1.54166666666667 'H+'        0.83333333333333 'H2O'     0.25000000000 'HCO3-'  
-                  -0.12500000000000 'Acetate'  -0.33333333333333 'CrO4--'  0.33333333333 'Cr+++'
+  stoichiometry = -1.54166666666667 'H+'          0.83333333333333 'H2O'         0.25000000000 'HCO3-'  
+                  -0.12500000000000 'Acetate'    -0.33333333333333 'CrO4--'      0.33333333333 'Cr+++'
   keq           = 24.4994
 /
 
+&Aqueous
+  name          = 'GluO2CO2'
+  type          = 'catabolic'
+  stoichiometry = -0.041666666667 'Glucose'       0.250000000000 'H2O'           0.250000000000 'CO2(aq)'
+                  -0.250000000000 'O2(aq)'
+  keq           = 20.61099083
+/
+
+&Aqueous
+  name          = 'C7H12O4N_GluNH3Glu'
+  type          = 'anabolic'
+  stoichiometry = -1.208333333333 'Glucose'       2.750000000000 'H2O'           0.250000000000 'CO2(aq)'
+                   1.000000000000 'C7H12O4N'     -1.000000000000 'NH3(aq)'
+  keq           = 0.0
+/
+ 
+&Aqueous
+  name          = 'GluNO3CO2NO2'
+  type          = 'catabolic'
+  stoichiometry = -0.041666666667 'Glucose'       0.250000000000 'CO2(aq)'           0.250000000000 'H2O'
+                  -0.500000000000 'NO3-'          0.500000000000 'NO2-'
+  keq           = 14.11297727
+/
+
+&Aqueous
+  name          = 'C7H12O4N_GluNH3CO2'
+  type          = 'anabolic'
+  stoichiometry = -0.041666666667 'Glucose'       0.094827586207 'H2O'           0.008620689655 'CO2(aq)'
+                   0.034482758621 'C7H12O4N'     -0.034482758621 'NH3(aq)'
+  keq           = 0.0
+/
+
+&Aqueous
+  name          = 'AceNO3CO2NO2'
+  type          = 'catabolic'
+  stoichiometry = -0.125000000000 'Acetate'      -0.125000000000 'H+'            0.250000000000 'CO2(aq)'
+                   0.250000000000 'H2O'          -0.500000000000 'NO3-'          0.500000000000 'NO2-'
+  keq           = 11.84428182
+/
+
+&Aqueous
+  name          = 'C7H12O4N_AceNH3Ace'
+  type          = 'anabolic'
+  stoichiometry = -3.625000000000 'Acetate'      -3.625000000000 'H+'            2.750000000000 'H2O'
+                   0.250000000000 'CO2(aq)'          -1.000000000000 'NH3(aq)'           1.000000000000 'C7H12O4N'
+  keq           = 0.0
+/
+
+&Aqueous
+  name          = 'C7H12O4N_AceNH3CO2'
+  type          = 'anabolic'
+  stoichiometry = -0.125000000000 'Acetate'      -0.125000000000 'H+'            0.094827586207 'H2O'
+                   0.008620689655 'CO2(aq)'          -0.034482758621 'NH3(aq)'           0.034482758621 'C7H12O4N'
+  keq           = 0.0
+/
+
+&Aqueous
+  name          = 'LacNO3CO2NO2'
+  type          = 'catabolic'
+  stoichiometry = -0.083333333333 'Lactate'      -0.083333333333 'H+'            0.250000000000 'H2O'
+                   0.250000000000 'CO2(aq)'          -0.500000000000 'NO3-'          0.500000000000 'NO2-'
+  keq           = 12.6658093 
+/
+
+&Aqueous
+  name          = 'C7H12O4N_LacNH3CO2'
+  type          = 'anabolic'
+  stoichiometry = -0.083333333333 'Lactate'      -0.083333333333 'H+'            0.094827586207 'H2O'
+                   0.008620689655 'CO2(aq)'           0.034482758621 'C7H12O4N'     -0.034482758621 'NH3(aq)'
+  keq           = 0.0
+/
+
+&Aqueous
+  name          = 'C7H12O4N_LacNH3Lac'
+  type          = 'anabolic'
+  stoichiometry = -2.416666666667 'Lactate'      -2.416666666667 'H+'            2.750000000000 'H2O'
+                   0.250000000000 'CO2(aq)'           1.000000000000 'C7H12O4N'     -1.000000000000 'NH3(aq)' 
+  keq           = 0.0
+/ 
+
+&Aqueous
+  name          = 'GluNO2CO2NO'
+  type          = 'catabolic'
+  stoichiometry = -0.041666666667 'Glucose'      -1.000000000000 'H+'            0.750000000000 'H2O'
+                   0.250000000000 'CO2(aq)'          -1.000000000000 'NO2-'          1.000000000000 'NO(aq)'
+  keq           = 12.70872622 
+/
+
+&Aqueous
+  name          = 'AceNO2CO2NO'
+  type          = 'catabolic'
+  stoichiometry = -0.125000000000 'Acetate'      -1.125000000000 'H+'            0.750000000000 'H2O'
+                   0.250000000000 'CO2(aq)'          -1.000000000000 'NO2-'          1.000000000000 'NO(aq)'
+  keq           = 10.44003076 
+/ 
+
+&Aqueous
+  name          = 'LacNO2CO2NO'
+  type          = 'catabolic'
+  stoichiometry = -0.083333333333 'Lactate'      -1.083333333333 'H+'            0.750000000000 'H2O'
+                   0.250000000000 'CO2(aq)'          -1.000000000000 'NO2-'          1.000000000000 'NO(aq)'
+  keq           = 11.26155824
+/
+
+&Aqueous
+  name          = 'GluNOCO2N2O'
+  type          = 'catabolic'
+  stoichiometry = -0.041666666667 'Glucose'       0.250000000000 'H2O'           0.250000000000 'CO2(aq)'
+                  -1.000000000000 'NO(aq)'            0.500000000000 'N2O(aq)'
+  keq           = 26.65850817
+/ 
+
+&Aqueous
+  name          = 'AceNOCO2N2O'
+  type          = 'catabolic'
+  stoichiometry = -0.125000000000 'Acetate'       0.250000000000 'H2O'           0.250000000000 'CO2(aq)'
+                  -0.125000000000 'H+'           -1.000000000000 'NO(aq)'            0.500000000000 'N2O(aq)'
+  keq           = 24.38981271 
+/
+
+&Aqueous
+  name          = 'LacNOCO2N2O'
+  type          = 'catabolic'
+  stoichiometry = -0.083333333333 'Lactate'       0.250000000000 'H2O'           0.250000000000 'CO2(aq)'
+                  -0.083333333333 'H+'           -1.000000000000 'NO(aq)'            0.500000000000 'N2O(aq)'
+  keq           = 25.21134019
+/ 
+
+&Aqueous
+  name          = 'AceN2OCO2N2'
+  type          = 'catabolic'
+  stoichiometry = -0.125000000000 'Acetate'       0.250000000000 'H2O'           0.250000000000 'CO2(aq)'
+                  -0.125000000000 'H+'           -0.500000000000 'N2O(aq)'           0.500000000000 'N2(aq)'
+  keq           = 27.47492301
+/ 
+
+&Aqueous
+  name          = 'LacN2OCO2N2'
+  type          = 'catabolic'
+  stoichiometry = -0.083333333333 'Lactate'       0.250000000000 'CO2(aq)'           0.250000000000 'H2O'
+                  -0.083333333333 'H+'           -0.500000000000 'N2O(aq)'           0.500000000000 'N2(aq)'
+  keq           = 28.29645048 
+/
+
+&Aqueous
+  name          = 'NH3O2NO2'
+  type          = 'catabolic'
+  stoichiometry =  0.166666666667 'H+'            0.166666666667 'H2O'          -0.166666666667 'NH3(aq)'
+                   0.166666666667 'NO2-'         -0.250000000000 'O2(aq)' 
+  keq           = 8.404529916
+/ 
+
+&Aqueous
+  name          = 'C7H12O4N_NH3NH3CO2'
+  type          = 'anabolic'
+  stoichiometry =  0.166666666667 'H+'            0.011494252874 'H2O'          -0.241379310345 'CO2(aq)'
+                   0.034482758621 'C7H12O4N'     -0.201149425287 'NH3(aq)'           0.166666666667 'NO2-'
+  keq           = 0.0
+/
+
+&Aqueous
+  name          = 'NO2O2NO3'
+  type          = 'catabolic'
+  stoichiometry = -0.500000000000 'NO2-'          0.500000000000 'NO3-'         -0.250000000000 'O2(aq)'
+  keq           =  6.498013557
+/ 
+
+&Aqueous
+  name          = 'C7H12O4N_NO2NO2CO2'
+  type          = 'anabolic'
+  stoichiometry = -0.028571428571 'H+'           -0.157142857143 'H2O'          -0.200000000000 'CO2(aq)'
+                   0.028571428571 'C7H12O4N'     -0.528571428571 'NO2-'          0.500000000000 'NO3-'
+  keq           = 0.0
+/
+
+&Aqueous
+  name          = 'N2BMCO2NH3'
+  type          = 'catabolic'
+  stoichiometry =  0.200000000000 'Glucose'      -0.800000000000 'H2O'           0.200000000000 'CO2(aq)'
+                  -0.200000000000 'C7H12O4N'      0.450000000000 'NH3(aq)'           0.125000000000 'H2(aq)'
+                  -0.125000000000 'N2(aq)'
+  keq           = 14.52492714 
+/ 
+
+&Aqueous
+  name          = 'Enz_AceNH3CO2'
+  type          = 'anabolic'
+  stoichiometry = -0.125000000000 'Acetate'      -0.125000000000 'H+'            0.153765690377 'H2O'
+                   0.009588563459 'CO2(aq)'          -0.065725244073 'NH3(aq)'           0.000174337517 'Enz'
+  keq           = 0.0
+/
+
+&Aqueous
+  name          = 'AceFeOOHCO2Fe'
+  type          = 'catabolic'
+  stoichiometry = -0.125000000000 'Acetate'      -2.125000000000 'H+'            1.750000000000 'H2O'
+                   0.250000000000 'CO2(aq)'          -1.000000000000 'FeOOH(aq)'         1.000000000000 'Fe++'
+  keq           = 79.74598178 
+/ 
+
+&Aqueous
+  name          = 'C7H12O4N_AceNH3CO2'
+  type          = 'anabolic'
+  stoichiometry = -0.125000000000 'Acetate'      -0.125000000000 'H+'            0.094827586207 'H2O'
+                   0.008620689655 'CO2(aq)'           0.034482758621 'C7H12O4N'     -0.034482758621 'NH3(aq)'
+  keq           = 0.0
+/
+
+&Aqueous
+  name          = 'MnO2H2Mn'
+  type          = 'catabolic'
+  stoichiometry = -1.000000000000 'H+'            1.000000000000 'H2O'           0.500000000000 'Mn++'
+                  -0.500000000000 'MnO2(aq)'         -0.500000000000 'H2(aq)'
+  keq           = 13.77133637
+/
+
+&Aqueous
+  name          = 'C7H12O4N_H2NH3CO2'
+  type          = 'anabolic'
+  stoichiometry =  0.344827586207 'H2O'          -0.241379310345 'CO2(aq)'           0.034482758621 'C7H12O4N'
+                  -0.034482758621 'NH3(aq)'          -0.500000000000 'H2(aq)'
+  keq           = 0.0
+/
+
+&Aqueous
+  name          = 'AceMnO2CO2Mn'
+  type          = 'catabolic'
+  stoichiometry = -0.125000000000 'Acetate'      -1.125000000000 'H+'            0.750000000000 'H2O'
+                   0.250000000000 'CO2(aq)'           0.500000000000 'Mn++'         -0.500000000000 'MnO2(aq)'
+  keq           = 11.32612352
+/
+
+&Aqueous
+  name          = 'LacMnO2CO2Mn'
+  type          = 'catabolic'
+  stoichiometry = -0.083333333333 'Lactate'      -1.083333333333 'H+'            0.750000000000 'H2O'
+                   0.250000000000 'CO2(aq)'           0.500000000000 'Mn++'         -0.500000000000 'MnO2(aq)'
+  keq           = 12.147651
+/
+
+&Aqueous
+  name          = 'FeOOHH2Fe'
+  type          = 'catabolic'
+  stoichiometry = -2.000000000000 'H+'            2.000000000000 'H2O'          -1.000000000000 'FeOOH(aq)'
+                   1.000000000000 'Fe++'         -0.500000000000 'H2(aq)'
+  keq           = 82.19119462
+/
+
+&Aqueous
+  name          = 'GluN2OCO2N2'
+  type          = 'catabolic'
+  stoichiometry = -0.041666666667 'Glucose'       0.250000000000 'H2O'           0.250000000000 'CO2(aq)'
+                  -0.500000000000 'N2O(aq)'           0.500000000000 'N2(aq)'
+  keq           = 29.74361846 
+/
+
+&Aqueous
+  name          = 'LacFeOOHCO2Fe'
+  type          = 'catabolic'
+  stoichiometry = -0.083333333333 'Lactate'      -2.083333333333 'H+'            1.750000000000 'H2O'
+                   0.250000000000 'CO2(aq)'          -1.000000000000 'FeOOH(aq)'         1.000000000000 'Fe++'
+  keq           = 80.56750925
+/
+
+&Aqueous
+  name          = 'SO4H2HS'
+  type          = 'catabolic'
+  stoichiometry = -0.125000000000 'H+'            0.500000000000 'H2O'           0.125000000000 'HS-'
+                  -0.125000000000 'SO4--'        -0.500000000000 'H2(aq)'
+  keq           = 3.334066424
+/
+
+&Aqueous
+  name          = 'SO4AceHSCO2'
+  type          = 'catabolic'
+  stoichiometry = -0.125000000000 'Acetate'      -0.250000000000 'H+'            0.250000000000 'H2O'
+                   0.250000000000 'CO2(aq)'           0.125000000000 'HS-'          -0.125000000000 'SO4--'
+  keq           = 0.888853581
+/
+
+&Aqueous
+  name          = 'SO4LacHSCO2'
+  type          = 'catabolic'
+  stoichiometry = -0.083333333333 'Lactate'      -0.208333333333 'H+'            0.250000000000 'H2O'
+                   0.250000000000 'CO2(aq)'           0.125000000000 'HS-'          -0.125000000000 'SO4--'
+  keq           = 1.710381057
+/
+
+&Aqueous
+  name          = 'CO2H2CH4'
+  type          = 'catabolic'
+  stoichiometry =  0.250000000000 'H2O'          -0.125000000000 'CO2(aq)'           0.125000000000 'CH4(aq)'
+                  -0.500000000000 'H2(aq)'
+  keq           = 2.696754507
+/
+
+&Aqueous
+  name          = 'AceCO2CH4'
+  type          = 'catabolic'
+  stoichiometry = -0.125000000000 'Acetate'      -0.125000000000 'H+'            0.125000000000 'CO2(aq)'
+                   0.125000000000 'CH4(aq)'
+  keq           = 0.251541663
+/
+
+&Aqueous
+  name          = 'MnO2MnO2'
+  type          = 'catabolic'
+  stoichiometry =  1.000000000000 'H+'           -0.500000000000 'H2O'          -0.500000000000 'Mn++'
+                   0.500000000000 'MnO2(aq)'         -0.250000000000 'O2(aq)'
+  keq           = 7.016171854
+/
+
+&Aqueous
+  name          = 'C7H12O4N_MnNH3CO2'
+  type          = 'anabolic'
+  stoichiometry =  1.000000000000 'H+'           -0.655172413793 'H2O'          -0.241379310345 'CO2(aq)'
+                   0.034482758621 'C7H12O4N'     -0.034482758621 'NH3(aq)'          -0.500000000000 'Mn++'
+                   0.500000000000 'MnO2(aq)'
+  keq           = 0.0
+/
+
+&Aqueous
+  name          = 'FeO2FeOOH'
+  type          = 'catabolic'
+  stoichiometry =  2.000000000000 'H+'           -1.500000000000 'H2O'           1.000000000000 'FeOOH(aq)'
+                  -1.000000000000 'Fe++'         -0.250000000000 'O2(aq)'
+  keq           = -61.4036864
+/
+
+&Aqueous
+  name          = 'C7H12O4N_FeNH3CO2'
+  type          = 'anabolic'
+  stoichiometry =  2.000000000000 'H+'           -1.655172413793 'H2O'          -0.241379310345 'CO2(aq)'
+                   0.034482758621 'C7H12O4N'     -0.034482758621 'NH3(aq)'           1.000000000000 'FeOOH(aq)'
+                  -1.000000000000 'Fe++' 
+  keq           = 0.0
+/
+
+&Aqueous
+  name          = 'MnO2FeMnFeOOH'
+  type          = 'catabolic'
+  stoichiometry =  1.000000000000 'H+'           -1.000000000000 'H2O'           0.500000000000 'Mn++'
+                  -0.500000000000 'MnO2(aq)'          1.000000000000 'FeOOH(aq)'        -1.000000000000 'Fe++'
+  keq           = -68.41985826
+/
+
+&Aqueous
+  name          = 'H2SO2SO4'
+  type          = 'catabolic'
+  stoichiometry =  0.250000000000 'H+'           -0.125000000000 'H2S(aq)'           0.125000000000 'SO4--'
+                  -0.250000000000 'O2(aq)'
+  keq           = 17.45234623
+/
+
+&Aqueous
+  name          = 'C7H12O4N_H2SNH3CO2'
+  type          = 'anabolic'
+  stoichiometry =  0.250000000000 'H+'           -0.155172413793 'H2O'          -0.241379310345 'CO2(aq)'
+                   0.034482758621 'C7H12O4N'     -0.034482758621 'NH3(aq)'          -0.125000000000 'H2S(aq)'
+                   0.125000000000 'SO4--'
+  keq           = 0.0
+/
+
+&Aqueous
+  name          = 'MnO2H2SMnS0'
+  type          = 'catabolic'
+  stoichiometry = -1.000000000000 'H+'            1.000000000000 'H2O'           0.500000000000 'Mn++'
+                  -0.500000000000 'MnO2(aq)'         -0.500000000000 'H2S(aq)'           0.500000000000 'S0(aq)'
+  keq           = 11.32866523
+/
+
+&Aqueous
+  name          = 'FeOOHH2SFeS0'
+  type          = 'catabolic'
+  stoichiometry = -2.000000000000 'H+'            2.000000000000 'H2O'          -1.000000000000 'FeOOH(aq)'
+                   1.000000000000 'Fe++'         -0.500000000000 'H2S(aq)'           0.500000000000 'S0(aq)'
+  keq           = 79.74852349
+/
+
+&Aqueous
+  name          = 'NO3H2SNO2SO4'
+  type          = 'catabolic'
+  stoichiometry =  0.250000000000 'H+'           -0.125000000000 'H2S(aq)'           0.125000000000 'SO4--'
+                   0.500000000000 'NO2-'         -0.500000000000 'NO3-'
+  keq           = 10.95433267
+/
+
+&Aqueous
+  name          = 'FeSO4Fe'
+  type          = 'catabolic'
+  stoichiometry =  0.125000000000 'Fe++'          0.125000000000 'SO4--'        -0.125000000000 'FeS(aq)'
+                  -0.250000000000 'O2(aq)'
+  keq           = 15.8440572
+/
+
+&Aqueous
+  name          = 'C7H12O4N_FeSNH3CO2'
+  type          = 'anabolic'
+  stoichiometry = -0.155172413793 'H2O'          -0.241379310345 'CO2(aq)'           0.034482758621 'C7H12O4N'
+                  -0.034482758621 'NH3(aq)'           0.125000000000 'Fe++'          0.125000000000 'SO4--'
+                  -0.125000000000 'FeS(aq)'
+  keq           = 0.0
+/
+
+&Aqueous
+  name          = 'CH4O2CO2'
+  type          = 'catabolic'
+  stoichiometry =  0.250000000000 'H2O'           0.125000000000 'CO2(aq)'          -0.125000000000 'CH4(aq)'
+                  -0.250000000000 'O2(aq)'
+  keq           = 18.09075371
+/
+
+&Aqueous
+  name          = 'C7H12O4N_CH4NH3CO2'
+  type          = 'anabolic'
+  stoichiometry =  0.094827586207 'H2O'          -0.116379310345 'CO2(aq)'           0.034482758621 'C7H12O4N'
+                  -0.034482758621 'NH3(aq)'          -0.125000000000 'CH4(aq)'
+  keq           = 0.0
+/
+
+&Aqueous
+  name          = 'CH4SO4CO2HS'
+  type          = 'catabolic'
+  stoichiometry = -0.125000000000 'H+'            0.250000000000 'H2O'           0.125000000000 'CO2(aq)'
+                   0.125000000000 'HS-'          -0.125000000000 'SO4--'        -0.125000000000 'CH4(aq)'
+  keq           = 0.637311918
+/
+
+&Aqueous
+  name          = 'FeNO3FeOOHNO2'
+  type          = 'catabolic'
+  stoichiometry =  2.000000000000 'H+'           -1.500000000000 'H2O'           1.000000000000 'FeOOH(aq)'
+                  -1.000000000000 'Fe++'          0.500000000000 'NO2-'         -0.500000000000 'NO3-'
+  keq           = -67.90169996
+/
+
+&Aqueous
+  name          = 'FeSNO3FeNO2'
+  type          = 'catabolic'
+  stoichiometry =  0.125000000000 'Fe++'          0.125000000000 'SO4--'        -0.125000000000 'FeS(aq)'
+                   0.500000000000 'NO2-'         -0.500000000000 'NO3-'
+  keq           = 9.346043642
+/
+
+&Aqueous
+  name          = 'CH4NO3CO2NO2'
+  type          = 'catabolic'
+  stoichiometry =  0.250000000000 'H2O'           0.125000000000 'CO2(aq)'          -0.125000000000 'CH4(aq)'
+                   0.500000000000 'NO2-'         -0.500000000000 'NO3-'
+  keq           = 11.59274016
+/
 
 ! -------------------------------------------------------------------------------------------------
 !
@@ -61,19 +497,6 @@
 !
 ! -------------------------------------------------------------------------------------------------
 
-
-&AqueousKinetics
-  name          = 'AceNO3HCO3NO2'
-  label         = 'default'
-  type          = 'MonodBiomass'
-  rate25C       = 2000.0
-  monod_terms   = 'tot_Acetate' 2.03E-5 'tot_NO3-' 1.06E-5 'tot_NH4+' 1.0e-6
-  biomass       = 'C5H7O2NNO3(s)'
-  planktonic    = 'C5H7O2NNO3'
-  bq            = 4.0
-  chi           = 1
-  direction     =-1
-/
 
 &AqueousKinetics
   name          = 'AceNO2HCO3N2'
@@ -87,20 +510,6 @@
   bq            = 4.0
   chi           = 1
   direction     = -1
-/
-
-&AqueousKinetics
-  name          = 'aAceNO3HCO3NO2'
-  label         = 'default'
-  type          = 'MonodBiomass'
-  rate25C       = 2000.0
-  monod_terms   = 'tot_Acetate' 2.03E-5 'tot_NO3-' 1.06E-5
-  inhibition    = 'tot_NH4+'    1.06E-5
-  biomass       = 'C5H7O2NNO3(s)'
-  planktonic    = 'C5H7O2NNO3'
-  bq            = 4.0
-  chi           = 1
-  direction     =-1
 /
 
 &AqueousKinetics
@@ -142,4 +551,734 @@
   bq            = 4.0
   chi           = 1
   direction     = -1
+/
+
+&AqueousKinetics
+  name          = 'GluO2CO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'C7H12O4N_GluNH3Glu'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'GluNO3CO2NO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'C7H12O4N_GluNH3CO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'AceNO3CO2NO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'C7H12O4N_AceNH3Ace'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'C7H12O4N_AceNH3CO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'LacNO3CO2NO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'C7H12O4N_LacNH3CO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'C7H12O4N_LacNH3Lac'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'GluNO2CO2NO'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'AceNO2CO2NO'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'LacNO2CO2NO'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'GluNOCO2N2O'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'AceNOCO2N2O'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'LacNOCO2N2O'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'GluN2OCO2N2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'AceN2OCO2N2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'LacN2OCO2N2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'NH3O2NO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'C7H12O4N_NH3NH3CO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'NO2O2NO3'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'C7H12O4N_NO2NO2CO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'N2BMCO2NH3'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'Enz_AceNH3CO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'AceFeOOHCO2Fe'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'C7H12O4N_AceNH3CO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'MnO2H2Mn'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'C7H12O4N_H2NH3CO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'AceMnO2CO2Mn'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'LacMnO2CO2Mn'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'FeOOHH2Fe'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'LacFeOOHCO2Fe'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'SO4H2HS'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'SO4AceHSCO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'SO4LacHSCO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'CO2H2CH4'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'AceCO2CH4'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'MnO2MnO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'C7H12O4N_MnNH3CO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'FeO2FeOOH'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'C7H12O4N_FeNH3CO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'MnO2FeMnFeOOH'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'H2SO2SO4'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'C7H12O4N_H2SNH3CO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'MnO2H2SMnS0'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'FeOOHH2SFeS0'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'NO3H2SNO2SO4'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'FeSO4Fe'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'C7H12O4N_FeSNH3CO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'CH4O2CO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'C7H12O4N_CH4NH3CO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'CH4SO4CO2HS'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+v
+
+&AqueousKinetics
+  name          = 'FeNO3FeOOHNO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'FeSNO3FeNO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
+/
+
+&AqueousKinetics
+  name          = 'CH4NO3CO2NO2'
+  label         = 'default'
+  type          = 'MonodBiomass'
+  rate25C       = 2000.0
+  monod_terms   = ''
+  biomass       = 'C7H12O4N(s)'
+  planktonic    = 'C7H12O4N'
+  bq            = 4.0
+  chi           = 1
+  direction     =-1
 /
