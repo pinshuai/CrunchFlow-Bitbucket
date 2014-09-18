@@ -346,6 +346,8 @@ REAL(DP)                                                   :: sumCO2
 REAL(DP)                                                   :: sumPlagioclaseArea
 REAL(DP)                                                   :: denominator
 
+logical :: alquimia = .false. !.false.
+
 ! ******************** PETSC declarations ********************************
 PetscFortranAddr     userC(6),userD(6),userP(6),user(6)
 Mat                  amatpetsc,amatD,amatP
@@ -474,7 +476,34 @@ iprnt = 0
 CALL start98(ncomp,nspec,nkin,nrct,ngas,npot,nx,ny,nz,data1,ipath,igamma,  &
     ikmast,ikph,iko2,ltitle,tstep,delt,deltmin,ttol,jpor,ikin,nstop,       &
     corrmax,nseries,nexchange,nexch_sec,nsurf,nsurf_sec,ndecay,str_mon,    &
-    str_day,str_hr,str_min,str_sec,NumInputFiles,InputFileCounter)
+    str_day,str_hr,str_min,str_sec,NumInputFiles,InputFileCounter,alquimia)
+
+! Alquimia400 (smr)
+if_alquimia400: if (alquimia) then 
+
+  neqn = ncomp + nexchange + nsurf + npot
+  nxyz = nx*ny*nz
+  
+  call AllocateOS3D(ncomp,nspec,ngas,nrct,nexchange,nsurf,nsurf_sec,npot,neqn,nx,ny,nz)  
+  call AllocateALL(ncomp,nspec,ngas,nrct,nexchange,nsurf,nsurf_sec,npot,neqn,nx,ny,nz)
+
+  DO jz = 1,nz; DO jy = 1,ny; DO jx = 1,nx
+        DO npt = 1,npot
+          LogPotential(npt,jx,jy,jz) = LogPotentialInit(npt,jinit(jx,jy,jz))
+        END DO
+  END DO; END DO; END DO
+
+  IF (Duan) THEN
+    DO jz = 1,nz; DO jy = 1,ny; DO jx = 1,nx
+          GasPressureTotal(jx,jy,jz) = GasPressureTotalInit(jinit(jx,jy,jz))
+    END DO; END DO; END DO
+  END IF
+
+  if (isaturate == 1) call AllocateGasesOS3D(nx,ny,nz,ncomp) 
+
+  NewInput = .FALSE.
+  return
+end if if_alquimia400
 
 ! ************ Initialize PETSc stuff ***************************************
 if( InputFileCounter == 1) then

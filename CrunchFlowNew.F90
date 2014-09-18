@@ -28,5 +28,7 @@ DO WHILE (NewInput)
   CALL CrunchFlow(NumInputFiles,InputFileCounter,NewInput)
 END DO
 
+continue
+
 STOP
 END 

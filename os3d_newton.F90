@@ -118,7 +118,6 @@ DO ne = 1,newton
   END IF
 
   CALL totconc(ncomp,nspec,jx,jy,jz)
-
   CALL totexchange_local(ncomp,nexchange,nexch_sec,nsurf,nsurf_sec,jx,jy,jz)
   CALL totsurf_local(ncomp,nsurf,nsurf_sec,jx,jy,jz)
   CALL tot_ex(ncomp,nexchange,nexch_sec,jx,jy,jz)

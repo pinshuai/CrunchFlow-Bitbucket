@@ -442,7 +442,6 @@ IF (icomplete /= 1) THEN
 !!      END IF
 
     END IF
-
   ELSE
     ngas = 0
     DO ik = 1,ncomp+ncmplx
@@ -460,7 +459,7 @@ IF (icomplete /= 1) THEN
 !!      npointH2gas = 2
     END IF
   END IF
-  
+
 END IF
 
 !  *****End of gas read****

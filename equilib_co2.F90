@@ -1029,7 +1029,7 @@ DO  ktrial = 1,ntrial
 
 !!  call ludcmp90(fj,indx,det,neqn)
 !!  call lubksb90(fj,indx,beta,neqn)
-
+  
   CALL dgetrf(neqn,neqn,fj,neqn,indx,info)
   CALL dgetrs(trans,neqn,ione,fj,neqn,indx,beta,neqn,info)
 

@@ -17,7 +17,7 @@ SUBROUTINE start98(ncomp,nspec,nkin,nrct,ngas,npot,                   &
     tstep,delt,deltmin,ttol,jpor,ikin,nstop,                          &
     corrmax,nseries,nexchange,nexch_sec,nsurf,nsurf_sec,ndecay,       &
     str_mon,str_day,str_hr,str_min,str_sec,NumInputFiles,             &
-    InputFileCounter)
+    InputFileCounter,alquimia)
 USE crunchtype
 USE params
 USE runtime
@@ -227,6 +227,8 @@ REAL(DP), INTENT(OUT)                                         :: delt
 REAL(DP), INTENT(OUT)                                         :: deltmin
 REAL(DP), INTENT(OUT)                                         :: ttol
 REAL(DP), INTENT(OUT)                                         :: corrmax
+
+logical, intent(in)                                           :: alquimia
 
 !  Internal variables and arrays
 
@@ -550,7 +552,7 @@ IF (NumInputFiles == 1) THEN
   INQUIRE(FILE='PestControl.ant',EXIST=ext)
   IF (EXT) THEN          !!  Pest Control file exists, so read input filename from it rather than prompting user
     OPEN(iunit1,FILE='PestControl.ant',STATUS='old',ERR=708)
-    READ(iunit1,'(a)') filename
+    READ(iunit1,'(a)') filename    
     CLOSE(iunit1,STATUS='keep')
     RunningPest = .TRUE.
   ELSE                   !!  No Pestcontrol.ant file, so prompt user for the file name
@@ -565,6 +567,7 @@ END IF
 INQUIRE(FILE=filename,EXIST=ext)
 IF (.NOT. ext) THEN
   CALL stringlen(filename,ls)
+  write(*,*)'ls= ',ls
   WRITE(*,*) 
   WRITE(*,*) ' Cannot find input file: ', filename(1:ls)
   WRITE(*,*)
@@ -3000,6 +3003,9 @@ ELSE
 END IF
 !!   ********* END OF ISOTOPES BLOCK ********************
 
+! Alquimia100 (smr)
+if_Alquimia100: if (.not. alquimia) then
+
 !     ********SPECIATION OF GEOCHEMICAL CONDITIONS******
 
 !  First, call the initialization routine so that the
@@ -3169,6 +3175,7 @@ WRITE(iunit2,*)
 
 IF (ispeciate == 1) STOP
 
+end if if_Alquimia100 ! Alquimia100 (smr)
 
 !  ***************STOP HERE WHEN DATABASE SWEEP IS DONE***************
 
@@ -3508,6 +3515,9 @@ END IF
 
 !   ***************************************************
 
+! Alquimia200 (smr)
+if_Alquimia200: if (.not. alquimia) then
+
 !************DISCRETIZATION****************************
 !  Check for discretization block
 !  If absent, assume a reaction path calculation
@@ -3732,6 +3742,18 @@ ELSE
   nxyz = 1
 END IF
 
+else if (alquimia) then ! Alquimia200 (smr)
+
+! correct initialization of alquimia single-cell chemistry
+  nx = 1
+  ny = 1
+  nz = 1
+  nzonex = 0
+  nzoney = 0
+  nzonez = 0
+  nxyz = 1
+
+end if if_alquimia200 ! Alquimia200 (smr)
     
 !*****************************************************
 !  Write out information on discretization
@@ -4260,6 +4282,9 @@ t = tinit
 
 
 ! *****************************************************************
+
+! Alquimia300 (smr)
+if_alquimia300: if (.not. alquimia) then
 
 !    ***************INTERNAL HETEROGENEITIES********************
 
@@ -8431,6 +8456,8 @@ DEALLOCATE(SolidDensityFrom)
 IF (Duan) THEN
   DEALLOCATE(vrInitial)
 END IF
+
+end if if_alquimia300 ! Alquimia300 (smr)
 
 CLOSE(UNIT=8)
 

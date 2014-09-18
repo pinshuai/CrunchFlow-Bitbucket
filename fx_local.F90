@@ -120,6 +120,7 @@ DO i = 1,ncomp
     aq_accum = r*por(jx,jy,jz)*ro(jx,jy,jz)*   &
            (H2Oreacted(jx,jy,jz)*xgram(jx,jy,jz)*satl*s(i,jx,jy,jz) - &
             xgramOld(jx,jy,jz)*satlold*sn(i,jx,jy,jz)) *(1.0 + Retardation*distrib(i) ) 
+    
   ELSE
     aq_accum = r*por(jx,jy,jz)*ro(jx,jy,jz)*   &
            (xgram(jx,jy,jz)*satl*s(i,jx,jy,jz) - &
@@ -135,7 +136,7 @@ DO i = 1,ncomp
   ex_accum = r*(sNCexch_local(i) - sexold(i,jx,jy,jz))      &
             +    r*(sNCsurf_local(i) - ssurfold(i,jx,jy,jz))
 
-  fxx(ind) = aq_accum + gas_accum + ex_accum - source 
+  fxx(ind) = aq_accum + gas_accum + ex_accum - source
   
   IF (ABS(fxx(ind)) > fxmax(i)) THEN
     fxmax(i) = ABS(fxx(ind))
