@@ -69,7 +69,7 @@ REAL(DP), INTENT(IN)                          :: AqueousToBulk
 
 !  Internal arrays
 
-INTEGER(I4B), PARAMETER                       :: newton=50
+INTEGER(I4B), PARAMETER                       :: newton=100
 INTEGER(I4B), PARAMETER                       :: ione=1
 INTEGER(I4B)                                  :: ind
 INTEGER(I4B)                                  :: ne

@@ -703,7 +703,7 @@ IF (nsurf > 0) THEN
   ALLOCATE(zsurf(nsurf+nsurf_sec))
   CLOSE(nout,STATUS='delete')
   OPEN(UNIT=iunit5,FILE=data1,STATUS='old',ERR=334)
-  OPEN(UNIT=nout,FILE='CrunchJunk2.out',STATUS='new') 
+  OPEN(UNIT=nout,FILE='CrunchJunk2.out',STATUS='unknown') 
   REWIND nout
   string1 = 'Begin surface complexation parameters'
   CALL find_string(iunit5,string1,ifind)
