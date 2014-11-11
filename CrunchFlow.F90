@@ -655,7 +655,8 @@ IF (CalculateFlow) THEN
 !!    call PCFactorSetShiftType(pc,MAT_SHIFT_NONZERO,ierr)
 !!    call PCFactorSetShiftAmount(pc,1.D-12,ierr)
 !! smr end replacement
-  CALL KSPSetOperators(ksp,amatP,amatP,SAME_NONZERO_PATTERN,ierr)
+!  CALL KSPSetOperators(ksp,amatP,amatP,SAME_NONZERO_PATTERN,ierr)
+  CALL KSPSetOperators(ksp,amatP,amatP,ierr)
   CALL KSPSolve(ksp,BvecP,XvecP,ierr)
   CALL KSPGetIterationNumber(ksp,itsiterate,ierr)
 
@@ -985,7 +986,8 @@ DO WHILE (nn <= nend)
     pc = userP(5)
     ksp = userP(6)
 
-    CALL KSPSetOperators(ksp,amatP,amatP,SAME_NONZERO_PATTERN,ierr)
+    CALL KSPSetOperators(ksp,amatP,amatP,ierr)
+!!    CALL KSPSetOperators(ksp,amatP,amatP,SAME_NONZERO_PATTERN,ierr)
 
     IF (SolverMethod /= 'direct') THEN
       CALL KSPSetInitialGuessNonzero(ksp,PETSC_TRUE,ierr)
@@ -1530,7 +1532,8 @@ DO WHILE (nn <= nend)
             END DO
           END DO
 
-          CALL KSPSetOperators(ksp,amatD,amatD,SAME_NONZERO_PATTERN,ierr)
+          CALL KSPSetOperators(ksp,amatD,amatD,ierr)
+!!CALL KSPSetOperators(ksp,amatD,amatD,SAME_NONZERO_PATTERN,ierr)
           CALL KSPSolve(ksp,BvecD,XvecD,ierr)
           CALL KSPGetIterationNumber(ksp,itsiterate,ierr)
 
@@ -1609,7 +1612,8 @@ DO WHILE (nn <= nend)
           END DO
         END DO
 
-        CALL KSPSetOperators(ksp,amatD,amatD,SAME_NONZERO_PATTERN,ierr)
+        CALL KSPSetOperators(ksp,amatD,amatD,ierr)
+!!CALL KSPSetOperators(ksp,amatD,amatD,SAME_NONZERO_PATTERN,ierr)
         CALL KSPSolve(ksp,BvecD,XvecD,ierr)
         CALL KSPGetIterationNumber(ksp,itsiterate,ierr)
 
@@ -2014,7 +2018,8 @@ newtonloop:  DO WHILE (icvg == 1 .AND. iterat <= newton)
 !!            CALL PCILUSetDamping(pc,1.D-12,ierr)
             CALL PCFactorSetLevels(pc,GimrtLevel,ierr)
 
-            call KSPSetOperators(ksp,amatpetsc,amatpetsc,SAME_NONZERO_PATTERN,ierr)
+!! call KSPSetOperators(ksp,amatpetsc,amatpetsc,SAME_NONZERO_PATTERN,ierr)
+            call KSPSetOperators(ksp,amatD,amatD,ierr)            
             call KSPSolve(ksp,bvec,xvec,ierr)
             CALL KSPGetIterationNumber(ksp,itsiterate,ierr)
 
