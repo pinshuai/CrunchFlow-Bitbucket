@@ -86,30 +86,42 @@ IF (nIsotopeMineral > 0) THEN
   IF (IsotopeMineralRare(k)) THEN
 
     kIsotopologue = kPointerIsotope(k)
+
+    kMineralRare = kIsotopeRare(kIsotopologue)
+    KMineralCommon = kIsotopeCommon(kIsotopologue)
+    isotopologue = PointerToPrimaryIsotope(kIsotopologue)
+    iPrimaryCommon = isotopeCommon(Isotopologue)
+
     IF (isotopeBackReactionOption(kIsotopologue) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue)) THEN
       isotopologue = PointerToPrimaryIsotope(kIsotopologue)
       iPrimaryRare = isotopeRare(Isotopologue)
       iPrimaryCommon = isotopeCommon(Isotopologue)
       denominator = sppTMP10(iPrimaryRare) + sppTMP10(iPrimaryCommon)
-      MoleFractionMineral = sppTMP10(iPrimaryRare)/denominator
+      MoleFractionMineral = (sppTMP10(iPrimaryRare)/denominator)
     ELSE
       MoleFractionMineral = MoleFractionMineralRare(kPointerIsotope(k))
     END IF
-    sumiap = sumiap - DLOG(MoleFractionMineral)
+    sumiap = sumiap - (mumin(1,kMineralCommon,iPrimaryCommon))*DLOG(MoleFractionMineral)
 
   ELSE IF (IsotopeMineralCommon(k)) THEN
 
     kIsotopologue = kPointerIsotope(k)
+
+    kMineralRare = kIsotopeRare(kIsotopologue)
+    KMineralCommon = kIsotopeCommon(kIsotopologue)
+    isotopologue = PointerToPrimaryIsotope(kIsotopologue)
+    iPrimaryCommon = isotopeCommon(Isotopologue)
+
     IF (isotopeBackReactionOption(kIsotopologue) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue)) THEN
       isotopologue = PointerToPrimaryIsotope(kIsotopologue)
       iPrimaryRare = isotopeRare(Isotopologue)
       iPrimaryCommon = isotopeCommon(Isotopologue)
       denominator = sppTMP10(iPrimaryRare) + sppTMP10(iPrimaryCommon)
-      MoleFractionMineral = sppTMP10(iPrimaryCommon)/denominator
+      MoleFractionMineral = (sppTMP10(iPrimaryCommon)/denominator)
     ELSE
       MoleFractionMineral = MoleFractionMineralCommon(kPointerIsotope(k))
     END IF
-    sumiap = sumiap - DLOG(MoleFractionMineral)
+    sumiap = sumiap - (mumin(1,kMineralCommon,iPrimaryCommon))*DLOG(MoleFractionMineral)
 
   ELSE
     CONTINUE

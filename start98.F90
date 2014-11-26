@@ -32,6 +32,7 @@ USE io
 USE strings
 USE ReadFlow
 USE modflowModule
+USE isotope, ONLY: IsotopeMineralRare, IsotopeMineralCommon
 USE NanoCrystal
 
 IMPLICIT NONE
@@ -394,6 +395,19 @@ REAL(DP)                                                      :: convert
 REAL(DP)                                                      :: MinSaturation
 REAL(DP)                                                      :: TortuosityConstant
 
+REAL(DP)                                                      :: LogPermMinX
+REAL(DP)                                                      :: LogPermMinY
+REAL(DP)                                                      :: LogPermMaxX
+REAL(DP)                                                      :: LogPermMaxY
+REAL(DP)                                                      :: MidPointX
+REAL(DP)                                                      :: MidPointY
+REAL(DP)                                                      :: NewPermXRange
+REAL(DP)                                                      :: NewPermYRange
+REAL(DP)                                                      :: LogPermX
+REAL(DP)                                                      :: LogPermY
+REAL(DP)                                                      :: NewLogPermX
+REAL(DP)                                                      :: NewLogPermY
+
 INTEGER(I4B)                                                  :: nxtemp
 INTEGER(I4B)                                                  :: nytemp
 INTEGER(I4B)                                                  :: nztemp
@@ -451,7 +465,7 @@ INTEGER(I4B)                                                  :: ntot
 INTEGER(I4B)                                                  :: nhet
 INTEGER(I4B)                                                  :: ll
 INTEGER(I4B)                                                  :: i2
-INTEGER(I4B)                                                  :: isotope
+!!INTEGER(I4B)                                                  :: isotope
 INTEGER(I4B)                                                  :: nbnd
 INTEGER(I4B)                                                  :: nlength
 INTEGER(I4B)                                                  :: intjunk
@@ -551,9 +565,15 @@ IF (NumInputFiles == 1) THEN
     CLOSE(iunit1,STATUS='keep')
     RunningPest = .TRUE.
   ELSE                   !!  No Pestcontrol.ant file, so prompt user for the file name
-    WRITE(*,*)
-    WRITE(*,*) ' Type in your input file name'
-    READ(*,'(a)') filename
+
+    CALL get_command_argument(1,filename)
+
+    IF (filename == '') THEN
+      WRITE(*,*)
+      WRITE(*,*) ' Type in your input file name'
+      READ(*,'(a)') filename
+    END IF
+
   END IF
 ELSE
   filename = InputFile(InputFileCounter)
@@ -1041,6 +1061,8 @@ IF (found) THEN
 
   IF (GIMRT_PCMethod == 'bjacobi') THEN
     CONTINUE
+  ELSE IF (GIMRT_PCMethod == 'lu') THEN   
+    CONTINUE
   ELSE IF (GIMRT_PCMethod == 'ilu') THEN   
     CONTINUE
   ELSE
@@ -1071,6 +1093,22 @@ IF (found) THEN
     END IF
   END IF
 
+  parchar = 'gimrt_rtolksp'
+  parfind = ' '
+  realjunk = 0.0
+  CALL read_par(nout,lchar,parchar,parfind,realjunk,section)
+  IF (parfind == ' ') THEN  ! Parameter timestep_max not found
+    GimrtRTOLKSP = 1.0D-09            ! Use default
+  ELSE
+    GimrtRTOLKSP = realjunk
+  END IF
+!!!  IF (GimrtRTOLKSP > 1.0D-07) THEN
+!!!    GimrtRTOLKSP = 1.0D-07
+!!!  END IF
+  IF (GimrtRTOLKSP < 1.0D-10) THEN
+    GimrtRTOLKSP = 1.0D-10
+  END IF
+
 !!   ************************************************
 
   parchar = 'screen_output'
@@ -1097,13 +1135,13 @@ IF (found) THEN
     ttol = realjunk
   END IF
   
-  ResidualTolerance = 1.D-10
+  ResidualTolerance = 0.0d0
   parchar = 'ResidualTolerance'
   parfind = ' '
   realjunk = 0.0
   CALL read_par(nout,lchar,parchar,parfind,realjunk,section)
   IF (parfind == ' ') THEN  ! Parameter timestep_max not found
-    ResidualTolerance = 1.D-10            ! Use default
+    ResidualTolerance = 0.0d0            ! Use default
   ELSE
     ResidualTolerance = realjunk
   END IF
@@ -2018,6 +2056,20 @@ ELSE
   ALLOCATE(ispot(nsurf))
 END IF
 
+IF (ALLOCATED(kpot)) THEN
+  DEALLOCATE(kpot)
+  ALLOCATE(kpot(50))
+ELSE
+  ALLOCATE(kpot(50))
+END IF
+
+IF (ALLOCATED(kPotential)) THEN
+  DEALLOCATE(kPotential)
+  ALLOCATE(kPotential(500))
+ELSE
+  ALLOCATE(kPotential(500))
+END IF
+
 ndependex = 0
 ndependsurf = 0
 ixdepend = 0
@@ -2214,13 +2266,22 @@ END DO        !  Loop over minerals
 
 !     **************END OF RADIOACTIVE DECAY****************
 
-!  Find the number of potentials (surface complexes using electrostatic correction
+!  Find the number of potentials (surface complexes using electrostatic correction)
+
+kPotential = .FALSE.
+
+DO is = 1,nsurf
+  k = ksurf(is)
+  IF (iedl(is) == 0) THEN
+    kPotential(k) = .TRUE.
+  END IF
+END DO
 
 npot = 0
-DO is = 1,nsurf
-  IF (iedl(is) == 0) THEN
-    npot = npot + 1
-    ispot(npot) = is
+DO k = 1,nrct
+  IF (kPotential(k) == .TRUE.) THEN
+     npot = npot + 1
+     kpot(npot) = k
   END IF
 END DO
 
@@ -2232,9 +2293,9 @@ ELSE
 END IF
 IF (ALLOCATED(LogPotential_tmp)) THEN
   DEALLOCATE(LogPotential_tmp)
-  ALLOCATE(LogPotential_tmp(npot))
+  ALLOCATE(LogPotential_tmp(nsurf))
 ELSE
-  ALLOCATE(LogPotential_tmp(npot))
+  ALLOCATE(LogPotential_tmp(nsurf))
 END IF
 IF (ALLOCATED(islink)) THEN
   DEALLOCATE(islink)
@@ -2267,9 +2328,12 @@ nptlink = 0
 
 DO ns = 1,nsurf_sec
   DO npt = 1,npot
-    IF (islink(ns) == ispot(npt)) THEN
-      nptlink(ns) = npt
-    END IF
+!!    IF (islink(ns) == ispot(npt)) THEN
+!!      nptlink(ns) = npt
+!!    END IF
+   IF (ksurf(islink(ns)) == kpot(npt)) THEN
+     nptlink(ns) = npt
+   END IF
   END DO
 END DO
 
@@ -2277,6 +2341,8 @@ neqn = ncomp + nsurf + nexchange + npot
 
 !  Temporary arrays deallocated later in START98
 
+ALLOCATE(SkipAdjust(mchem))
+SkipAdjust = .FALSE.
 ALLOCATE(tempcond(mchem))
 ALLOCATE(rocond(mchem))
 ALLOCATE(porcond(mchem))
@@ -2964,6 +3030,18 @@ END IF
 
 !  *****************ISOTOPES BLOCK***********************
 
+IF (ALLOCATED(IsotopeMineralRare)) THEN
+  DEALLOCATE(IsotopeMineralRare)
+END IF
+ALLOCATE(IsotopeMineralRare(nrct))
+IF (ALLOCATED(IsotopeMineralCommon)) THEN
+  DEALLOCATE(IsotopeMineralCommon)
+END IF
+ALLOCATE(IsotopeMineralCommon(nrct))
+
+IsotopeMineralRare = .FALSE.
+IsotopeMineralCommon = .FALSE.
+
 section = 'isotopes'
 CALL readblock(nin,nout,section,found,ncount)
 
@@ -3036,6 +3114,8 @@ DO nco = 1,nchem
   END DO
 
   LogPotential_tmp = 0.0
+  spgastmp = -100.0d0
+  spgastmp10 = 1.0D-35
   
   CALL species_init(ncomp,nspec)
   CALL gases_init(ncomp,ngas,tempc)
@@ -6744,6 +6824,88 @@ IF (found) THEN
         
         END IF    !! 
 
+        permmaxX = 0.0d0
+        permmaxy = 0.0d0
+        permminX = 1.0d0
+        permminY = 1.0d0
+
+        do jz = 1,nz
+          do jy = 1,ny
+            do jx = 1,nx
+ 
+              if (permx(jx,jy,jz) > permmaxX) then
+                permmaxX = permx(jx,jy,jz)
+              end if
+              if (permY(jx,jy,jz) > permmaxY) then
+                permmaxY = permY(jx,jy,jz)
+              end if
+              if (permx(jx,jy,jz) < permminX) then
+                permminX = permx(jx,jy,jz)
+              end if
+              if (permy(jx,jy,jz) < permminy) then
+                permminY = permy(jx,jy,jz)
+              end if
+
+            end do
+          end do
+        end do
+
+        write(*,*) ' Internal MinMax in X: ', permminX,permmaxX
+        write(*,*) ' Internal MinMax in Y: ', permminY,permmaxY
+        write(*,*)
+
+
+!!!        do jz = 1,nz
+!!!          do jy = 1,ny
+!!!            do jx = 1,nx
+!!!
+!!!                LogPermX = DLOG10(permx(jx,jy,jz))
+!!!                NewLogPermX = (LogPermX - MidPointX)/2.0d0 + MidPointX
+!!!                permx(jx,jy,jz) = 10**(NewLogPermX)       
+!!!
+!!!                LogPermY = DLOG10(permY(jx,jy,jz))
+!!!                NewLogPermY = (LogPermY - MidPointY)/2.0d0 + MidPointY
+!!!                permy(jx,jy,jz) = 10**(NewLogPermY)       
+!!!
+!!!           end do
+!!!         end do
+!!!        end do
+!!!
+!!!        permmaxX = 0.0d0
+!!!        permmaxy = 0.0d0
+!!!        permminX = 1.0d0
+!!!        permminY = 1.0d0
+
+!!!        do jz = 1,nz
+!!!          do jy = 1,ny
+!!!            do jx = 1,nx
+!!! 
+!!!              if (permx(jx,jy,jz) > permmaxX) then
+!!!                permmaxX = permx(jx,jy,jz)
+!!!              end if
+!!!              if (permY(jx,jy,jz) > permmaxY) then
+!!!                permmaxY = permy(jx,jy,jz)
+!!!              end if
+!!!              if (permx(jx,jy,jz) < permminX) then
+!!!                permminX = permx(jx,jy,jz)
+!!!              end if
+!!!              if (permy(jx,jy,jz) < permminY) then
+!!!                permminY = permy(jx,jy,jz)
+!!!                if (permminY == 0.0d0) then
+!!!                   write(*,*) jx,jy
+!!!                   read(*,*)
+!!!                end if
+!!!              end if
+!!!
+!!!            end do
+!!!          end do
+!!!        end do
+!!!
+!!!
+!!!        write(*,*) ' MinMax in X: ', permminX,permmaxX
+!!!        write(*,*) ' MinMax in Y: ', permminY,permmaxY
+!!!        write(*,*)
+
         perminx = permx
         perminy = permy
         perminz = permz       
@@ -6828,9 +6990,9 @@ IF (found) THEN
           END DO
         END IF
         
-        permmaxx = 0.0
+        permmaxX= 0.0
         permx = perminx
-        permmaxx = MAXVAL(DABS(permx))
+        permmaxX = MAXVAL(DABS(permx))
         
         DEALLOCATE(permzonex)
         DEALLOCATE(jxxpermx_lo)
@@ -8274,9 +8436,8 @@ CALL dispersivity(nx,ny,nz)
 !      write(*,*)
 !      pause
 
-call BreakthroughInitialize(ncomp,nspec,nkin,nrct,ngas,npot, &
-    nx,ny,nz,nseries,nexchange,nexch_sec,nsurf,nsurf_sec )
-
+call BreakthroughInitialize(ncomp,nspec,nkin,nrct,ngas,npot,nx,ny,nz,nseries,  &
+                        nexchange,nexch_sec,nsurf,nsurf_sec,ikpH )
 call AqueousFluxInitialize(ncomp,nspec,nx,ny,nz )
 
 call FluxWeightedConcentrationInitialize(ncomp,nspec,nx,ny,nz )
@@ -8380,6 +8541,7 @@ DEALLOCATE(totexch)
 DEALLOCATE(ncon)
 DEALLOCATE(namdep_nyf)
 DEALLOCATE(tempcond)
+DEALLOCATE(SkipAdjust)
 DEALLOCATE(rocond)
 DEALLOCATE(porcond)
 DEALLOCATE(SaturationCond)

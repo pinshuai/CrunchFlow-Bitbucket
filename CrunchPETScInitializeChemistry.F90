@@ -19,6 +19,8 @@ INTEGER(I4B), INTENT(IN OUT)                                          :: ierr
 
 INTEGER(I4B)                                                          :: linefil
 INTEGER(I4B)                                                          :: np
+INTEGER(I4B)       :: i
+INTEGER(I4B), Dimension(nx)      :: iRowWidth
 
 ! ******************** PETSC declarations ********************************
 PetscFortranAddr     userC(*)
@@ -47,14 +49,20 @@ ELSE
   END IF
 END IF
 
+!!!do i = 2,nx-1
+!!!  iRowWidth(i) = 3
+!!!end do
+!!!iRowWidth(1) = 2
+!!!iRowWidth(nx) = 2
+
 call MatCreateSeqBAIJ(PETSC_COMM_SELF,neqn,np,np,linefil,PETSC_NULL_INTEGER,amatpetsc,ierr)
 call MatSetOption(amatpetsc,MAT_ROW_ORIENTED,PETSC_FALSE,ierr)
-call VecCreateSeqWithArray(PETSC_COMM_SELF,np,fxx,bvec,ierr)
-call VecCreateSeqWithArray(PETSC_COMM_SELF,np,xn,xvec,ierr)
+call VecCreateSeqWithArray(PETSC_COMM_SELF,neqn,np,fxx,bvec,ierr)
+call VecCreateSeqWithArray(PETSC_COMM_SELF,neqn,np,xn,xvec,ierr)
 call KSPCreate(PETSC_COMM_SELF,ksp,ierr)
 call KSPSetFromOptions(ksp,ierr)
 call KSPGetPC(ksp,pc,ierr)
-!!call KSPGetKSP(sles,ksp,ierr)
+
 
 userC(1) = amatpetsc
 userC(2) = bvec

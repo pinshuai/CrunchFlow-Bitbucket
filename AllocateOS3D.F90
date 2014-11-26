@@ -163,7 +163,7 @@ INTEGER(I4B), INTENT(IN)                           :: nz
   IF (ALLOCATED(LogPotential)) THEN
     DEALLOCATE(LogPotential)
   END IF
-  ALLOCATE(LogPotential(npot,nx,ny,nz))
+  ALLOCATE(LogPotential(nsurf,nx,ny,nz))
   LogPotential = 0.0
   IF (ALLOCATED(surfcharge)) THEN
     DEALLOCATE(surfcharge)

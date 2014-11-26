@@ -164,7 +164,8 @@ DO ir = 1,ikin
    
 !!  Normal Monod terms
 
-    term2 = 1.0
+    term2 = 1.0d0
+
     DO id = 1,nmonodaq(ir)
       i = imonodaq(id,ir)
       IF (itot_monodaq(id,ir) == 1) THEN
@@ -217,7 +218,8 @@ DO ir = 1,ikin
 
 !!  Normal Monod terms
 
-    term2 = 1.0
+    term2 = 1.0d0
+
     DO id = 1,nmonodaq(ir)
       i = imonodaq(id,ir)
 

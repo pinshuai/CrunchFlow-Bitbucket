@@ -243,20 +243,6 @@ DO jx = 1,nx
 END DO
 CLOSE(UNIT=8,STATUS='keep')
 
-!!!fn='isotopes'
-!!!ilength = 8
-!!!CALL newfile(fn,suf1,fnv,nint,ilength)
-!!!OPEN(UNIT=8,FILE=fnv, ACCESS='sequential',STATUS='unknown')
-!!!WRITE(8,2283) PrintTime
-!!!WRITE(8,102)
-!!!WRITE(8,2285) (ulabprnt(ik),ik=1,ncomp)
-!!!jy = 1
-!!!jz = 1
-!!!DO jx = 1,nx
-!!!  del34S_sulfate = ( ( s(11,jx,jy,jz)/s(10,jx,jy,jz) )/0.0441626 - 1.0d0)*1000.0d0
-!!!  del34S_sulfide = ( ( s(13,jx,jy,jz)/s(12,jx,jy,jz) )/0.0441626 - 1.0d0)*1000.0d0
-!!!  WRITE(8,184) x(jx)*OutputDistanceScale,del34S_sulfate,del34S_sulfide
-!!!END DO
 
 !!!DO jx = 1,nx
 !!!  delCa44 = ( ( s(6,jx,jy,jz)/s(7,jx,jy,jz) )/47.153 - 1.0d0)*1000.0d0

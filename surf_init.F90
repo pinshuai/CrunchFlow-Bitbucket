@@ -25,6 +25,7 @@ REAL(DP)                                                    :: delta_z
 REAL(DP)                                                    :: activity
 REAL(DP)                                                    :: LogTotalSites
 REAL(DP)                                                    :: LogTotalEquivalents
+REAL(DP)                                                    :: CheckWrite
 
 DO ns = 1,nsurf_sec
 
@@ -46,9 +47,9 @@ DO ns = 1,nsurf_sec
     IF (musurf(ns,islink(ns)+ncomp) == 1.0) THEN
       LogTotalEquivalents = LogTotalSites - 0.0d0
     ELSe IF (musurf(ns,islink(ns)+ncomp) == 2.0) THEN
-      LogTotalEquivalents = LogTotalSites - 0.30102999566398
+      LogTotalEquivalents = LogTotalSites - 0.693147180559945
     ELSE IF (musurf(ns,islink(ns)+ncomp) == 3.0) THEN
-      LogTotalEquivalents = LogTotalSites - 0.47712125471966
+      LogTotalEquivalents = LogTotalSites - 1.09861228866811
     ELSE IF (musurf(ns,islink(ns)+ncomp) == 0.0) THEN
       LogTotalEquivalents = 0.0d0
     ELSE
@@ -85,9 +86,9 @@ DO ns = 1,nsurf_sec
     IF (musurf(ns,islink(ns)+ncomp) == 1.0) THEN
       LogTotalEquivalents = LogTotalSites - 0.0d0
     ELSe IF (musurf(ns,islink(ns)+ncomp) == 2.0) THEN
-      LogTotalEquivalents = LogTotalSites - 0.30102999566398
+      LogTotalEquivalents = LogTotalSites - 0.693147180559945
     ELSE IF (musurf(ns,islink(ns)+ncomp) == 3.0) THEN
-      LogTotalEquivalents = LogTotalSites - 0.47712125471966
+      LogTotalEquivalents = LogTotalSites - 1.09861228866811
     ELSE IF (musurf(ns,islink(ns)+ncomp) == 0.0) THEN
       LogTotalEquivalents = 0.0d0
     ELSE
@@ -105,6 +106,7 @@ DO ns = 1,nsurf_sec
     END DO
 
     spsurftmp(ns+nsurf) = keqsurf_tmp(ns) + sum + LogTotalEquivalents
+!!    spsurftmp(ns+nsurf) = keqsurf_tmp(ns) + sum + LogTotalSites
     spsurftmp10(ns+nsurf) = DEXP(spsurftmp(ns+nsurf))
   END IF
 

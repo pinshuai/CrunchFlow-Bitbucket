@@ -145,6 +145,13 @@ CHARACTER (LEN=5)                                    :: Dumstring
 REAL(DP)                                             :: dependTMP
 REAL(DP)                                             :: surftmp
 
+INTEGER(I4B)                                                    :: kIsotopologue
+INTEGER(I4B)                                                    :: Isotopologue
+INTEGER(I4B)                                                    :: kMineralRare
+INTEGER(I4B)                                                    :: kMineralCommon
+INTEGER(I4B)                                                    :: iPrimaryRare
+INTEGER(I4B)                                                    :: iPrimaryCommon
+
 !!!REAL(DP), DIMENSION(NCOMP)                           :: dMoleFraction40
 !!!REAL(DP), DIMENSION(NCOMP)                           :: dMoleFraction44
 !!!REAL(DP)                                             :: MoleFraction40Tmp
@@ -164,6 +171,7 @@ REAL(DP)                                             :: surftmp
 
 REAL(DP)                                             :: DenomSquared
 REAL(DP)                                             :: Denom
+REAL(DP)                                             :: AffinityInitial
 
 !!!REAL(DP)                                             :: MoleFraction44Mineral
 !!!REAL(DP)                                             :: MoleFraction40Mineral
@@ -183,16 +191,8 @@ REAL(DP)                                             ::  termHyperbolic
 
 REAL(DP)                                                        :: MoleFractionMineral
 
-INTEGER(I4B)                                                    :: kIsotopologue
-INTEGER(I4B)                                                    :: Isotopologue
-INTEGER(I4B)                                                    :: kMineralRare
-INTEGER(I4B)                                                    :: kMineralCommon
-INTEGER(I4B)                                                    :: iPrimaryRare
-INTEGER(I4B)                                                    :: iPrimaryCommon
-
-
 ! biomass
-INTEGER(I4B)                                         :: ib, jj
+INTEGER(I4B)                                                    :: ib, jj
 ! biomass end
 
 SetToAqueousMoleFraction = .FALSE.
@@ -214,14 +214,13 @@ tk = t(jx,jy,jz) + 273.15D0
 tkinv = 1.0d0/tk
 reft = 1.0d0/298.15d0
 porfactor = (por(jx,jy,jz)/porin(jx,jy,jz))**(0.666666D0)
-!!porfactor = 1.0d0
+porfactor = 1.0d0
 !!porfactor = por(jx,jy,jz)
 IF (DampRateInLowPorosity .AND. por(jx,jy,jz) < 0.001) THEN
   porfactor = porfactor*PorosityDamp
 END IF
 
-porfactor = 1.0d0
-
+!!porfactor = 1.0d0
 
 IF (nIsotopeMineral > 0) THEN
   dMoleFractionAqueousCommon = 0.0d0
@@ -346,69 +345,226 @@ DO k = 1,nkin
 
         IF (imintype(np,k) /= 3 .AND. imintype(np,k) /= 2) THEN         !! Everything but Monod and irreversible
             
+!!  Strictly first order TST type rate laws:
+
           IF (AffinityDepend1(np,k) == 1.0d0 .AND. AffinityDepend2(np,k) == 1.0d0 .AND. AffinityDepend3(np,k) == 1.0d0) THEN
-            DO i = 1,ncomp
 
-!!              if (UseDissolutionOnly) then
-!!                jac_sat(i) = mumin(1,k,i)*si(1,k)
-!!              else
+              IF (IsotopeMineralRare(k)) THEN
 
-                jac_sat(i) = mumin(np,k,i)*si(np,k)  
+                jac_sat = 0.0d0
+
+                DO i = 1,ncomp
+
+                  jac_sat(i) = mumin(np,k,i)*si(np,k)  
             
-!!              end if
-!!              if (.NOT. UseDissolutionOnly .AND. imintype(np,k) == 4 .AND. silog(np,k) < 0.0d0) then   !! Precipitation only
+                END DO
 
-              if (imintype(np,k) == 4 .AND. silog(np,k) < 0.0d0) then   !! Precipitation only
-                jac_sat(i) = 0.0d0
-             end if
+                kIsotopologue  = kPointerIsotope(k)
+                kMineralRare   = kIsotopeRare(kIsotopologue)
+                KMineralCommon = kIsotopeCommon(kIsotopologue)
+                isotopologue   = PointerToPrimaryIsotope(kIsotopologue)
+                iPrimaryCommon = isotopeCommon(Isotopologue)
+                iPrimaryRare   = isotopeRare(Isotopologue)
 
-!!              if (.NOT. UseDissolutionOnly .AND.imintype(np,k) == 5 .AND. silog(np,k) > 0.0d0) then   !! Dissolution only
-              if (imintype(np,k) == 5 .AND. silog(np,k) > 0.0d0) then   !! Dissolution only
-                jac_sat(i) = 0.0d0
-              end if
+                IF (isotopeBackReactionOption(kIsotopologue) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue)) THEN
 
-            END DO
 
-          ELSE IF ( (AffinityDepend1(np,k) /= 1.0d0 .OR. AffinityDepend2(np,k) /= 1.0d0) .AND. AffinityDepend3(np,k) == 1.0d0) THEN
+                    jac_sat(iPrimaryRare)   = jac_sat(iPrimaryRare) + si(np,k) *                                                       &
+                                              (-mumin(1,kMineralCommon,iPrimaryCommon))/MoleFractionAqueousRare(Isotopologue)          &
+                                              * dMoleFractionAqueousRare(iPrimaryRare,isotopologue)
+
+                    jac_sat(iPrimaryCommon) = si(np,k) *                                                                               &
+                                              (-mumin(1,kMineralCommon,iPrimaryCommon))/MoleFractionAqueousRare(Isotopologue)          &                            &
+                                              * dMoleFractionAqueousRare(iPrimaryCommon,isotopologue)
+
+!!!  **********  Numerical derivative **********************
+!!!!!            perturb = 1.0D-09
+!!!!!            sppTMP(:)   = sp(:,jx,jy,jz)
+!!!!!            sppTMP10(:) = sp10(:,jx,jy,jz)
+!!!!!            CALL AffinityNumerical(ncomp,nrct,jx,jy,jz,np,k,sppTMP,termTMP,time)
+!!!!!            AffinityInitial = termTMP
+!!!!!            DO i = 1,ncomp
+!!!!!                sppTMP(i) = sppTMP(i) + perturb
+!!!!!                sppTMP10(i) = DEXP(sppTMP(i))
+!!!!!                CALL AffinityNumerical(ncomp,nrct,jx,jy,jz,np,k,sppTMP,termTMP,time)
+!!!!!                jac_check(i) = (termTMP - AffinityInitial)/perturb
+!!!!!!!                jac_sat(i) = jac_check(i)
+!!!!!                sppTMP(i) = sp(i,jx,jy,jz) 
+!!!!!                sppTMP10(i) = sp10(i,jx,jy,jz)
+!!!!!            END DO
+!!!  *******************************************************
+
+                ELSE 
+
+                  CONTINUE
+
+                END IF
+
+                IF (imintype(np,k) == 4 .AND. silog(np,k) < 0.0d0) THEN    !! Precipitation only
+                  jac_sat = 0.0d0
+                END IF
+
+                IF (imintype(np,k) == 5 .AND. silog(np,k) > 0.0d0) THEN   !! Dissolution only
+                  jac_sat = 0.0d0
+                END IF
+
+!!!              write(*,*) umin(k)
+!!!              write(*,*)
+!!!              do i = 1,ncomp
+!!!                dumstring = ulab(i)
+!!!                write(*,*) dumstring,jac_sat(i),jac_check(i)
+!!!              end do
+!!!              write(*,*)
+!!!              read(*,*)
+
+              ELSE IF (IsotopeMineralCommon(k)) THEN
+
+                jac_sat = 0.0d0
+
+                DO i = 1,ncomp
+
+                  jac_sat(i) = mumin(np,k,i)*si(np,k)  
+            
+                END DO
+
+                kIsotopologue  = kPointerIsotope(k)
+                kMineralRare   = kIsotopeRare(kIsotopologue)
+                KMineralCommon = kIsotopeCommon(kIsotopologue)
+                isotopologue   = PointerToPrimaryIsotope(kIsotopologue)
+                iPrimaryCommon = isotopeCommon(Isotopologue)
+                iPrimaryRare   = isotopeRare(Isotopologue)
+
+                IF (isotopeBackReactionOption(kIsotopologue) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue)) THEN
+
+
+
+                    jac_sat(iPrimaryCommon) = jac_sat(iPrimaryCommon) + si(np,k) *                                                &
+                                              (-mumin(1,kMineralCommon,iPrimaryCommon))/MoleFractionAqueousCommon(Isotopologue)   &
+                                                * dMoleFractionAqueousCommon(iPrimaryCommon,isotopologue)
+                    jac_sat(iPrimaryRare)   = si(np,k) *                                                                          &
+                                              (-mumin(1,kMineralCommon,iPrimaryCommon))/MoleFractionAqueousCommon(Isotopologue)   &
+                                                * dMoleFractionAqueousCommon(iPrimaryRare,isotopologue)
+
+                ELSE
+
+                  CONTINUE
+
+                END IF
+
+                IF (imintype(np,k) == 4 .AND. silog(np,k) < 0.0d0) THEN    !! Precipitation only
+                  jac_sat = 0.0d0
+                END IF
+
+                IF (imintype(np,k) == 5 .AND. silog(np,k) > 0.0d0) THEN   !! Dissolution only
+                  jac_sat = 0.0d0
+                END IF
+
+!!!              write(*,*) umin(k)
+!!!              write(*,*)
+!!!              do i = 1,ncomp
+!!!                dumstring = ulab(i)
+!!!                write(*,*) dumstring,jac_sat(i),jac_check(i)
+!!!              end do
+!!!              write(*,*)
+!!!              read(*,*)
+
+              ELSE
+  
+                DO i = 1,ncomp
+
+                  jac_sat(i) = mumin(np,k,i)*si(np,k)  
+
+                END DO
+
+                IF (imintype(np,k) == 4 .AND. silog(np,k) < 0.0d0) THEN    !! Precipitation only
+                  jac_sat = 0.0d0
+                END IF
+
+                IF (imintype(np,k) == 5 .AND. silog(np,k) > 0.0d0) THEN   !! Dissolution only
+                  jac_sat = 0.0d0
+                END IF
+
+            END IF
+
+          ELSE IF ( AffinityDepend1(np,k) /= 1.0d0 .AND. AffinityDepend2(np,k) == 1.0d0 .AND. AffinityDepend3(np,k) == 1.0d0) THEN
               
-            SaturationTerm = (si(np,k)**AffinityDepend2(np,k) - 1.0d0)
+            SaturationTerm = (si(np,k) - 1.0d0)
             IF (saturationterm == 0.0d0) THEN
               term3 = 0.0d0
-            else
+            ELSE
               term3 = (DABS(SaturationTerm))**(AffinityDepend1(np,k)-1.0d0)
-            end if
-            
- !!           IF (SaturationTerm == 0.0d0) THEN
- !!             SaturationTerm = tiny
- !!           END IF
-                
+            END IF
+                        
             DO i = 1,ncomp      
+  
+              jac_sat(i) = mumin(np,k,i)*si(np,k)* AffinityDepend1(np,k)*AffinityDepend2(np,k) * term3
 
-!!                IF (UseDissolutionOnly) THEN
-!!                  jac_sat(i) = mumin(1,k,i)*si(1,k)* AffinityDepend1(1,k)*AffinityDepend2(1,k)*       &
-!!                           ( si(1,k)**(AffinityDepend2(1,k)-1.0d0) ) * (DABS(si(1,k)**AffinityDepend2(1,k) - 1.0d0))**(AffinityDepend1(1,k)-1.0d0)
-!!                ELSE
+              IF (imintype(np,k) == 4 .AND. silog(np,k) < 0.0d0) THEN   !! Precipitation only
+                jac_sat(i) = 0.0d0
+              END IF
+
+              IF (imintype(np,k) == 5 .AND. silog(np,k) > 0.0d0) THEN   !! Dissolution only
+                  jac_sat(i) = 0.0d0
+              END IF
+
+            END DO         
+
+          ELSE IF ( AffinityDepend1(np,k) == 1.0d0 .AND. AffinityDepend2(np,k) /= 1.0d0 .AND. AffinityDepend3(np,k) == 1.0d0) THEN   
+
+            SaturationTerm = ( si(np,k)**AffinityDepend2(np,k) - 1.0d0 )
+            IF (saturationterm == 0.0d0) THEN
+              term3 = 0.0d0
+            ELSE
+              term3 = DABS(SaturationTerm)
+            END IF
+                        
+            DO i = 1,ncomp      
   
               jac_sat(i) = mumin(np,k,i)*si(np,k)* AffinityDepend1(np,k)*AffinityDepend2(np,k)*       &
                            ( si(np,k)**(AffinityDepend2(np,k)-1.0d0) ) * term3
 
-!!                END IF
+!!              jac_sat(i) = mumin(np,k,i)*si(np,k)* AffinityDepend1(np,k)*AffinityDepend2(np,k)*       &
+!!                           ( SaturationTerm ) * term3
 
-!!                if (.NOT. UseDissolutionOnly .AND. imintype(np,k) == 4 .AND. silog(np,k) < 0.0d0) then   !! Precipitation only
-
-              if (imintype(np,k) == 4 .AND. silog(np,k) < 0.0d0) then   !! Precipitation only
+              IF (imintype(np,k) == 4 .AND. silog(np,k) < 0.0d0) THEN   !! Precipitation only
                 jac_sat(i) = 0.0d0
-              end if
+              END IF
 
-!!                if (.NOT. UseDissolutionOnly .AND.imintype(np,k) == 5 .AND. silog(np,k) > 0.0d0) then   !! Dissolution only
-
-                if (imintype(np,k) == 5 .AND. silog(np,k) > 0.0d0) then   !! Dissolution only
+              IF (imintype(np,k) == 5 .AND. silog(np,k) > 0.0d0) THEN   !! Dissolution only
                   jac_sat(i) = 0.0d0
-                end if
+              END IF
 
-            END DO              
+            END DO     
+  
+          ELSE IF ( (AffinityDepend1(np,k) /= 1.0d0 .OR. AffinityDepend2(np,k) /= 1.0d0) .AND. AffinityDepend3(np,k) == 1.0d0) THEN
+
+            SaturationTerm = ( si(np,k)**AffinityDepend2(np,k) - 1.0d0 )
+            IF (saturationterm == 0.0d0) THEN
+              term3 = 0.0d0
+            ELSE
+              term3 = (DABS(SaturationTerm))**(AffinityDepend1(np,k)-1.0d0)
+
+            END IF
+                        
+            DO i = 1,ncomp      
+  
+              jac_sat(i) = mumin(np,k,i)*si(np,k)* AffinityDepend1(np,k)*AffinityDepend2(np,k)*       &
+                           ( si(np,k)**(AffinityDepend2(np,k)-1.0d0) ) * term3
+
+!!              jac_sat(i) = mumin(np,k,i)*si(np,k)* AffinityDepend1(np,k)*AffinityDepend2(np,k)*       &
+!!                           ( SaturationTerm ) * term3
+
+              IF (imintype(np,k) == 4 .AND. silog(np,k) < 0.0d0) THEN   !! Precipitation only
+                jac_sat(i) = 0.0d0
+              END IF
+
+              IF (imintype(np,k) == 5 .AND. silog(np,k) > 0.0d0) THEN   !! Dissolution only
+                  jac_sat(i) = 0.0d0
+              END IF
+
+            END DO    
               
-          ELSE
+          ELSE          !!  Full numerical derivative
            
 !!  Numerical derivative for full Burch-Hellmann rate law (all exponents /= 1.0)
             IF (.NOT. JacobianNumerical) THEN

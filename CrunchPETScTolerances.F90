@@ -28,7 +28,8 @@ ksp = user(6)
  
 ! Tolerances for linear solver set here
 
-call KSPSetTolerances(ksp,rtolksp,atolksp,dtolksp,maxitsksp,ierr)
+!!!call KSPSetTolerances(ksp,rtolksp,atolksp,dtolksp,maxitsksp,ierr)
+call KSPSetTolerances(ksp,rtolksp,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,maxitsksp,ierr)
 
 ! Choose linear solver
 
@@ -45,14 +46,17 @@ END IF
 ! Choose preconditioning method
 
 IF (PCMethod == 'jacobi') THEN
+  call KSPGetPC(ksp,pc,ierr)
   CALL PCSetType(pc,PCJACOBI,ierr)
   CALL PCFactorSetLevels(pc,level,ierr)
 ELSE
+  call KSPGetPC(ksp,pc,ierr)
   CALL PCSetType(pc,PCILU,ierr)
   CALL PCFactorSetLevels(pc,level,ierr)
 END IF
 
 IF (SolverMethod == 'direct') THEN
+  call KSPGetPC(ksp,pc,ierr)
   CALL PCSetType(pc,PCCHOLESKY,ierr)
 END IF
 

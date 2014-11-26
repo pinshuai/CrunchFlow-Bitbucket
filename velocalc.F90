@@ -47,7 +47,7 @@ REAL(DP), PARAMETER                                                   :: visc=0.
 REAL(DP), PARAMETER                                                   :: ct=9.135E-10
 REAL(DP), PARAMETER                                                   :: big=1.0d0
 REAL(DP), PARAMETER                                                   :: zero=0.0d0
-REAL(DP), PARAMETER                                                   :: grav=9.8d0
+REAL(DP), PARAMETER                                                   :: grav=9.806d0
 REAL(DP)                                                              :: term1
 REAL(DP)                                                              :: term2
 

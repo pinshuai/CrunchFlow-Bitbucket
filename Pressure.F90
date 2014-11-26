@@ -73,15 +73,17 @@ REAL(DP)                                                              :: AddPres
 REAL(DP)                                                              :: AddPressureY
 REAL(DP)                                                              :: AddPressureZ
 REAL(DP)                                                              :: Check
+REAL(DP)                                                              :: printcorrectionX
+REAL(DP)                                                              :: printcorrectionY
 
 !  ****** PARAMETERS  ****************************
 
 REAL(DP), PARAMETER                                                   :: visc=0.001d0
 REAL(DP), PARAMETER                                                   :: ctTransient=4.8D-07
 REAL(DP), PARAMETER                                                   :: ctSteady=0.00
-REAL(DP), PARAMETER                                                   :: big=1000.0D0
+REAL(DP), PARAMETER                                                   :: big=100000.0D0
 REAL(DP), PARAMETER                                                   :: zero=0.0d0
-REAL(DP), PARAMETER                                                   :: grav=9.81d0
+REAL(DP), PARAMETER                                                   :: grav=9.806d0
 
 REAL(DP), DIMENSION(-3:3)                                             :: coef
 
@@ -107,10 +109,16 @@ ELSE
 END IF
 
 ct = ctTransient
+
 CALL MatZeroEntries(amatP,ierr)
 
 ! --- formulate equation matrix for each node (including inactive cells)
 
+  printcorrectionX = COSD(x_angle)
+  printcorrectionY = COSD(y_angle)
+
+!!  write(*,*) ' X, Y: ',printcorrectionX,printcorrectionY
+!!  read(*,*)
 
 ScaleFactor = 1.0
 

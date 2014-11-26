@@ -106,6 +106,9 @@ MODULE mineral
   INTEGER(I4B), DIMENSION(:,:), ALLOCATABLE        :: iarea
   INTEGER(I4B), DIMENSION(:), ALLOCATABLE          :: iedl
   INTEGER(I4B), DIMENSION(:), ALLOCATABLE          :: ispot
+
+  INTEGER(I4B), DIMENSION(:), ALLOCATABLE          :: kpot
+  LOGICAL(LGT), DIMENSION(:), ALLOCATABLE          :: kPotential
   
 !! Hyperbolic Inhibition Term
 !! Kformation(np,nkin),HyperbolicInhibitionName(np,nkin),HyperbolicInhibitionDepend(np,nkin)

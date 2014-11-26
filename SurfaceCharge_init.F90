@@ -36,8 +36,8 @@ faraday = 96485.0
 surfcharge_init = 0.0
 
 DO npt = 1,npot
-  is = ispot(npt)
-  k = ksurf(is) 
+
+  k = kpot(npt)
 
   IF (volin(k,nco) == 0.0d0) THEN
     gramsperL = wtmin(k)*voltemp(k,nco)/(rocond(nco)*volmol(k)*portemp)  ! units of g/L    
@@ -47,12 +47,18 @@ DO npt = 1,npot
 
   term1 = faraday/(specific(k,nco)*gramsperL)
 
-  surfcharge_init(k) = surfcharge_init(k) + zsurf(is)*spsurftmp10(is)*term1
+  DO is = 1,nsurf
+    IF ( ksurf(is) == kpot(npt) ) THEN
+      surfcharge_init(k) = surfcharge_init(k) + zsurf(is)*spsurftmp10(is)*term1
+    END IF
+  END DO
+
   DO ns = 1,nsurf_sec
-    IF (islink(ns) == is) THEN
+    IF (ksurf(islink(ns)) == kpot(npt)) THEN
       surfcharge_init(k) = surfcharge_init(k) + zsurf(ns+nsurf)*spsurftmp10(ns+nsurf)*term1
     END IF
   END DO
+
 END DO
 
 RETURN

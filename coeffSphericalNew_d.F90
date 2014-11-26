@@ -103,7 +103,6 @@ END DO
 jz = 1
 DO jy = 1,ny
   DO jx = 1,nx
-!fp! set_index({#ident# jz #});
     tk = 273.15 + t(jx,jy,jz)
     IF (idiffus == 0) THEN
       dstar(jx,jy,jz) = dzero*EXP((activation/rgas)*(tk25 - 1.0/tk))/formation
@@ -116,9 +115,8 @@ END DO
 dstar(0,jy,jz) = dstar(1,jy,jz)
 dstar(nx+1,jy,jz) = dstar(nx,jy,jz)
 
-DO jy = 1,ny
+!!DO jy = 1,ny
   DO jx = 1,nx
-!fp! set_index({#ident# jz #});
     
     porp = por(jx,jy,jz)
     satp = satliq(jx,jy,jz) 
@@ -391,7 +389,7 @@ DO jy = 1,ny
     dxy(jx,jy,jz) = (4.0/3.0)*pi*( (x(jx)+0.5*dxx(jx))**3 - (x(jx)-0.5*dxx(jx))**3  )
     
   END DO
-END DO
+!!END DO
 
 
 RETURN

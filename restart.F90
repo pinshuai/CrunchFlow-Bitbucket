@@ -92,8 +92,8 @@ END IF
     READ(iures) time
     READ(iures) nn
     READ(iures) nint
-    READ(iures) delt,dtold,tstep,deltmin,dtmaxcour,dtmax
-!!    READ(iures) DummyReal,DummyReal,DummyReal,DummyReal,DummyReal,DummyReal
+!!    READ(iures) delt,dtold,tstep,deltmin,dtmaxcour,dtmax
+    READ(iures) DummyReal,dtold,DummyReal,DummyReal,DummyReal,dtmax
 
     READ(iures) keqaq
     READ(iures) keqgas
@@ -141,9 +141,21 @@ END IF
     READ(iures) area
     READ(iures) LogPotential
 
-    READ(iures) t
-    READ(iures) told
-    READ(iures) ro   
+!!!    IF (NoReadRestart-T) THEN
+!!!      i = size(t,1)
+!!!      j = size(t,2)
+!!!      k = size(t,3)
+!!!      ndim = i*j*k
+!!!      ALLOCATE(RealDummyArray)
+!!!      READ(iures) RealDummyArray
+!!!      READ(iures) RealDummyArray
+!!!      READ(iures) RealDummyArray
+!!!      DEALLOCATE(RealDummyArray)
+!!!    ELSE
+      READ(iures) t
+      READ(iures) told
+      READ(iures) ro   
+!!!    END IF
  
     READ(iures) por 
 

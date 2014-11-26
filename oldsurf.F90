@@ -23,6 +23,7 @@ INTEGER(I4B), INTENT(IN)                      :: jz
 REAL(DP)                                      :: sum
 REAL(DP)                                      :: permole
 REAL(DP)                                      :: check
+REAL(DP)                                                    :: volMinimum
 
 INTEGER(I4B)                                  :: is
 INTEGER(I4B)                                  :: k
@@ -36,12 +37,16 @@ DO is = 1,nsurf
   IF (volin(k,jinit(jx,jy,jz)) == 0.0d0 .AND. volfx(k,jx,jy,jz)< voltemp(k,jinit(jx,jy,jz)) ) THEN
     ssurfn(is,jx,jy,jz) = permole*voltemp(k,jinit(jx,jy,jz))/(volmol(k))
   ELSE
-    ssurfn(is,jx,jy,jz) = permole*volfx(k,jx,jy,jz)/(volmol(k))
+    volMinimum = volfx(k,jx,jy,jz)
+    if (volMinimum < 1.0D-15) then
+       volMinimum = 1.0D-15
+    end if
+    ssurfn(is,jx,jy,jz) = permole*volMinimum/(volmol(k))
   END IF
 
-  IF (ssurfn(is,jx,jy,jz) < 1.D-30) THEN
-    ssurfn(is,jx,jy,jz) = 1.D-30
-  END IF
+!!  IF (ssurfn(is,jx,jy,jz) < 1.D-20) THEN
+!!    ssurfn(is,jx,jy,jz) = 1.D-20
+!!  END IF
 
   LogTotalSurface(is,jx,jy,jz) = DLOG(ssurfn(is,jx,jy,jz))
 

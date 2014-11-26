@@ -6,12 +6,12 @@ MODULE params
   INTEGER(I4B), PARAMETER :: mrct=500
   INTEGER(I4B), PARAMETER :: mspec=1000
   INTEGER(I4B), PARAMETER :: mgas=75
-  INTEGER(I4B), PARAMETER :: msurf=15
+  INTEGER(I4B), PARAMETER :: msurf=25
   INTEGER(I4B), PARAMETER :: mtot=mcomp+mspec
   INTEGER(I4B), PARAMETER :: mexch=15
   INTEGER(I4B), PARAMETER :: meqn=mcomp+mexch+msurf
-  INTEGER(I4B), PARAMETER :: mexch_sec=100
-  INTEGER(I4B), PARAMETER :: msurf_sec=100
+  INTEGER(I4B), PARAMETER :: mexch_sec=150
+  INTEGER(I4B), PARAMETER :: msurf_sec=250
   INTEGER(I4B), PARAMETER :: msurftot=msurf+msurf_sec
   INTEGER(I4B), PARAMETER :: mx=1000
   INTEGER(I4B), PARAMETER :: mp=meqn*mx*meqn*3

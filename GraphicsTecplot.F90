@@ -1088,10 +1088,10 @@ IF (nrct > 0) THEN
   CLOSE(UNIT=8,STATUS='keep')
 END IF
 
-! 1011 format('VARIABLES = " X (meters)",
-!     &      " Y (meters)"',50(', "',a25,'"'))
-  1011 FORMAT('VARIABLES = " X (meters)", "  Y (meters)  "',50(', "',A10,'"'))
-  2011 FORMAT('VARIABLES = " X (meters)", "  Z (meters)  "',50(', "',A10,'"'))
+!!! 1011 format('VARIABLES = " X (meters)",
+!!!     &      " Y (meters)"',50(', "',a25,'"'))
+  1011 FORMAT('VARIABLES = " X (meters)", "  Y (meters)  "',50(', "',A11,'"'))
+  2011 FORMAT('VARIABLES = " X (meters)", "  Z (meters)  "',50(', "',A11,'"'))
 
 !   Write out the reaction rates in units of mol/L(bulk vol.)/sec
 
@@ -1130,12 +1130,10 @@ IF (nrct > 0) THEN
   DO jz = 1,nz
   DO jy = 1,ny
     DO jx = 1,nx
-!fp! if_onproc({#expr# volfx(k,jx,jy,jz) #});
       DO k = 1,nrct
         dvolpr(k) = volfx(k,jx,jy,jz)*1.0
       END DO
       WRITE(8,184) x(jx)*OutputDistanceScale,z(jz)*OutputDistanceScale,(dvolpr(k),k=1,nrct)
-!fp! end_onproc();
     END DO
   END DO
   END DO
@@ -1145,7 +1143,6 @@ END IF
 !  Write out the porosity
 
   fn = 'porosity'
-
 
   ilength = 8
   CALL newfile(fn,suf1,fnv,nint,ilength)
@@ -1205,15 +1202,13 @@ END IF
   DO jz = 1,nz
   DO jy = 1,ny
     DO jx = 1,nx
-!fp! if_onproc({#expr# qx(jx,jy,jz) #});
       WRITE(8,191) x(jx)*OutputDistanceScale,z(jz)*OutputDistanceScale,qx(jx,jy,jz),qz(jx,jy,jz)
-!fp! end_onproc();
     END DO
   END DO
   END DO
   CLOSE(UNIT=8,STATUS='keep')
 
-ELSE   !  XY plot
+ELSE   !  XY plot          1D case
 
 !! One-dimensional case
 
@@ -1668,13 +1663,13 @@ IF (nrct > 0) THEN
   CLOSE(UNIT=8,STATUS='keep')
 END IF
 
-185 FORMAT(1PE12.5,12x,100(1X,1PE13.5))
+185 FORMAT(1PE12.5,12x,100(1X,1PE16.8))
 
 END IF
 
-1009 FORMAT('VARIABLES = " X (meters)", "  Y (meters)  "',100(', "',A10,'"'))
-2009 FORMAT('VARIABLES = " X (meters)", "  Z (meters)  "',100(', "',A10,'"'))
-2001 FORMAT('VARIABLES = "X (meters)"',                   100(', "',A10,'"'))
+1009 FORMAT('VARIABLES = " X (meters) ", "  Y (meters)  "',100(', "',A13,'"'))
+2009 FORMAT('VARIABLES = " X (meters) ", "  Z (meters)  "',100(', "',A13,'"'))
+2001 FORMAT('VARIABLES = "X (meters) "',                   100(', "',A13,'"'))
 
 1012 FORMAT('VARIABLES = " X (meters)", " Y (meters)", "X Velocity", "Y Velocity"')
 2012 FORMAT('VARIABLES = " X (meters)", " Z (meters)", "X Velocity", "Z Velocity"')
@@ -1687,7 +1682,7 @@ END IF
 
 182 FORMAT(100(1X,1PE12.4))
 183 FORMAT(1PE12.4,2X,1PE12.4,2X,1PE12.4)
-184 FORMAT(100(1X,1PE15.7))
+184 FORMAT(100(1X,1PE16.8))
 191 FORMAT(100(1X,1PE17.7))
 188 FORMAT(100(1X,f15.7))
 

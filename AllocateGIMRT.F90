@@ -280,7 +280,7 @@ IF (ierode == 1) THEN
   IF (ALLOCATED(LogPotential)) THEN
     DEALLOCATE(LogPotential)
   END IF
-  ALLOCATE(LogPotential(npot,nx,ny,nz))
+  ALLOCATE(LogPotential(nsurf,nx,ny,nz))
 
   IF (ALLOCATED(surfcharge)) THEN
     DEALLOCATE(surfcharge)
@@ -327,7 +327,7 @@ ELSE IF (ierode /= 1) THEN
   IF (ALLOCATED(LogPotential)) THEN
     DEALLOCATE(LogPotential)
   END IF
-  ALLOCATE(LogPotential(npot,nx,ny,nz))
+  ALLOCATE(LogPotential(nsurf,nx,ny,nz))
   IF (ALLOCATED(surfcharge)) THEN
     DEALLOCATE(surfcharge)
   END IF
@@ -578,6 +578,31 @@ ELSE
     DEALLOCATE(xn)
   END IF
   ALLOCATE(xn(neqn*nx*ny*nz))
+  IF (ALLOCATED(aah)) THEN
+    DEALLOCATE(aah)
+  END IF
+  ALLOCATE(aah(neqn,neqn,nx))
+  IF (ALLOCATED(bbh)) THEN
+    DEALLOCATE(bbh)
+  END IF
+  ALLOCATE(bbh(neqn,neqn,nx))
+  IF (ALLOCATED(cch)) THEN
+    DEALLOCATE(cch)
+  END IF
+  ALLOCATE(cch(neqn,neqn,nx))
+  IF (ALLOCATED(yh)) THEN
+    DEALLOCATE(yh)
+  END IF
+  ALLOCATE(yh(neqn,nx))
+  IF (ALLOCATED(indexx)) THEN
+    DEALLOCATE(indexx)
+  END IF
+  ALLOCATE(indexx(neqn,nx))
+  aah = 0.0
+  bbh = 0.0
+  cch = 0.0
+  yh = 0.0
+  indexx = 0
 END IF
 
 !!IF (nsurf > 0) THEN

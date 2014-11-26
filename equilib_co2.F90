@@ -17,7 +17,7 @@
 !**********************************************************************
 
 SUBROUTINE equilib_co2(ncomp,nspec,nrct,ngas,nsurf,igamma,ikph,     &
-    nco,nexchange,nexch_sec,nsurf_sec,npot,neqn,tempc,portemp,  &
+    nco,nexchange,nexch_sec,nsurf_sec,npot,neqn,tempc,portemp,      &
     DensityModule,ipest,PestUnit,pest)
 USE crunchtype
 USE params
@@ -27,7 +27,7 @@ USE solver
 USE io
 USE temperature
 USE medium
-USE runtime, ONLY: HanfordStrontium, Duan
+USE runtime, ONLY: HanfordStrontium, Duan, SkipAdjust
 
 IMPLICIT NONE
 
@@ -116,7 +116,7 @@ INTEGER(I4B), DIMENSION(:), ALLOCATABLE                    :: iTotNegative
 CHARACTER (LEN=mls)                                        :: namtemp
 CHARACTER (LEN=mls)                                        :: dumstring
 
-REAL(DP), PARAMETER                                        :: tolf=1.e-13
+REAL(DP), PARAMETER                                        :: tolf=1.e-12
 REAL(DP)                                                   :: tk
 REAL(DP)                                                   :: sumchg
 REAL(DP)                                                   :: sum
@@ -151,11 +151,14 @@ REAL(DP)                                                   :: AqueousToBulk
 REAL(DP)                                                   :: actcoeffprint
 REAL(DP)                                                   :: MolePerGSolids
 REAL(DP)                                                   :: EquivPerGSolids
+REAL(DP),DIMENSION(nrct)                                                   :: SurfaceChargeOriginal
+REAL(DP)                                                   :: deltaSurfaceCharge
 
+REAL(DP)                                                   :: CheckValue
 REAL(DP)                                                   :: rone
 REAL(DP)                                                   :: eps = 1.0D-11
 
-REAL(DP), PARAMETER                                        :: perturb=1.e-06
+REAL(DP), PARAMETER                                        :: perturb=1.e-07
 REAL(DP), PARAMETER                                        :: corrmax=2.0
 REAL(DP), PARAMETER                                        :: SmallLogNumber=-35.0
 
@@ -198,6 +201,7 @@ LOGICAL(LGT)                                               :: bagit
 LOGICAL(LGT)                                               :: ChargeBalance
 LOGICAL(LGT)                                               :: NeedChargeBalance
 LOGICAL(LGT)                                               :: ChargeOK
+LOGICAL(LGT)                                               :: InitializeMineralEquilibrium
 
 REAL(DP)                                                   :: MeanSaltConcentration
 REAL(DP)                                                   :: MassFraction
@@ -211,6 +215,8 @@ REAL(DP)                                                   :: TotalExchangeEquiv
 REAL(DP)                                                   :: TotalExchangeMoles
 
 REAL(DP)                                                   :: vrInOut
+REAL(DP)                                                   :: fxMaxPotential
+REAL(DP)                                                   :: ChargeSum
 
 
 CHARACTER (LEN=1)                                          :: trans
@@ -461,7 +467,8 @@ DO  ktrial = 1,ntrial
  
   end if
 
-  IF (ihalf > 10000) THEN
+  IF (ihalf > 2000) THEN
+
     WRITE(*,*)
     WRITE(*,*) ' Halved the concentrations too many times in condition: ', dumstring(1:lscond)
     WRITE(*,*) ' Exiting EQUILIBRATION routine'
@@ -476,7 +483,25 @@ DO  ktrial = 1,ntrial
     else
       CALL gamma_init(ncomp,nspec,tempc,sqrt_sion)
     end if
+  ELSE
+
+    ChargeSum = 0.0d0
+    DO ik = 1,ncomp+nspec
+      IF (ulab(ik) /= 'H2O') THEN
+        ChargeSum = ChargeSum + sptmp10(ik)*chg(ik)*chg(ik)
+      ELSE
+        CONTINUE
+      END IF
+    END DO
+    sion_tmp = 0.50D0*ChargeSum
+    IF (sion_tmp < 25.0d0) THEN
+      sqrt_sion = DSQRT(sion_tmp)
+    ELSE
+      sqrt_sion = 0.0d0
+    END IF
+
   END IF
+
   CALL species_init(ncomp,nspec)
   
   if (Duan) then
@@ -524,32 +549,28 @@ DO  ktrial = 1,ntrial
         check = stmp(i)/ctot(i,nco)  !! Ratio of calculated total concentration to imposed
       END IF
       feq(i) = stmp(i) - ctot(i,nco)
-      IF (check > 10000.0 .AND. iTotNegative(i) == 0) THEN
+      IF (check > 1000000.0 .AND. iTotNegative(i) == 0) THEN
         sptmp(i) = sptmp(i) - clg    !! If calculated total concentration too high, reduce primary species
-        sptmp10(i) = EXP(sptmp(i))
-        ihalf = ihalf + 1
-        bagit = .TRUE.
-      ELSE IF (check < 1.e-05  .AND. iTotNegative(i) == 0) THEN
+        sptmp10(i) = DEXP(sptmp(i))
+        if (ihalf < 2000) then
+          ihalf = ihalf + 1
+          bagit = .TRUE.
+        end if
+      ELSE IF (check < 1.e-07  .AND. iTotNegative(i) == 0) THEN
         sptmp(i) = sptmp(i) + clg
-        sptmp10(i) = EXP(sptmp(i))
-        ihalf = ihalf + 1
-        bagit = .TRUE.
+        sptmp10(i) = DEXP(sptmp(i))
+        if (ihalf < 2000) then
+          ihalf = ihalf + 1
+          bagit = .TRUE.
+        end if
       END IF
 
       IF (bagit) THEN
          EXIT
       END IF
 
-!      IF (check <= 0.0 .AND. ulab(i) /= 'h+' .AND. ulab(i) /= 'H+' .AND.  &
-!            ulab(i) /= 'o2(aq)' .AND. ulab(i) /= 'O2(aq)') THEN
-!        WRITE(*,*)
-!        WRITE(*,*) ' Negative total concentration other than'
-!        WRITE(*,*) ' H+ or O2(aq)'
-!        WRITE(*,*)
-!        STOP
-!      END IF
-
     ELSE IF (itype(i,nco) == 3) THEN
+
       DO k = 1,nrct
         IF (umin(k) == ncon(i,nco)) THEN
           kk = k + nspec
@@ -575,19 +596,29 @@ DO  ktrial = 1,ntrial
           sumiap = sumiap + mumin(1,k,i2)* (sptmp(i2)+gamtmp(i2))
         end if
       END DO
+
       feq(i) = sumiap - keqmin_tmp(1,k)
-      IF (feq(i) > clg) THEN
-        sptmp(i) = sptmp(i) - clg
-        sptmp10(i) = DEXP(sptmp(i))
-        ihalf = ihalf + 1
-        bagit = .TRUE.
-      END IF
 
-      IF (bagit) THEN
-         EXIT
-      END IF
+      IF (SkipAdjust(nco)) THEN
+        CONTINUE
+      ELSE
 
-      sind(k) = feq(i)/clg
+        IF (feq(i) > clg) THEN
+           sptmp(i) = sptmp(i) - clg
+           sptmp10(i) = DEXP(sptmp(i))
+         if (ihalf < 2000) then
+          ihalf = ihalf + 1
+          bagit = .TRUE.
+        end if
+        END IF
+
+        IF (bagit) THEN
+          EXIT
+        END IF
+
+!!!         sind(k) = feq(i)/clg
+
+       END IF
 
     ELSE IF (itype(i,nco) == 4) THEN             !!! Gas constraint
 
@@ -839,71 +870,16 @@ DO  ktrial = 1,ntrial
 
     DO npt = 1,npot
       nrow = npt + ncomp + nexchange + nsurf
-      is = ispot(npt)
       temp1 = SINH(LogPotential_tmp(npt))
-      feq(nrow) = 0.1174*sqrt_sion*temp1 - surfcharge_init(ksurf(is))
+      feq(nrow) = 0.1174d0*sqrt_sion*temp1 - surfcharge_init(kpot(npt))
     END DO
 
-!!    DO i2 = 1,ncomp
-!!      ncol = i2
-!!      sptmp(i2) = sptmp(i2) + perturb
-!!      CALL surf_init(ncomp,nspec,nsurf,nsurf_sec,nco)
-!!      CALL SurfaceCharge_init(ncomp,nspec,nsurf,nsurf_sec,npot,portemp,nco)
-!!      DO npt = 1,npot
-!!        nrow = npt + ncomp + nexchange + nsurf
-!!        is = ispot(npt)
-!!        feq_tmp = 0.1174*sqrt_sion*SINH(LogPotential_tmp(npt)) - surfcharge_init(ksurf(is))
-!!        fj_num(nrow,ncol) = (feq_tmp - feq(nrow))/perturb
-!!      END DO
-!!      sptmp(i2) = sptmp(i2) - perturb
-!!    END DO
-
-!!    DO is2 = 1,nsurf
-!!      ncol = is2+ncomp+nexchange
-!!      spsurftmp(is2) = spsurftmp(is2) + perturb
-!!      CALL surf_init(ncomp,nspec,nsurf,nsurf_sec,nco)
-!!      CALL SurfaceCharge_init(ncomp,nspec,nsurf,nsurf_sec,npot,portemp,nco)
-!!      DO npt = 1,npot
-!!        nrow = npt + ncomp + nexchange + nsurf
-!!        is = ispot(npt)
-!!        feq_tmp = 0.1174*sqrt_sion*SINH(LogPotential_tmp(npt)) - surfcharge_init(ksurf(is))
-!!        fj_num(nrow,ncol) = (feq_tmp - feq(nrow))/perturb
-!!      END DO
-!!      spsurftmp(is2) = spsurftmp(is2) - perturb
-!!    END DO
-
-!!    DO npt2 = 1,npot
-!!      ncol = npt2+ncomp+nexchange+nsurf
-!!      LogPotential_tmp(npt2) = LogPotential_tmp(npt2) + perturb
-!!      CALL surf_init(ncomp,nspec,nsurf,nsurf_sec,nco)
-!!      CALL SurfaceCharge_init(ncomp,nspec,nsurf,nsurf_sec,npot,portemp,nco)
-!!      DO npt = 1,npot
-!!        nrow = npt + ncomp + nexchange + nsurf
-!!        is = ispot(npt)
-!!        feq_tmp = 0.1174*sqrt_sion*SINH(LogPotential_tmp(npt)) - surfcharge_init(ksurf(is))
-!!        fj_num(nrow,ncol) = (feq_tmp - feq(nrow))/perturb
-!!      END DO      
-!!      CALL totconc_init(ncomp,nspec,nexchange,nexch_sec,nsurf,nsurf_sec,nco)
-!!      DO i = 1,ncomp
-!!        IF (itype(i,nco) == 1) THEN
-!!          nrow = i
-!!          feq_tmp = stmp(i) - ctot(i,nco)
-!!          fj_num(nrow,ncol) = (feq_tmp - feq(nrow))/perturb
-!!        END IF
-!!      END DO
-!!      CALL totsurf_init(ncomp,nsurf,nsurf_sec)
-!!      DO is = 1,nsurf
-!!        nrow = is + ncomp + nexchange
-!!        feq_tmp = ssurftmp(is) - c_surf(is,nco)
-!!        fj_num(nrow,ncol) = (feq_tmp - feq(nrow))/perturb
-!!      END DO
-!!      LogPotential_tmp(npt2) = LogPotential_tmp(npt2) - perturb
-!!    END DO
-
+!!  Dependence of electrostatic potential (with mineral surface charge) on other variables (ncomp, nsurf, npot)
     DO npt = 1,npot
+
       nrow = npt + ncomp + nexchange + nsurf
-      is = ispot(npt)
-      k = ksurf(is)
+
+      k = kpot(npt)
 
       IF (volin(k,nco) == 0.0d0) THEN
         gramsperL = wtmin(k)*voltemp(k,nco)/(rocond(nco)*volmol(k)*portemp)  ! units of g/L    
@@ -915,7 +891,7 @@ DO  ktrial = 1,ntrial
         ncol = i2
         sum = 0.0
         DO ns = 1,nsurf_sec
-          IF (ksurf(islink(ns)) == ksurf(is)) THEN
+          IF (ksurf(islink(ns)) == kpot(npt)) THEN
             sum = sum - musurf(ns,i2)*zsurf(ns+nsurf)*spsurftmp10(ns+nsurf)
           END IF
         END DO
@@ -923,67 +899,59 @@ DO  ktrial = 1,ntrial
       END DO
 
       DO is2 = 1,nsurf
-          ncol = is2 + ncomp + nexchange
-          sum = 0.0
-          DO ns = 1,nsurf_sec
-            IF (ksurf(islink(ns)) == ksurf(is)) THEN
+        ncol = is2 + ncomp + nexchange
+        sum = 0.0
+        DO ns = 1,nsurf_sec
+          IF (ksurf(islink(ns)) == kpot(npt)) THEN
               sum = sum - musurf(ns,is2+ncomp)*zsurf(ns+nsurf)*spsurftmp10(ns+nsurf)
-            END IF
-          END DO
-          fj(nrow,ncol) = sum*faraday/(specific(k,nco)*gramsperL)
-          IF (ksurf(is2) == ksurf(is)) THEN
-            fj(nrow,ncol) = fj(nrow,ncol)  &
-            - zsurf(is2)*spsurftmp10(is2)*faraday/(specific(k,nco)*gramsperL)
           END IF
+        END DO
+        fj(nrow,ncol) = sum*faraday/(specific(k,nco)*gramsperL)
+
+        IF (ksurf(is2) == kpot(npt)) THEN
+          fj(nrow,ncol) = fj(nrow,ncol)  &
+            - zsurf(is2)*spsurftmp10(is2)*faraday/(specific(k,nco)*gramsperL)
+        END IF
+
       END DO
-
-    END DO
-
-    DO npt = 1,npot
-      nrow = npt + ncomp + nexchange + nsurf
-      is = ispot(npt)
-      k = ksurf(is)
-      IF (volin(k,nco) == 0.0d0) THEN
-        gramsperL = wtmin(k)*voltemp(k,nco)/(rocond(nco)*volmol(k)*portemp)  ! units of g/L    
-      ELSE
-        gramsperL = wtmin(k)*volin(k,nco)/(rocond(nco)*volmol(k)*portemp)  ! units of g/L
-      END IF
 
       DO npt2 = 1,npot
         sum = 0.0
         ncol = npt2 + ncomp + nexchange + nsurf
-        IF (ksurf(ispot(npt)) == ksurf(ispot(npt2))) THEN
-          DO ns = 1,nsurf_sec
-            delta_z = zsurf(ns+nsurf) - zsurf(islink(ns))
-            IF (islink(ns) == ispot(npt2) ) THEN
-              sum = sum - zsurf(ns+nsurf)*spsurftmp10(ns+nsurf)*delta_z*2.0
-            END IF
-          END DO
+        DO ns = 1,nsurf_sec
+          delta_z = zsurf(ns+nsurf) - zsurf(islink(ns))   !! Charge associated with changing from primary to secondary surface complex
+          IF ( ksurf(islink(ns)) == kpot(npt2) .AND. kpot(npt) == kpot(npt2) ) THEN
+            sum = sum - zsurf(ns+nsurf)*spsurftmp10(ns+nsurf)*delta_z*2.0
+          END IF
+        END DO
+        
+        IF (nrow == ncol) THEN
+          CheckValue = 0.1174d0*sqrt_sion*COSH(LogPotential_tmp(npt))
+          fj(nrow,ncol) = 0.1174d0*sqrt_sion*COSH(LogPotential_tmp(npt)) - sum*faraday/(specific(k,nco)*gramsperL)
+        ELSE
+          fj(nrow,ncol) = 0.0d0
+!!          fj(nrow,ncol) =  -sum*faraday/(specific(k,nco)*gramsperL)
         END IF
 
-        IF (nrow == ncol) THEN
-          fj(nrow,ncol) = 0.1174*sqrt_sion*COSH(LogPotential_tmp(npt)) -     & 
-             sum*faraday/(specific(k,nco)*gramsperL)
-        ELSE
-          fj(nrow,ncol) =  -sum*faraday/(specific(k,nco)*gramsperL)
-        END IF
       END DO
+
     END DO
 
     DO i = 1,ncomp
+
       IF (equilibrate(i,nco) .AND. itype(i,nco) == 1) THEN
         nrow = i
         DO npt2 = 1,npot
           ncol = npt2+ncomp+nexchange+nsurf
-          is2 = ispot(npt2)
           sum = 0.0
           DO ns = 1,nsurf_sec
             delta_z = zsurf(ns+nsurf) - zsurf(islink(ns))
-            IF (islink(ns) == is2) THEN
-              sum = sum - 2.0*delta_z*musurf(ns,i)*spsurftmp10(ns+nsurf)
+            IF (ksurf(islink(ns)) == kpot(npt)) THEN
+              sum = sum - 2.0d0*delta_z*musurf(ns,i)*spsurftmp10(ns+nsurf)
             END IF
           END DO
-          fj(nrow,ncol) = sum     
+          fj(nrow,ncol) = sum 
+          fj(nrow,ncol) = 0.0d0    
         END DO
       END IF
     END DO
@@ -992,19 +960,153 @@ DO  ktrial = 1,ntrial
       nrow = is + ncomp + nexchange
       DO npt2 = 1,npot
         ncol = npt2+ncomp+nexchange+nsurf
-        is2 = ispot(npt2)
-        IF (is == ispot(npt2)) THEN
           sum = 0.0
           DO ns = 1,nsurf_sec
             delta_z = zsurf(ns+nsurf) - zsurf(islink(ns))
-            IF (islink(ns) == is2) THEN
-              sum = sum - 2.0*delta_z*musurf(ns,is+ncomp)*spsurftmp10(ns+nsurf)
+             IF (ksurf(islink(ns)) == kpot(npt2)) THEN
+              sum = sum - 2.0d0*delta_z*musurf(ns,is+ncomp)*spsurftmp10(ns+nsurf)
             END IF
           END DO
           fj(nrow,ncol) = sum  
-        END IF   
       END DO
     END DO
+
+!!!    SurfacechargeOriginal = surfcharge_init
+!!!    fj_num = 0.0d0
+!!!    DO i2 = 1,ncomp
+!!!      ncol = i2
+!!!      sptmp(i2) = sptmp(i2) + perturb
+!!!      CALL surf_init(ncomp,nspec,nsurf,nsurf_sec,nco)
+!!!      CALL SurfaceCharge_init(ncomp,nspec,nsurf,nsurf_sec,npot,portemp,nco)
+!!!      DO npt = 1,npot
+!!!        nrow = npt + ncomp + nexchange + nsurf
+!!!        k = kpot(npt)
+!!!        deltaSurfaceCharge = surfcharge_init(k)-SurfaceChargeOriginal(k)
+!!!        feq_tmp = 0.1174*sqrt_sion*SINH(LogPotential_tmp(npt)) - surfcharge_init(k)
+!!!        fj_num(nrow,ncol) = (feq_tmp - feq(nrow))/perturb
+!!!        IF (DABS( fj_num(nrow,ncol) ) < 1.0D-25) THEN
+!!!           fj_num(nrow,ncol) = 0.0d0
+!!!        END IF
+!!!      END DO
+!!!      sptmp(i2) = sptmp(i2) - perturb
+
+!!!      write(*,*)
+!!!      write(*,*) ulab(i2)
+!!!      do nrow=42,47
+!!!         write(*,*) nrow, fj(nrow,ncol),fj_num(nrow,ncol)
+!!!      end do
+!!!      write(*,*)
+
+!!!    END DO
+
+!!!    DO is2 = 1,nsurf
+!!!      ncol = is2+ncomp+nexchange
+!!!      spsurftmp(is2) = spsurftmp(is2) + perturb
+!!!      CALL surf_init(ncomp,nspec,nsurf,nsurf_sec,nco)
+!!!      CALL SurfaceCharge_init(ncomp,nspec,nsurf,nsurf_sec,npot,portemp,nco)
+!!!      DO npt = 1,npot
+!!!        nrow = npt + ncomp + nexchange + nsurf
+!!!        k = kpot(npt)
+!!!        if (k==ksurf(is2)) then
+!!!        deltaSurfaceCharge = surfcharge_init(k)-SurfaceChargeOriginal(k)
+!!!        feq_tmp = 0.1174*sqrt_sion*SINH(LogPotential_tmp(npt)) - surfcharge_init(k)
+!!!        fj_num(nrow,ncol) = (feq_tmp - feq(nrow))/perturb
+!!!        else
+!!!          fj_num(nrow,ncol) = 0.0d0
+!!!        end if
+!!!        IF (DABS( fj_num(nrow,ncol) ) < 1.0D-25) THEN
+!!!           fj_num(nrow,ncol) = 0.0d0
+!!!        END IF
+!!!      END DO
+!!!
+!!!      spsurftmp(is2) = spsurftmp(is2) - perturb
+
+!!!      write(*,*)
+!!!     write(*,*) namsurf(is2)
+!!!      do nrow=42,47
+!!!         write(*,*) nrow,fj(nrow,ncol),fj_num(nrow,ncol)
+!!!      end do
+!!!      write(*,*)
+
+!!!    END DO
+
+!!!    DO npt2 = 1,npot
+!!!      ncol = npt2+ncomp+nexchange+nsurf
+!!!
+!!!      LogPotential_tmp(npt2) = LogPotential_tmp(npt2) + perturb
+!!!
+!!!      CALL surf_init(ncomp,nspec,nsurf,nsurf_sec,nco)
+!!!      CALL SurfaceCharge_init(ncomp,nspec,nsurf,nsurf_sec,npot,portemp,nco)
+!!!      DO npt = 1,npot
+!!!        nrow = npt + ncomp + nexchange + nsurf
+!!!        if (npt2==npt) then
+!!!          k = kpot(npt)
+!!!          feq_tmp = 0.1174*sqrt_sion*SINH(LogPotential_tmp(npt)) - surfcharge_init(k)
+!!!          fj_num(nrow,ncol) = (feq_tmp - feq(nrow))/perturb
+!!!        else
+!!!          fj_num(nrow,ncol) = 0.0d0
+!!!        end if
+!!!      END DO 
+
+!!!      write(*,*)
+!!!     write(*,*) ' Potential'
+!!!      do nrow=42,47
+!!!         write(*,*) nrow,fj(nrow,ncol),fj_num(nrow,ncol)
+!!!      end do
+!!      read(*,*)
+  
+!!!      write(*,*)
+!!!      write(*,*) ' Dependence on potential ',npt2
+!!!      do nrow=38,43
+!!!          write(*,*) ' on Potential ',nrow-37, fj(nrow,ncol),fj_num(nrow,ncol)
+!!!       end do
+!!!       read(*,*)
+   
+!!!      IF (equilibrate(i,nco) .AND. itype(i,nco) == 1) THEN
+!!!      CALL totconc_init(ncomp,nspec,nexchange,nexch_sec,nsurf,nsurf_sec,nco)
+!!!      DO i = 1,ncomp
+!!!       IF (itype(i,nco) == 1) THEN
+!!!          nrow = i
+!!!          feq_tmp = stmp(i) - ctot(i,nco)
+!!!          fj_num(nrow,ncol) = (feq_tmp - feq(nrow))/perturb
+!!!        END IF
+!!!!!       fj(nrow,ncol) = fj_num(nrow,ncol)
+!!!      END DO
+!!!      end if
+
+!!!     CALL surf_init(ncomp,nspec,nsurf,nsurf_sec,nco)
+!!!     CALL totsurf_init(ncomp,nsurf,nsurf_sec)
+!!!      DO is = 1,nsurf
+!!!        nrow = is + ncomp + nexchange
+!!!        feq_tmp = ssurftmp(is) - c_surf(is,nco)
+!!!        if (kpot(npt2) == ksurf(is)) then
+!!!        fj_num(nrow,ncol) = (feq_tmp - feq(nrow))/perturb
+!!!        else
+!!!         fj_num(nrow,ncol) = 0.0d0
+!!!        end if
+!!       fj(nrow,ncol) = fj_num(nrow,ncol)
+!!!      END DO
+
+!!!      write(*,*)
+!!!      write(*,*) ' Dependence on potential ',npt2
+!!!      do nrow=1,ncomp
+!!!          write(*,*) ' of primary ',nrow, fj(nrow,ncol),fj_num(nrow,ncol)
+!!!       end do
+!!!      write(*,*)
+!!!      write(*,*) ' Dependence on potential ',npt2
+!!!      do nrow=ncomp+1,ncomp+nexchange
+!!!          write(*,*) ' of exchange ',nrow, fj(nrow,ncol),fj_num(nrow,ncol)
+!!!       end do
+!!!      write(*,*)
+!!!      write(*,*) ' Dependence on potential ',npt2
+!!!      do nrow=ncomp+nexchange+1,ncomp+nexchange+nsurf
+!!!          write(*,*) ' of surface ',nrow, fj(nrow,ncol),fj_num(nrow,ncol)
+!!!       end do
+!!!       read(*,*)
+
+!!!      LogPotential_tmp(npt2) = LogPotential_tmp(npt2) - perturb
+
+!!!    END DO
 
   ELSE
 
@@ -1017,9 +1119,15 @@ DO  ktrial = 1,ntrial
   END IF
 
   fxmaxx = 0.0
-  DO i = 1,ncomp+nexchange+nsurf+npot
+  DO i = 1,ncomp+nexchange+nsurf
     IF (DABS(feq(i)) > fxmaxx) THEN
       fxmaxx = DABS(feq(i))
+    END IF
+  END DO
+  fxmaxPotential = 0.0
+  DO i = ncomp+nexchange+nsurf,ncomp+nexchange+nsurf+npot
+    IF (DABS(feq(i)) > fxmaxPotential) THEN
+      fxmaxPotential = DABS(feq(i))
     END IF
   END DO
 
@@ -1027,11 +1135,16 @@ DO  ktrial = 1,ntrial
 
 !  Solve the set of equations using LU decomposition. 
 
-!!  call ludcmp90(fj,indx,det,neqn)
-!!  call lubksb90(fj,indx,beta,neqn)
+  call ludcmp90(fj,indx,det,neqn)
+  call lubksb90(fj,indx,beta,neqn)
 
-  CALL dgetrf(neqn,neqn,fj,neqn,indx,info)
-  CALL dgetrs(trans,neqn,ione,fj,neqn,indx,beta,neqn,info)
+  if (ihalf == 540) then
+    continue
+  end if
+
+!!!  CALL dgetrf(neqn,neqn,fj,neqn,indx,info)
+!!!  write(*,*) ktrial, ihalf
+!!!  CALL dgetrs(trans,neqn,ione,fj,neqn,indx,beta,neqn,info)
 
 !  Check the error in the concentration corrections.
   
@@ -1047,7 +1160,7 @@ DO  ktrial = 1,ntrial
 !  Damp the Newton step if necessary.
   
   DO i = 1,neqn-npot
-    IF (ABS(beta(i)) > corrmax) THEN
+    IF (DABS(beta(i)) > corrmax) THEN
       beta(i) = SIGN(corrmax,beta(i))
     ELSE
       CONTINUE
@@ -1056,11 +1169,11 @@ DO  ktrial = 1,ntrial
   END DO
 
   DO i = 1,npot
-    IF (ABS(beta(i+ncomp+nexchange+nsurf)) > 0.1) THEN
-      beta(i+ncomp+nexchange+nsurf) = SIGN(0.1d0,beta(i+ncomp+nexchange+nsurf))
-    ELSE
-      CONTINUE
-    END IF
+    IF (DABS(beta(i+ncomp+nexchange+nsurf)) > 0.9d0) THEN
+       beta(i+ncomp+nexchange+nsurf) = SIGN(0.9d0,beta(i+ncomp+nexchange+nsurf))
+     ELSE
+       CONTINUE
+     END IF
     u(i+ncomp+nexchange+nsurf) = u(i+ncomp+nexchange+nsurf) + beta(i+ncomp+nexchange+nsurf)
   END DO
   
@@ -1095,8 +1208,12 @@ DO  ktrial = 1,ntrial
       ChargeOK = .FALSE.
     END IF
   END IF
+
+   if (ktrial == 4999) THEN
+     continue
+   end if
   
-  IF (fxmaxx < atol .AND. ktrial > 10 .AND. ChargeOK) THEN
+  IF (fxmaxx < atol .AND. DABS(fxmaxPotential) < 1.0E-07 .AND. ktrial > 10 .AND. ChargeOK) THEN
     
     CALL species_init(ncomp,nspec)
     
@@ -1551,7 +1668,6 @@ DO  ktrial = 1,ntrial
       WRITE(iunit2,509) umin(k),siprnt
     END DO
     
-
     DEALLOCATE(u)
     DEALLOCATE(feq)
     DEALLOCATE(beta)

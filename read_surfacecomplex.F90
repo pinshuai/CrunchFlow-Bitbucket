@@ -31,6 +31,7 @@ INTEGER(I4B)                                                :: lzs
 INTEGER(I4B)                                                :: lsurf
 
 CALL stringlen(namtemp,lsurf)
+complexfound = .FALSE.
 
 REWIND nout
 
@@ -40,7 +41,7 @@ iff = mls
 CALL sschaine(zone,id,iff,ssch,ids,ls)
 IF(ls /= 0) THEN
   IF (ssch == namsurf(ks)) THEN
-    complexfound = .true.     ! Surface complex found
+    complexfound = .TRUE.     ! Surface complex found
   ELSE
     GO TO 100
   END IF

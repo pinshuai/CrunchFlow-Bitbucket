@@ -5,6 +5,7 @@ MODULE solver
 
   INTEGER(I4B)                                     :: level
   INTEGER(I4B)                                     :: Gimrtlevel
+  REAL(DP)                                         :: GimrtRTOLKSP
   
   CHARACTER (LEN=mls)                              :: GIMRT_SolverMethod
   CHARACTER (LEN=mls)                              :: SolverMethod

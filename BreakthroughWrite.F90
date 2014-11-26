@@ -41,6 +41,7 @@ INTEGER(I4B), INTENT(IN)                                     :: ikpH
 
 REAL(DP), INTENT(IN)                                         :: time
 
+
 !! INTERNAL VARIABLES
 
 INTEGER(I4B)                                                  :: i
@@ -72,6 +73,7 @@ REAL(DP)                                                      :: PrintTime
 REAL(DP)                                                      :: AqueousToBulk
 REAL(DP)                                                      :: pHwrite
 REAL(DP)                                                      :: tK
+REAL(DP)                                                      :: qxsum
 
 REAL(DP), PARAMETER                                           :: eps=1.D-12
 
@@ -227,7 +229,15 @@ REAL(DP), PARAMETER                                           :: eps=1.D-12
    
                 ELSE IF (iplotph == nplot) THEN
 
-                  WRITE(intfile,705) PrintTime,(s(iplot(i),jx,jy,jz),i=1,nplot-1),phwrite
+                  qxsum = 0.0
+                  IF (Benchmark) THEN
+                    qxSum = 0.0d0
+                    do jy = 1,ny
+                      qxSum = qxSum + qx(nx,jy,1)*dyy(jy)
+                    end do
+                  END IF
+
+                  WRITE(intfile,705) PrintTime,(s(iplot(i),jx,jy,jz),i=1,nplot-1),phwrite,qxsum/365.0
 
                 ELSE
                   WRITE(intfile,185) PrintTime,(s(iplot(i),jx,jy,jz),i=1,iplotph-1),  &

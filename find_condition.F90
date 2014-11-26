@@ -26,6 +26,7 @@ USE concentration
 USE mineral
 USE medium
 USE temperature
+USE Runtime, ONLY: SkipAdjust
 
 IMPLICIT NONE
 
@@ -131,6 +132,7 @@ LOGICAL(LGT)                                                 :: SaturationFound
 LOGICAL(LGT)                                                 :: equilfound
 LOGICAL(LGT)                                                 :: complexfound
 LOGICAL(LGT)                                                 :: topefound
+LOGICAL(LGT)                                                 :: SkipSaturationAdjust
 
 INTEGER(I4B)                                                 :: ncount
 INTEGER(I4B)                                                 :: i
@@ -154,9 +156,15 @@ REAL(DP)                                                     :: MeanSaltConcentr
 REAL(DP)                                                     :: RoSolution
 REAL(DP)                                                     :: WritePorosity
 REAL(DP)                                                     :: MineralMolality
+REAL(DP)                                                     :: TotalVolumeMinerals
 
 CHARACTER (LEN=mls)                                          :: dumstring
 CHARACTER (LEN=mls)                                          :: labeltemp
+
+CHARACTER (LEN=mls)                                           :: parchar
+CHARACTER (LEN=mls)                                           :: parfind
+
+INTEGER(I4B)                                                  :: lchar
 
 REWIND nin
 
@@ -191,6 +199,15 @@ IF (found) THEN
     STOP
   END IF
   
+!!  Look for logical telling the code to skip the mineral saturation adjustment
+
+  parchar = 'SkipSaturationAdjust'
+  parfind = ' '
+  SkipSaturationAdjust = .FALSE.
+  CALL read_logical(nout,lchar,parchar,parfind,SkipSaturationAdjust)
+  
+  SkipAdjust(nchem) = SkipSaturationAdjust
+
 ! Search for a temperature for this geochemical condition
   
   tempfound = .false.
@@ -571,11 +588,14 @@ IF (found) THEN
     IF (sum == 0.0d0) THEN 
       SolidDensity(nchem) = 0.0d0
     ELSE
+      TotalVolumeMinerals = 0.0d0
       DO k = 1,nkin
+        TotalVolumeMinerals = TotalVolumeMinerals + volin(k,nchem)
         IF (volmol(k) /= 0.0d0) THEN
           SolidDensity(nchem) = SolidDensity(nchem) + (volin(k,nchem)/sum)*0.001d0*wtmin(k)/volmol(k) 
         END IF
       END DO
+      porcond(nchem) = 1.0d0 - TotalVolumeMinerals
     END IF
     SolidSolutionRatio(nchem) = OneOverMassFraction(nchem)*1000.d0*SolidDensity(nchem)*(1.0-porcond(nchem))/(SaturationCond(nchem)*porcond(nchem)*rocond(nchem))
     IF (porcond(nchem) == 1.0d0 .AND. SolidDensity(nchem) /= 0.0d0) THEN
@@ -698,6 +718,17 @@ DO ks = 1,nsurf
 !    WRITE(*,*) ' Looking for ',namsurf(ks)
 !    WRITE(*,*)
     CALL read_surfacecomplex(nout,ks,nchem,ncomp,nkin,ngas,complexfound)
+    IF (complexfound) THEN
+      CONTINUE
+    ELSE
+      dumstring = namsurf(ks)
+      WRITE(*,*)
+      WRITE(*,*) ' Surface complex not found: ',dumstring(1:15)
+      WRITE(*,*) ' In Condition: ',nchem
+      WRITE(*,*)
+      READ(*,*)
+      STOP
+    END IF
   END DO
   
 !  Calculate concentration of surface hydroxyls per kg H2O
