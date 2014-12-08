@@ -131,6 +131,7 @@ REAL(DP)                                      :: CellVolume
 REAL(DP)                                      :: MultiplyCell
 REAL(DP)                                      :: Retardation
 REAL(DP)                                      :: HyperbolicSine
+REAL(DP)                                      :: volMinimum
 
 
 !********************* PETSc declarations ********************************
@@ -158,6 +159,8 @@ nxyz = nx*ny*nz
 ntotal = 0
 surf_accum = 0.0d0
 ex_accum = 0.0d0
+
+!!!xn = 0.0d0
 
 IF (nxyz == nx .AND. ihindmarsh == 1 .AND. nxyz /= 1) THEN
   indexx = 0
@@ -200,14 +203,18 @@ DO jy = 1,ny
       CellVolume = dyy(jy)*pi*( (x(jx)+dxx(jx)/2.0d0 )**2.0d0 - ( x(jx)-dxx(jx)/2.0d0 )**2.0d0  )
       df = 1.0d0
       MultiplyCell = CellVolume
-  IF (CylindricalDivideVolume) THEN
-      df = 1.0/CellVolume
-      MultiplyCell = 1.0
-  END IF
+      IF (CylindricalDivideVolume) THEN
+        df = 1.0/CellVolume
+        MultiplyCell = 1.0
+      END IF
     ELSE IF (spherical) THEN
       CellVolume = (4.0d0/3.0d0)*pi*( (x(jx) + 0.5d0*dxx(jx))**3.0d0 - (x(jx) - 0.5d0*dxx(jx))**3.0d0  )
        df = 1.0d0
        MultiplyCell = CellVolume
+       IF (CylindricalDivideVolume) THEN
+        df = 1.0/CellVolume
+        MultiplyCell = 1.0
+       END IF
 !!      df = 1.0/CellVolume
 !!      MultiplyCell = 1.0
     ELSE
@@ -896,14 +903,16 @@ DO jy = 1,ny
 
 !  Surface charge calculation
 
-    CALL SurfaceCharge(ncomp,nspec,nsurf,nsurf_sec,npot,jx,jy,jz)
+    CALL SurfaceCharge(ncomp,nspec,nsurf,nsurf_sec,npot,jx,jy,jz,time)
 
     sqrt_sion = SQRT(sion(jx,jy,jz))
 
     DO npt = 1,npot
       ind = (j-1)*(neqn) + npt+ncomp+nexchange+nsurf
+      k = kpot(npt)
       HyperbolicSine = SINH(LogPotential(npt,jx,jy,jz) )
-      fxx(ind) = 0.1174*sqrt_sion*SINH(LogPotential(npt,jx,jy,jz)) - surfcharge(ksurf(ispot(npt)))
+!!      fxx(ind) = 0.1174*sqrt_sion*HyperbolicSine - surfcharge(ksurf(ispot(npt)))
+      fxx(ind) = 0.1174*sqrt_sion*HyperbolicSine - surfcharge( k )
     END DO
     
     DO i = 1,ncomp
@@ -1016,6 +1025,7 @@ DO jy = 1,ny
           alf(ind2,i,2) = MultiplyCell*(surf_accum + rxnmin) + surf_transport 
         END DO
 
+!!  Dependence of the total aqueous concentration on the potential
         DO npt2 = 1,npot
           ind2 = npt2+ncomp+nexchange+nsurf
 !          rxnmin = sumrd(is2+ncomp+nexchange)
@@ -1028,8 +1038,9 @@ DO jy = 1,ny
 !         reaction rate
 
         END DO
+!!  ***************************************************************
       
-      ELSE
+      ELSE    !! Following is for no burial/erosion
 
         DO i2 = 1,ncomp        
           ind2 = i2                
@@ -1067,16 +1078,17 @@ DO jy = 1,ny
           alf(ind2,i,2) = MultiplyCell*(surf_accum + rxnmin)
         END DO
 
+!!  Dependence of the total aqueous concentration on the potential
         DO npt2 = 1,npot
           ind2 = npt2+ncomp+nexchange+nsurf
 !          rxnmin = sumrd(is2+ncomp+nexchange)
-          pot_accum = r*fjpotncomp(npt2,i,jx,jy,jz)
+          pot_accum = fjpotncomp(npt2,i,jx,jy,jz)/delt
           alf(ind2,i,2) = MultiplyCell*pot_accum  !  + rxnmin
-
+!!!          alf(ind2,i,2) = 0.0d0
 !  NOTE:  Need to add dependence of reaction rate on potentials (if surface complex is in 
 !         reaction rate
-
         END DO 
+!!  ***************************************************************
 
       END IF
 
@@ -1160,6 +1172,7 @@ DO jy = 1,ny
           alf(ind2,is+ncomp+nexchange,2) = MultiplyCell*(surf_accum) + surf_transport
         END DO
 
+!!  Dependence of the total surface complex concentration on the potential
         DO npt2 = 1,npot
           ind2 = npt2+ncomp+nexchange+nsurf
           pot_accum = r*fjpotnsurf(npt2,is,jx,jy,jz)
@@ -1167,6 +1180,7 @@ DO jy = 1,ny
                fjpotnsurf(npt2,is,jx,jy,jz)
           alf(ind2,is+ncomp+nexchange,2) = MultiplyCell*(pot_accum) + pot_transport
         END DO
+!!  ***********************************************************************
       
       ELSE
 
@@ -1182,11 +1196,13 @@ DO jy = 1,ny
           alf(ind2,is+ncomp+nexchange,2) = MultiplyCell*(surf_accum)
         END DO
 
+!!  Dependence of the total surface complex concentration on the potential
         DO npt2 = 1,npot
           ind2 = npt2+ncomp+nexchange+nsurf
-          pot_accum = r*fjpotnsurf(npt2,is,jx,jy,jz)
+          pot_accum = fjpotnsurf(npt2,is,jx,jy,jz)/delt
           alf(ind2,is+ncomp+nexchange,2) = MultiplyCell*(pot_accum) 
         END DO
+!!  ***********************************************************************
 
       END IF
       
@@ -1202,76 +1218,72 @@ DO jy = 1,ny
 !     other unknowns (ncomp,nsurf,npot)
 
     DO npt = 1,npot
+
       ncol = npt + ncomp + nexchange + nsurf
-      is = ispot(npt)
-      k = ksurf(is)
+      k = kpot(npt)       !!  One to one correspondence between potential and mineral surface (k)
+
       IF (volin(k,jinit(jx,jy,jz)) == 0.0d0 .AND. volfx(k,jx,jy,jz) < voltemp(k,jinit(jx,jy,jz)) ) THEN
         correct = wtmin(k)*specific(k,jinit(jx,jy,jz))*voltemp(k,jinit(jx,jy,jz))/volmol(k)   !!  m^2 mineral/m^3 BV
       ELSE
-        correct = wtmin(k)*specific(k,jinit(jx,jy,jz))*volfx(k,jx,jy,jz)/volmol(k)   !!  m^2 mineral/m^3 BV
+        volMinimum = volfx(k,jx,jy,jz)
+        if (volMinimum < 1.0D-15) then
+          volMinimum = 1.0D-15
+        end if
+        correct = wtmin(k)*specific(k,jinit(jx,jy,jz))*volMinimum/volmol(k)   !!  m^2 mineral/m^3 BV
       END IF
  
+!!  Dependence of the potential on primary species concentrations
       DO i2 = 1,ncomp
         ind2 = i2
         sum = 0.0
         DO ns = 1,nsurf_sec
-          IF (ksurf(islink(ns)) == ksurf(is)) THEN
-!!          IF (islink(ns) == is) THEN
+          IF (ksurf(islink(ns)) == kpot(npt)) THEN
             sum = sum - musurf(ns,i2)*zsurf(ns+nsurf)*spsurf10(ns+nsurf,jx,jy,jz)*faraday/correct
           END IF
         END DO
         alf(ind2,ncol,2) = sum
       END DO
 
+!!  Dependence of the potential on surface complex concentrations
       DO is2 = 1,nsurf
         ind2 = is2+ncomp+nexchange
-        sum = 0.0
+        sum = 0.0d0
         DO ns = 1,nsurf_sec
-          IF (ksurf(islink(ns)) == ksurf(is)) THEN
-!!            IF (islink(ns) == is) THEN
+!!        Add on secondary surface complex if it is associated with the npt potential
+          IF (ksurf(islink(ns)) == kpot(npt)) THEN
             sum = sum - musurf(ns,is2+ncomp)*zsurf(ns+nsurf)*spsurf10(ns+nsurf,jx,jy,jz)*faraday/correct
           END IF
         END DO
         alf(ind2,ncol,2) = sum
-        IF (ksurf(is2) == ksurf(is)) THEN
-          alf(ind2,ncol,2) =  alf(ind2,ncol,2)  &
-             - zsurf(is2)*spsurf10(is2,jx,jy,jz)*faraday/correct
+!!      Add on primary surface complex if it is associated with the npt potential
+        IF (ksurf(is2) == kpot(npt)) THEN
+          alf(ind2,ncol,2) =  alf(ind2,ncol,2) - zsurf(is2)*spsurf10(is2,jx,jy,jz)*faraday/correct
         END IF
-      END DO
 
-    END DO
+      END DO        !!  End of is2 loop
 
-    DO npt = 1,npot
-      ncol = npt + ncomp + nexchange + nsurf
-      is = ispot(npt)
-      k = ksurf(is)
-
-      IF (volin(k,jinit(jx,jy,jz)) == 0.0d0 .AND. volfx(k,jx,jy,jz) < voltemp(k,jinit(jx,jy,jz)) ) THEN
-        correct = wtmin(k)*specific(k,jinit(jx,jy,jz))*voltemp(k,jinit(jx,jy,jz))/volmol(k)   !!  m^2 mineral/m^3 BV
-      ELSE
-        correct = wtmin(k)*specific(k,jinit(jx,jy,jz))*volfx(k,jx,jy,jz)/volmol(k)   !!  m^2 mineral/m^3 BV
-      END IF
-
+!!    Dependence of the potential equation on the potential (through the surface charge)
       DO npt2 = 1,npot
         sum = 0.0
         nrow = npt2 + ncomp + nexchange + nsurf
-        IF (ksurf(ispot(npt)) == ksurf(ispot(npt2))) THEN
           DO ns = 1,nsurf_sec
             delta_z = zsurf(ns+nsurf) - zsurf(islink(ns))
-            IF (islink(ns) == ispot(npt2)) THEN
+            IF (ksurf(islink(ns)) == kpot(npt) .AND. kpot(npt2) == kpot(npt)) THEN
               sum = sum - zsurf(ns+nsurf)*spsurf10(ns+nsurf,jx,jy,jz)*delta_z*2.0
             END IF
           END DO
-        END IF
 
         IF (nrow == ncol) THEN
-           alf(nrow,ncol,2) = 0.1174*sqrt_sion*COSH(LogPotential(npt,jx,jy,jz)) -     & 
-             sum*faraday/correct
+           alf(nrow,ncol,2) = 0.1174d0*sqrt_sion*COSH(LogPotential(npt,jx,jy,jz)) - sum*faraday/correct
         ELSE
-           alf(nrow,ncol,2) =  -sum*faraday/correct
+!!!           alf(nrow,ncol,2) =  -sum*faraday/correct
+          alf(nrow,ncol,2) = 0.0d0
         END IF
 
-      END DO
+    END DO          !!  End of npt (potential) loop
+
+
+!!   *********************************************************************************
 
       IF (nxyz == nx .AND. ihindmarsh == 1 .AND. nxyz /= 1) THEN
         DO i2 = 1,neqn
@@ -1349,7 +1361,7 @@ DO jy = 1,ny
       END IF
 
     END IF
-    
+
     IF (ihindmarsh == 0 .OR. nxyz /= nx) THEN
 
      IF ( petscon) THEN
@@ -1388,6 +1400,16 @@ DO jy = 1,ny
              call MatSetValuesBlocked(amatpetsc,1,ipetsc,1,ipetsc,blockm,INSERT_VALUES,ierr)
              call MatSetValuesBlocked(amatpetsc,1,ipetsc,1,ipetsc+1,blockr,INSERT_VALUES,ierr)
           endif
+
+          IF (Switcheroo) THEN
+            do ind  = 1,neqn
+              do ind2 = 1,neqn
+                cch(ind,ind2,jx) = alf(ind2,ind,1)
+                aah(ind,ind2,jx) = alf(ind2,ind,2)
+                bbh(ind,ind2,jx) = alf(ind2,ind,3)
+              end do
+            end do
+          END IF
 
        else   !  2-D case for PETSc
 

@@ -383,6 +383,7 @@ nreacmin = 0
 nreacgas = 0
 nreacaq = 0
 
+
 !     initialize matrices for log K fit (coef) and
 !     for stoichiometric coefficients (a)
 
@@ -2017,6 +2018,7 @@ DO  i = n+1,1,-1
   
 END DO
 
+
 IF (imiss == 1) THEN
   
 !        if (ntemp.gt.1) then
@@ -2032,6 +2034,7 @@ IF (imiss == 1) THEN
     WRITE(*,*)
     WRITE(*,*) ' MSURF_SEC not dimensioned large enough in "params.inc"'
     WRITE(*,*) ' Number of secondary surface complexes = ',nsurf_sec
+    WRITE(*,*) ' MSURF_SEC dimensioned at: ',msurf_sec
     WRITE(*,*)
     READ(*,*)
     STOP

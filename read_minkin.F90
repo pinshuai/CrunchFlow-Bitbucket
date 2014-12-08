@@ -702,7 +702,7 @@ IF (ssch == tempmin) THEN
       iff = mls
       CALL sschaine(dummy1,id,iff,ssch,ids,ls)
       lzs=ls
-      CALL convan(ssch,lzs,res)
+!!!      CALL convan(ssch,lzs,res)
       IF (ssch == 'type') THEN                              !! Read TYPE
         id = ids + ls
         CALL sschaine(dummy1,id,iff,ssch,ids,ls)
@@ -711,9 +711,9 @@ IF (ssch == tempmin) THEN
           CALL sschaine(dummy1,id,iff,ssch,ids,ls)
           IF (ssch == 'tst') THEN
             imintype(npar,nkin) = 1
-          ELSE IF (ssch == 'monod') THEN
+          ELSE IF (ssch == 'monod' .OR. ssch == 'Monod' .OR. ssch == 'MONOD') THEN
             imintype(npar,nkin) = 2
-          ELSE IF (ssch == 'irreversible') THEN
+          ELSE IF (ssch == 'irreversible' .OR. ssch == 'Irreversible') THEN
             imintype(npar,nkin) = 3
           ELSE IF (ssch == 'PrecipitationOnly' .OR. ssch == 'Precipitationonly' .OR. ssch == 'precipitationonly') THEN
             imintype(npar,nkin) = 4
@@ -725,12 +725,12 @@ IF (ssch == tempmin) THEN
             imintype(npar,nkin) = 7
 
 ! biomass
-          ELSE IF (ssch == 'MonodBiomass') THEN
+          ELSE IF (ssch == 'MonodBiomass' .OR. ssch == 'monodbiomass') THEN
             imintype(npar,nkin) = 8
 ! biomass end 
 
 ! sergi: biomass decay
-         ELSE IF (ssch == 'BiomassDecay') THEN
+         ELSE IF (ssch == 'BiomassDecay' .OR. ssch == 'biomassdecay') THEN
            imintype(npar,nkin) = 9
 
 

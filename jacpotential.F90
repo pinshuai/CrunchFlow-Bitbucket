@@ -39,68 +39,67 @@ DO jz = 1,nz
   DO jy = 1,ny
     DO jx = 1,nx
 
-    DO i = 1,ncomp
-        DO npt2 = 1,npot
-          is2 = ispot(npt2)
-          sum = 0.0
-          DO ns = 1,nsurf_sec
-            delta_z = zsurf(ns+nsurf) - zsurf(islink(ns))
-            IF (islink(ns) == is2) THEN
-              sum = sum - 2.0*delta_z*musurf(ns,i)*spsurf10(ns+nsurf,jx,jy,jz)
-            END IF
-          END DO
-          fjpotncomp(npt2,i,jx,jy,jz) = sum     
-        END DO
-    END DO
-
-    DO is = 1,nsurf
-      DO npt2 = 1,npot
-        is2 = ispot(npt2)
-        sum = 0.0
-        IF (is == ispot(npt2)) THEN
-          DO ns = 1,nsurf_sec
-            delta_z = zsurf(ns+nsurf) - zsurf(islink(ns))
-            IF (islink(ns) == is2) THEN
-              sum = sum - 2.0*delta_z*musurf(ns,is+ncomp)*spsurf10(ns+nsurf,jx,jy,jz)
-            END IF
-          END DO
-          fjpotnsurf(npt2,is,jx,jy,jz) = sum  
-        END IF   
-      END DO
-    END DO
-
-
-!!!      DO ns = 1,nsurf_sec
-!!!        surfconc = spsurf10(ns+nsurf,jx,jy,jz)
-!!!        delta_z = zsurf(ns+nsurf) - zsurf(islink(ns))
-!!!
-!!!        DO i = 1,ncomp
-!!!          IF (musurf(ns,i) /= 0.0) THEN
-!!!            mutemp = musurf(ns,i)
-!!!            DO npt2 = 1,npot
-!!!              is2 = ispot(npt2)
-!!!              IF (islink(ns) == is2) THEN
-!!!                fjpotncomp(npt2,i,jx,jy,jz) = fjpotncomp(npt2,i,jx,jy,jz) -         &
-!!!                    2.0*delta_z*mutemp*surfconc
-!!!              END IF
-!!!            END DO     
-!!!          END IF
+!!!    DO i = 1,ncomp
+!!!        DO npt2 = 1,npot
+!!!          is2 = ispot(npt2)
+!!!          sum = 0.0
+!!!          DO ns = 1,nsurf_sec
+!!!            delta_z = zsurf(ns+nsurf) - zsurf(islink(ns))
+!!!            IF (islink(ns) == is2) THEN
+!!!              sum = sum - 2.0*delta_z*musurf(ns,i)*spsurf10(ns+nsurf,jx,jy,jz)
+!!!            END IF
+!!!          END DO
+!!!          fjpotncomp(npt2,i,jx,jy,jz) = sum     
 !!!        END DO
+!!!    END DO
 
-!!!        DO is = 1,nsurf
-!!!          IF (musurf(ns,is+ncomp) /= 0.0) THEN
-!!!            mutemp = musurf(ns,is+ncomp)
-!!!            DO npt2 = 1,npot
-!!!              is2 = ispot(npt2)
-!!!              IF (is == is2 .AND. islink(ns) == is2) THEN
-!!!                fjpotnsurf(npt2,is,jx,jy,jz) = fjpotnsurf(npt2,is,jx,jy,jz) -       & 
-!!!                   2.0*delta_z*mutemp*surfconc
-!!!              END IF
-!!!            END DO
-!!!          END IF   
-!!!        END DO
-
+!!!    DO is = 1,nsurf
+!!!      DO npt2 = 1,npot
+!!!        is2 = ispot(npt2)
+!!!        sum = 0.0
+!!!        IF (is == ispot(npt2)) THEN
+!!!          DO ns = 1,nsurf_sec
+!!!            delta_z = zsurf(ns+nsurf) - zsurf(islink(ns))
+!!!            IF (islink(ns) == is2) THEN
+!!!              sum = sum - 2.0*delta_z*musurf(ns,is+ncomp)*spsurf10(ns+nsurf,jx,jy,jz)
+!!!            END IF
+!!!          END DO
+!!!          fjpotnsurf(npt2,is,jx,jy,jz) = sum
+!!!        END IF   
 !!!      END DO
+!!!    END DO
+
+
+      DO ns = 1,nsurf_sec
+        surfconc = spsurf10(ns+nsurf,jx,jy,jz)
+        delta_z = zsurf(ns+nsurf) - zsurf(islink(ns))
+
+        DO i = 1,ncomp
+          IF (musurf(ns,i) /= 0.0) THEN
+            mutemp = musurf(ns,i)
+            DO npt2 = 1,npot
+             IF (ksurf(islink(ns)) == kpot(npt2)) THEN
+                fjpotncomp(npt2,i,jx,jy,jz) = fjpotncomp(npt2,i,jx,jy,jz) -         &
+                    2.0*delta_z*mutemp*surfconc
+!!!                fjpotncomp(npt2,i,jx,jy,jz) = 0.0d0
+              END IF
+            END DO     
+          END IF
+        END DO
+
+        DO is = 1,nsurf
+          IF (musurf(ns,is+ncomp) /= 0.0) THEN
+            mutemp = musurf(ns,is+ncomp)
+            DO npt2 = 1,npot
+              IF (ksurf(islink(ns)) == kpot(npt2)) THEN
+                fjpotnsurf(npt2,is,jx,jy,jz) = fjpotnsurf(npt2,is,jx,jy,jz) -       & 
+                   2.0*delta_z*mutemp*surfconc
+!!!                fjpotnsurf(npt2,is,jx,jy,jz) = 0.0d0
+              END IF
+            END DO
+          END IF   
+        END DO
+      END DO
 
     END DO
   END DO

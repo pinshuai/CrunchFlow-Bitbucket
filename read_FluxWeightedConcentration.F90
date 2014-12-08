@@ -293,6 +293,9 @@ IF (parfind == 'FluxWeightedConcentrationSpecies' .OR. parfind == 'fluxweightedc
       
   nplotFluxWeightedConcentration = lenarray
 
+  IF (ALLOCATED(iplotFluxWeightedConcentration)) THEN
+    DEALLOCATE(iplotFluxWeightedConcentration)
+  END IF
   ALLOCATE(iplotFluxWeightedConcentration(nplotFluxWeightedConcentration))
 
   DO ll = 1,nplotFluxWeightedConcentration

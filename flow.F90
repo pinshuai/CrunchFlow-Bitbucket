@@ -2,9 +2,12 @@ MODULE flow
   
 USE crunchtype
       
-REAL(DP)                                     :: permmaxx
-REAL(DP)                                     :: permmaxy
-REAL(DP)                                     :: permmaxz
+REAL(DP)                                     :: permmaxX
+REAL(DP)                                     :: permmaxY
+REAL(DP)                                     :: permmaxZ
+REAL(DP)                                     :: permminX
+REAL(DP)                                     :: permminY
+REAL(DP)                                     :: permminZ
 REAL(DP)                                     :: maxQx
 REAL(DP)                                     :: maxQy
 REAL(DP)                                     :: maxQz

@@ -1,5 +1,5 @@
 subroutine BreakthroughInitialize(ncomp,nspec,nkin,nrct,ngas,npot, &
-    nx,ny,nz,nseries,nexchange,nexch_sec,nsurf,nsurf_sec )
+    nx,ny,nz,nseries,nexchange,nexch_sec,nsurf,nsurf_sec,ikpH)
 
 USE crunchtype
 USE params
@@ -35,6 +35,8 @@ INTEGER(I4B), INTENT(IN)                                      :: nexchange
 INTEGER(I4B), INTENT(IN)                                      :: nexch_sec
 INTEGER(I4B), INTENT(IN)                                      :: nsurf
 INTEGER(I4B), INTENT(IN)                                      :: nsurf_sec
+INTEGER(I4B), INTENT(IN)                                     :: ikpH
+
 
 !! INTERNAL VARIABLES
 
@@ -46,7 +48,6 @@ INTEGER(I4B)                                                  :: ls
 INTEGER(I4B)                                                  :: ns
 INTEGER(I4B)                                                  :: nex
 INTEGER(I4B)                                                  :: nmin
-INTEGER(I4B)                                                  :: ikph
 
 INTEGER(I4B)                                                  :: j
 INTEGER(I4B)                                                  :: nxyz

@@ -111,7 +111,7 @@ REAL(DP), DIMENSION(:), ALLOCATABLE                        :: csave
 REAL(DP), DIMENSION(:,:), ALLOCATABLE                      :: aaaTemp
 
 
-REAL(DP), PARAMETER                                        :: atol=1.e-10
+REAL(DP), PARAMETER                                        :: atol=1.e-09
 REAL(DP), PARAMETER                                        :: rtol=1.e-06
 REAL(DP), PARAMETER                                        :: correx=1.0
 
@@ -270,7 +270,6 @@ CHARACTER (LEN=1)                                           :: Coordinate
 INTEGER(I4B)                                               :: phloc(3)
 INTEGER(I4B)                                               :: DummyInteger
 
-
 LOGICAL(LGT)                                               :: SteadyFlow
 
 LOGICAL(LGT)                                               :: ActiveFlow
@@ -358,10 +357,12 @@ KSP                  ksp
 !!Scalar               zeroPetsc
 ! ************************end PETSc declarations of PETSc variables ******
 
+Switcheroo = .false.
+
 MassBalanceError = 0.0d0
 AqueousMassBalanceError = 0.0d0
 RateMassBalanceError = 0.0d0
-ResidualTolerance = 1.0D-10
+!!ResidualTolerance = 1.0D-10
 
 CumulativeSulfate = 0.0d0
 CumulativeFe = 0.0d0
@@ -620,6 +621,7 @@ IF (CalculateFlow) THEN
   WRITE(*,*) ' Minimum X permeability: ',MinPermeabilityX
   WRITE(*,*) ' Minimum Y permeability: ',MinPermeabilityY
   WRITE(*,*)
+  InitializeHydrostatic = .false.
 
   IF (InitializeHydrostatic) THEN
     WRITE(*,*) ' Initializing to hydrostatic'
@@ -634,29 +636,28 @@ IF (CalculateFlow) THEN
     END DO
   END IF
   
-  atolksp = 1.D-50
-  rtolksp = 1.D-25
-  dtolksp = 1.D+05
+!!  atolksp = 1.D-50
+!!  rtolksp = 1.D-25
+!!  dtolksp = 1.D+05
 
-  CALL CrunchPETScTolerances(userP,rtolksp,atolksp,dtolksp,maxitsksp,ierr)
-  CALL pressure (nx,ny,nz,dtflow,amatP,SteadyFlow)
+  atolksp = 1.D-50
+  rtolksp = GimrtRTOLKSP
+  rtolksp = 1.0D-17
+  dtolksp = 1.D+05
 
   pc = userP(5)
   ksp = userP(6)
-  
-!!  CALL PCILUSetDamping(pc,1.D-12,ierr)
-!!  CALL PCILUReorderForNonzeroDiagonal(pc,1.D-12,ierr)
-!!  CALL PCFactorSetZeroPivot(pc,1.D-12,ierr)
-!!  CALL PCFactorSetShiftNonzero(pc,1.D-12,ierr)
-!!    CALL PCILUSetDamping(pc,0.00d0,ierr)
-!!  CALL PCILUReorderForNonzeroDiagonal(pc,1.D-12,ierr)
-  CALL PCFactorSetZeroPivot(pc,1.D-12,ierr)
-!! smr 2011-08-05 replaced CALL PCFactorSetShiftNonzero(pc,1.D-12,ierr) with following two lines (PETSc-3.1)
-!!    call PCFactorSetShiftType(pc,MAT_SHIFT_NONZERO,ierr)
-!!    call PCFactorSetShiftAmount(pc,1.D-12,ierr)
-!! smr end replacement
-!  CALL KSPSetOperators(ksp,amatP,amatP,SAME_NONZERO_PATTERN,ierr)
+
   CALL KSPSetOperators(ksp,amatP,amatP,ierr)
+  CALL pressure(nx,ny,nz,dtflow,amatP,SteadyFlow)
+
+  CALL CrunchPETScTolerances(userP,rtolksp,atolksp,dtolksp,maxitsksp,ierr)
+
+!!!!  To invoke direct solve
+!!    call KSPGetPC(ksp,pc,ierr)
+!!    call PCSetType(pc,PCLU,ierr)
+ 
+
   CALL KSPSolve(ksp,BvecP,XvecP,ierr)
   CALL KSPGetIterationNumber(ksp,itsiterate,ierr)
 
@@ -831,7 +832,6 @@ IF (irestart == 1) THEN
   CALL restart(time,nn,nint,nexchange,nsurf,nx,ny,nz,nstop,nstopsave, &
      delt,dtold,tstep,deltmin,dtmaxcour,dtmax,userC,userD,userP,user,     &
      amatpetsc,amatD,amatP,bvec,xvec,bvecD,xvecD,bvecP,xvecP)
-
     
 END IF
 
@@ -974,35 +974,28 @@ DO WHILE (nn <= nend)
     END IF
 
     atolksp = 1.D-50
-    rtolksp = 1.D-15
+    rtolksp = GimrtRTOLKSP
+    rtolksp = 1.0D-15
     dtolksp = 1.D+05
-
-    CALL CrunchPETScTolerances(userP,rtolksp,atolksp,dtolksp,maxitsksp,ierr)
-
-    SteadyFlow = .FALSE.
-    CALL harmonic(nx,ny,nz)
-    CALL pressure (nx,ny,nz,delt,amatP,SteadyFlow)
 
     pc = userP(5)
     ksp = userP(6)
 
+    SteadyFlow = .FALSE.
     CALL KSPSetOperators(ksp,amatP,amatP,ierr)
-!!    CALL KSPSetOperators(ksp,amatP,amatP,SAME_NONZERO_PATTERN,ierr)
+    CALL harmonic(nx,ny,nz)
+    CALL pressure (nx,ny,nz,delt,amatP,SteadyFlow)
+
+    CALL CrunchPETScTolerances(userP,rtolksp,atolksp,dtolksp,maxitsksp,ierr)
+
+!!!!  To invoke direct solve
+!!    call KSPGetPC(ksp,pc,ierr)
+!!    call PCSetType(pc,PCLU,ierr)
+
 
     IF (SolverMethod /= 'direct') THEN
       CALL KSPSetInitialGuessNonzero(ksp,PETSC_TRUE,ierr)
     END IF
-!!    CALL PCILUSetDamping(pc,0.00d0,ierr)
-!!  CALL PCILUReorderForNonzeroDiagonal(pc,1.D-12,ierr)
-!!  CALL PCFactorSetZeroPivot(pc,1.D-12,ierr)
-!!    CALL PCILUSetDamping(pc,0.00d0,ierr)
-!!  CALL PCILUReorderForNonzeroDiagonal(pc,1.D-12,ierr)
-  CALL PCFactorSetZeroPivot(pc,1.D-12,ierr)
-!! smr 2011-08-05 replaced CALL PCFactorSetShiftNonzero(pc,1.D-12,ierr) with following two lines (PETSc-3.1)
-!!    call PCFactorSetShiftType(pc,MAT_SHIFT_NONZERO,ierr)
-!!    call PCFactorSetShiftAmount(pc,1.D-12,ierr)
-!! smr end replacement
-
 
     CALL KSPSolve(ksp,BvecP,XvecP,ierr)
     CALL KSPGetIterationNumber(ksp,itsiterate,ierr)
@@ -1406,9 +1399,6 @@ DO WHILE (nn <= nend)
     IF (delt > dtmaxcour .AND. dtmaxcour /= 0.0) THEN
       delt = dtmaxcour
     END IF
-
-
-!fp! data_sched({#expr# spno2(jx,jy,jz) #});
 
     DO jz = 1,nz
       DO jy = 1,ny
@@ -1961,10 +1951,15 @@ newtonloop:  DO WHILE (icvg == 1 .AND. iterat <= newton)
         CALL dgetrs(trans,neqn,ione,aaa,neqn,indd,bb,neqn,info)
         
         xn = bb
+        continue
         
       ELSE       !  One-dimensional case
         
-        IF (nxyz == nx .AND. ihindmarsh == 1 .AND. nxyz /= 1) THEN
+        IF (nxyz == nx .AND. ihindmarsh == 1 .AND. nxyz /= 1 .or. Switcheroo) THEN
+
+        IF (switcheroo) then
+          write(*,*) ' Using Hindmarsh solver with PETSc constructed arrays'
+        end if
           
           DO jx = 1,nx
             j = jx
@@ -1975,7 +1970,6 @@ newtonloop:  DO WHILE (icvg == 1 .AND. iterat <= newton)
           END DO
 
           CALL decbt90(neqn,nx,ier)
-
           CALL solbt90(neqn,nx)
 
         ELSE IF (ihindmarsh == 2) THEN
@@ -2003,23 +1997,15 @@ newtonloop:  DO WHILE (icvg == 1 .AND. iterat <= newton)
           if (petscon) then 
 
             atolksp = 1.D-50
-            rtolksp = 1.D-09
+!!            rtolksp = 1.D-09
+            rtolksp = GimrtRTOLKSP
             dtolksp = 1.D+05
-
-            CALL GIMRTCrunchPETScTolerances(userC,rtolksp,atolksp,dtolksp,maxitsksp,ierr)
-
-!!            sles = userC(4)
             pc = userC(5)
             ksp = userC(6)
 
-            CALL KSPSetType(ksp,GIMRT_SolverMethod,ierr)
-            CALL PCSetType(pc,GIMRT_PCMethod,ierr)
-!!            CALL PCILUReorderForNonzeroDiagonal(pc,1.D-12,ierr)
-!!            CALL PCILUSetDamping(pc,1.D-12,ierr)
-            CALL PCFactorSetLevels(pc,GimrtLevel,ierr)
+            call KSPSetOperators(ksp,amatpetsc,amatpetsc,ierr)
+            CALL GIMRTCrunchPETScTolerances(userC,rtolksp,atolksp,dtolksp,maxitsksp,ierr)
 
-!! call KSPSetOperators(ksp,amatpetsc,amatpetsc,SAME_NONZERO_PATTERN,ierr)
-            call KSPSetOperators(ksp,amatD,amatD,ierr)            
             call KSPSolve(ksp,bvec,xvec,ierr)
             CALL KSPGetIterationNumber(ksp,itsiterate,ierr)
 
@@ -2038,7 +2024,8 @@ newtonloop:  DO WHILE (icvg == 1 .AND. iterat <= newton)
         
       END IF
       
-      IF (nxyz == nx .AND. ihindmarsh == 1 .AND. nxyz /= 1) THEN
+      IF (nxyz == nx .AND. ihindmarsh == 1 .AND. nxyz /= 1 .or. Switcheroo) THEN
+
         errmax = 0.0
         jz = 1
         DO jy = 1,ny
@@ -2059,38 +2046,38 @@ newtonloop:  DO WHILE (icvg == 1 .AND. iterat <= newton)
                 CONTINUE
               END IF
               sp(i,jx,jy,jz) = sp(i,jx,jy,jz) + yh(i,jx)
-              sp10(i,jx,jy,jz) = EXP(sp(i,jx,jy,jz))
+              sp10(i,jx,jy,jz) = DEXP(sp(i,jx,jy,jz))
             END DO
             DO ix = 1,nexchange
-              IF (ABS(yh(ix+ncomp,jx)) > errmax) THEN
-                errmax = ABS(yh(ix+ncomp,jx))
+              IF (DABS(yh(ix+ncomp,jx)) > errmax) THEN
+                errmax = DABS(yh(ix+ncomp,jx))
               END IF
-              IF (ABS(yh(ix+ncomp,jx)) > MaximumCorrection) THEN
+              IF (DABS(yh(ix+ncomp,jx)) > MaximumCorrection) THEN
                 yh(ix+ncomp,jx) = SIGN(MaximumCorrection,yh(ix+ncomp,jx))
               ELSE
                 CONTINUE
               END IF
               spex(ix,jx,jy,jz) = spex(ix,jx,jy,jz) + yh(ix+ncomp,jx)
-              spex10(ix,jx,jy,jz) = EXP(spex(ix,jx,jy,jz))
+              spex10(ix,jx,jy,jz) = DEXP(spex(ix,jx,jy,jz))
             END DO
             DO is = 1,nsurf
-              IF (ABS(yh(is+ncomp+nexchange,jx)) > errmax) THEN
-                errmax = ABS(yh(is+ncomp+nexchange,jx))
+              IF (DABS(yh(is+ncomp+nexchange,jx)) > errmax) THEN
+                errmax = DABS(yh(is+ncomp+nexchange,jx))
               END IF
-              IF (ABS(yh(is+ncomp+nexchange,jx)) > MaximumCorrection) THEN
+              IF (DABS(yh(is+ncomp+nexchange,jx)) > MaximumCorrection) THEN
                 yh(is+ncomp+nexchange,jx) = SIGN(MaximumCorrection,yh(is+ncomp+nexchange,jx))
               ELSE
                 CONTINUE
               END IF
               spsurf(is,jx,jy,jz) = spsurf(is,jx,jy,jz) + yh(is+ncomp+nexchange,jx)
-              spsurf10(is,jx,jy,jz) = EXP(spsurf(is,jx,jy,jz))
+              spsurf10(is,jx,jy,jz) = DEXP(spsurf(is,jx,jy,jz))
             END DO
             DO npt = 1,npot
-              IF (ABS(yh(npt+ncomp+nexchange+nsurf,jx)) > errmax) THEN
-                errmax = ABS(yh(npt+ncomp+nexchange+nsurf,jx))
-              END IF
-              IF (ABS(yh(npt+ncomp+nexchange+nsurf,jx)) > 0.1) THEN
-                yh(npt+ncomp+nexchange+nsurf,jx) = SIGN(0.1d0,yh(npt+ncomp+nexchange+nsurf,jx))
+!!!              IF (DABS(yh(npt+ncomp+nexchange+nsurf,jx)) > errmax) THEN
+!!!                errmax = DABS(yh(npt+ncomp+nexchange+nsurf,jx))
+!!!              END IF
+              IF (DABS(yh(npt+ncomp+nexchange+nsurf,jx)) > 0.9d0) THEN
+                yh(npt+ncomp+nexchange+nsurf,jx) = SIGN(0.9d0,yh(npt+ncomp+nexchange+nsurf,jx))
               ELSE
                 CONTINUE
               END IF
@@ -2110,57 +2097,57 @@ newtonloop:  DO WHILE (icvg == 1 .AND. iterat <= newton)
            IF (ulab(i) == "O2(aq)") THEN
                 MaximumCorrection = corrmax
               ELSE
-                MaximumCorrection = 2.0
+                MaximumCorrection = 2.0d0
               END IF
               ind = (j-1)*(neqn) + i
-              IF (ABS(xn(ind)) > errmax) THEN
-                errmax = ABS(xn(ind))
+              IF (DABS(xn(ind)) > errmax) THEN
+                errmax = DABS(xn(ind))
               END IF
-              IF (ABS(xn(ind)) > MaximumCorrection) THEN
+              IF (DABS(xn(ind)) > MaximumCorrection) THEN
                 xn(ind) = SIGN(MaximumCorrection,xn(ind))
               ELSE
                 CONTINUE
               END IF
               sp(i,jx,jy,jz) = sp(i,jx,jy,jz) + xn(ind)
-              sp10(i,jx,jy,jz) = EXP(sp(i,jx,jy,jz))
+              sp10(i,jx,jy,jz) = DEXP(sp(i,jx,jy,jz))
             END DO
             DO ix = 1,nexchange
               ind = (j-1)*(neqn) + ix+ncomp
-              IF (ABS(xn(ind)) > errmax) THEN
-                errmax = ABS(xn(ind))
+              IF (DABS(xn(ind)) > errmax) THEN
+                errmax = DABS(xn(ind))
               END IF
-              IF (ABS(xn(ind)) > correx) THEN
-                xn(ind) = SIGN(correx,xn(ind))
+              IF (DABS(xn(ind)) > MaximumCorrection) THEN
+                xn(ind) = SIGN(MaximumCorrection,xn(ind))
               ELSE
                 CONTINUE
               END IF
               spex(ix,jx,jy,jz) = spex(ix,jx,jy,jz) + xn(ind)
-              spex10(ix,jx,jy,jz) = EXP(spex(ix,jx,jy,jz))
+              spex10(ix,jx,jy,jz) = DEXP(spex(ix,jx,jy,jz))
             END DO
             DO is = 1,nsurf
               ind = (j-1)*(neqn) + is+ncomp+nexchange
-              IF (ABS(xn(ind)) > errmax) THEN
-                errmax = ABS(xn(ind))
+              IF (DABS(xn(ind)) > errmax) THEN
+                errmax = DABS(xn(ind))
               END IF
-              IF (ABS(xn(ind)) > MaximumCorrection) THEN
+              IF (DABS(xn(ind)) > MaximumCorrection) THEN
                 xn(ind) = SIGN(MaximumCorrection,xn(ind))
               ELSE
                 CONTINUE
               END IF
               spsurf(is,jx,jy,jz) = spsurf(is,jx,jy,jz) + xn(ind)
-              spsurf10(is,jx,jy,jz) = EXP(spsurf(is,jx,jy,jz))
+              spsurf10(is,jx,jy,jz) = DEXP(spsurf(is,jx,jy,jz))
             END DO
             DO npt = 1,npot
               ind = (j-1)*(neqn) + npt+ncomp+nexchange+nsurf
-             IF (ABS(xn(ind)) > errmax) THEN
-                errmax = ABS(xn(ind))
+             IF (DABS(xn(ind)) > errmax) THEN
+                errmax = DABS(xn(ind))
              END IF
-             IF (ABS(xn(ind)) > 0.1d0) THEN
-               xn(ind) = SIGN(0.1d0,xn(ind))
-               CONTINUE
-              ELSE
-                CONTINUE
-              END IF
+!!!             IF (DABS(xn(ind)) > 0.9d0) THEN
+!!!               xn(ind) = SIGN(0.9d0,xn(ind))
+!!!               CONTINUE
+!!!              ELSE
+!!!                CONTINUE
+!!!              END IF
               LogPotential(npt,jx,jy,jz) = LogPotential(npt,jx,jy,jz) + xn(ind)
             END DO
           END DO
@@ -2191,13 +2178,8 @@ newtonloop:  DO WHILE (icvg == 1 .AND. iterat <= newton)
           END DO
           DO is = 1,nsurf
             tolmax = atol
-            tolmax = 1.0D-06
             ind = (j-1)*(neqn) + is+ncomp+nexchange
-            IF (cylindrical) THEN
-              IF (DABS(fxx(ind)) > tolmax) icvg = 1
-            ELSE
-              IF (DABS(delt*fxx(ind)) > tolmax) icvg = 1
-            END IF
+            IF (DABS(delt*fxx(ind)) > tolmax) icvg = 1
           END DO
           DO npt = 1,npot
             tolmax = 1.e-10
@@ -2219,6 +2201,7 @@ newtonloop:  DO WHILE (icvg == 1 .AND. iterat <= newton)
     
 !  Halve the timestep if convergence not achieved
     
+5017 CONTINUE
     IF (icvg == 1) THEN
       MaxFx = MaxLoc(fxx)
 !!      MaxValFx = MaxVal(fxx)
@@ -2232,17 +2215,17 @@ newtonloop:  DO WHILE (icvg == 1 .AND. iterat <= newton)
         DO jx = 1,nx
           DO i = 1,ncomp+nspec
             sp(i,jx,jy,jz) = spold(i,jx,jy,jz)
-            sp10(i,jx,jy,jz) = EXP(sp(i,jx,jy,jz))
+            sp10(i,jx,jy,jz) = DEXP(sp(i,jx,jy,jz))
           END DO
           DO ix = 1,nexchange+nexch_sec
             spex(ix,jx,jy,jz) = spexold(ix,jx,jy,jz)
           END DO
           DO nex = 1,nexch_sec
-            spex10(nex+nexchange,jx,jy,jz) = EXP(spex(nex+nexchange,jx,jy,jz))
+            spex10(nex+nexchange,jx,jy,jz) = DEXP(spex(nex+nexchange,jx,jy,jz))
           END DO
           DO is = 1,nsurf+nsurf_sec
             spsurf(is,jx,jy,jz) = spsurfold(is,jx,jy,jz)
-            spsurf10(is,jx,jy,jz) = EXP(spsurf(is,jx,jy,jz))
+            spsurf10(is,jx,jy,jz) = DEXP(spsurf(is,jx,jy,jz))
           END DO
           IF (ierode == 1) THEN
             CALL exchange(ncomp,nexchange,nexch_sec,jx,jy,jz)
@@ -2875,21 +2858,21 @@ END DO
   END IF
 
   IF (Benchmark) THEN
-    nbnd = 1
-    CALL bdgas(ncomp,nspec,nrct,ngas,nbnd,sgw)
-    CumulativeSulfate = CumulativeSulfate + s(9,100,1,1)*ro(100,1,1)*qx(100,1,1)*delt*1.0d0
-    CumulativeFe = CumulativeFe + s(10,100,1,1)*ro(100,1,1)*qx(100,1,1)*delt*1.0d0
-    CumulativeO2 = CumulativeO2 + ag(1,1,1)*( sgas(8,1,1,1) - sgw(8) )*delt*1.0d0
-    CumulativeCO2 = CumulativeCO2 + ag(1,1,1)*( sgas(4,1,1,1) - sgw(4) )*delt*1.0d0
+!!!    nbnd = 1
+!!!    CALL bdgas(ncomp,nspec,nrct,ngas,nbnd,sgw)
+!!!    CumulativeSulfate = CumulativeSulfate + s(9,100,1,1)*ro(100,1,1)*qx(100,1,1)*delt*1.0d0
+!!!    CumulativeFe = CumulativeFe + s(10,100,1,1)*ro(100,1,1)*qx(100,1,1)*delt*1.0d0
+!!!    CumulativeO2 = CumulativeO2 + ag(1,1,1)*( sgas(8,1,1,1) - sgw(8) )*delt*1.0d0
+!!!    CumulativeCO2 = CumulativeCO2 + ag(1,1,1)*( sgas(4,1,1,1) - sgw(4) )*delt*1.0d0
 
-    IF (time == 10.0d0) THEN
-      write(*,*) ' CumulativeSulfate = ', CumulativeSulfate
-      write(*,*) ' CumulativeFe      = ', CumulativeFe
-      write(*,*) ' CumulativeO2      = ', CumulativeO2
-      write(*,*) ' CumulativeCO2      = ', CumulativeCO2
-      write(*,*)
-      read(*,*)
-    end if
+!!!    IF (time == 10.0d0) THEN
+!!!      write(*,*) ' CumulativeSulfate = ', CumulativeSulfate
+!!!      write(*,*) ' CumulativeFe      = ', CumulativeFe
+!!!      write(*,*) ' CumulativeO2      = ', CumulativeO2
+!!!      write(*,*) ' CumulativeCO2      = ', CumulativeCO2
+!!!      write(*,*)
+!!!      read(*,*)
+!!!    end if
 
    END IF
 

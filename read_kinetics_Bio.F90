@@ -517,7 +517,7 @@ do_input_pathways: do kpath=1,npath
     else if (ios < 0) then
 
 !     no more pathways to read
-      write(*,*)'end of file'
+      write(*,*)'End of file'
       exit do_pathways
 
     else if (ios > 0) then
@@ -534,7 +534,7 @@ do_input_pathways: do kpath=1,npath
   if_found: if (ifound == 0) then        
 ! input file reaction not found in database: quit
 
-    write(*,*)'could not find the pathway ',name_pathway(kpath), &
+    write(*,*)'Could not find the pathway ',name_pathway(kpath), &
               ' of reaction ',dummy2(1:lsave),' in aqueous.dbs database file'
     stop
 

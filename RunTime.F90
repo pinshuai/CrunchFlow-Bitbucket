@@ -48,6 +48,8 @@ MODULE runtime
   LOGICAL(LGT)                                                :: CylindricalDivideVolume
   LOGICAL(LGT)                                                :: Benchmark
   LOGICAL(LGT)                                                :: DampRateInLowPorosity
+
+  LOGICAL(LGT)                                                :: Switcheroo
   
   REAL(DP)                                                    :: PorosityDamp
   REAL(DP)                                                    :: OutputTimeScale
@@ -87,8 +89,10 @@ MODULE runtime
   CHARACTER (LEN=mls), DIMENSION(:), ALLOCATABLE              :: TimeSeriesUnits
   CHARACTER (LEN=mls), DIMENSION(:), ALLOCATABLE              :: TimeSeriesSpecies
 
-INTEGER(I4B), DIMENSION(:,:,:), ALLOCATABLE                   :: IntegerArray
-REAL(DP), DIMENSION(:,:,:), ALLOCATABLE                       :: RealArray
-REAL(DP), DIMENSION(:), ALLOCATABLE                           :: FlexibleArray 
+  INTEGER(I4B), DIMENSION(:,:,:), ALLOCATABLE                   :: IntegerArray
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE                       :: RealArray
+  REAL(DP), DIMENSION(:), ALLOCATABLE                           :: FlexibleArray 
+
+  LOGICAL(LGT), DIMENSION(:), ALLOCATABLE                       :: SkipAdjust
 
 END MODULE runtime

@@ -94,7 +94,6 @@ INTEGER(I4B)                                                    :: kMineralCommo
 INTEGER(I4B)                                                    :: iPrimaryRare
 INTEGER(I4B)                                                    :: iPrimaryCommon
 
-
 REAL(DP)                                                        :: SaturationCloseToEquilibrium
 REAL(DP)                                                        :: Term1RateConstant
 REAL(DP)                                                        :: CheckRateAt1
@@ -127,6 +126,7 @@ tkinv = 1.0D0/tk
 reft = 1.0D0/298.15D0
 
 porfactor = (por(jx,jy,jz)/porin(jx,jy,jz))**(0.666666D0)
+porfactor = 1.0d0
 !!porfactor = 1.0d0
 !!porfactor = por(jx,jy,jz)
 IF (DampRateInLowPorosity .AND. por(jx,jy,jz) < 0.001) THEN
@@ -137,20 +137,22 @@ IF (nIsotopePrimary > 0) THEN
  UseAqueousMoleFraction = .FALSE.
 END IF
 
-porfactor = 1.0d0
+!!porfactor = 1.0d0
 
 !! For isotopes, calculate mole fractions based on aqueous geochemistry (for No Back Reaction case)
 
 DO kIsotopologue = 1,nIsotopeMineral
   kMineralRare = kIsotopeRare(kIsotopologue)
   KMineralCommon = kIsotopeCommon(kIsotopologue)
+  isotopologue = PointerToPrimaryIsotope(kIsotopologue)
+  iPrimaryCommon = isotopeCommon(Isotopologue)
   IF (IsotopeBackReactionOption(kIsotopologue) == 'bulk' .OR. time < LagSurface/365.0) THEN
-    denominator = volfx(kMineralRare,jx,jy,jz) + volfx(kMineralCommon,jx,jy,jz)
-    IF (denominator == 0.0d0 .OR. time<LagSurface/365.0) THEN
+    denominator = volfx(kMineralRare,jx,jy,jz) + volfx(kMineralCommon,jx,jy,jz) 
+    IF (denominator == 0.0d0 .OR. time < LagSurface/365.0) THEN
       UseAqueousMoleFraction(kIsotopologue) = .TRUE.
     ELSE
-      MoleFractionMineralRare(kIsotopologue) = volfx(kMineralRare,jx,jy,jz)/denominator
-      MoleFractionMineralCommon(kIsotopologue) = volfx(kMineralCommon,jx,jy,jz)/denominator
+      MoleFractionMineralRare(kIsotopologue) = (volfx(kMineralRare,jx,jy,jz)/denominator)
+      MoleFractionMineralCommon(kIsotopologue) = (volfx(kMineralCommon,jx,jy,jz)/denominator)
     END IF
   ELSE IF (IsotopeBackReactionOption(kIsotopologue) == 'surface') THEN
     denominator = volsave(kMineralRare,jx,jy,jz) + volsave(kMineralCommon,jx,jy,jz)
@@ -169,8 +171,8 @@ DO Isotopologue = 1,nIsotopePrimary
   iPrimaryRare = isotopeRare(Isotopologue)
   iPrimaryCommon = isotopeCommon(Isotopologue)
   denominator = sp10(iPrimaryRare,jx,jy,jz) + sp10(iPrimaryCommon,jx,jy,jz)
-  MoleFractionAqueousRare(Isotopologue) = sp10(iPrimaryRare,jx,jy,jz)/denominator
-  MoleFractionAqueousCommon(Isotopologue) = sp10(iPrimaryCommon,jx,jy,jz)/denominator
+  MoleFractionAqueousRare(Isotopologue) = (sp10(iPrimaryRare,jx,jy,jz)/denominator)
+  MoleFractionAqueousCommon(Isotopologue) = (sp10(iPrimaryCommon,jx,jy,jz)/denominator)
 END DO
 
 
@@ -191,13 +193,9 @@ checkSaturation = .FALSE.
 UseDissolutionOnly = .FALSE.
 
 DO k = 1,nkin
-    
+
   checkSaturation = .FALSE.
   UseDissolutionOnly = .FALSE.
-
-!!  IF (imintype(1,k) == 5 .AND. imintype(2,k) == 4 .AND. iterat >= 1) THEN
-!!    checkSaturation = .TRUE.
-!!  END IF
 
   dppt(k,jx,jy,jz) = 0.0D0
 
@@ -268,8 +266,6 @@ DO k = 1,nkin
 
         END IF
 
-
-
         silog(np,k) = (sumiap - keqmin(1,kk,jx,jy,jz))/clg
         si(np,k) = 10**(silog(np,k))
 
@@ -330,38 +326,56 @@ DO k = 1,nkin
 !!  Now modify the Ion Activity Product (Q) for the case of a solid solution (activity /= 1)
 
         IF (IsotopeMineralRare(k)) THEN
+
           kIsotopologue = kPointerIsotope(k)
+
+          kMineralRare = kIsotopeRare(kIsotopologue)
+          KMineralCommon = kIsotopeCommon(kIsotopologue)
+          isotopologue = PointerToPrimaryIsotope(kIsotopologue)
+          iPrimaryCommon = isotopeCommon(Isotopologue)
+
           IF (isotopeBackReactionOption(kIsotopologue) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue)) THEN
-            isotopologue = PointerToPrimaryIsotope(kIsotopologue)
-            MoleFractionMineral = MoleFractionAqueousRare(isotopologue)
+
+              MoleFractionMineral = MoleFractionAqueousRare(isotopologue)
+
           ELSE
+
             IF (MoleFractionMineralRare(kIsotopologue) == 0.0d0) THEN
               MoleFractionMineral = 1.0d0
             ELSE
-              MoleFractionMineral = MoleFractionMineralRare(kPointerIsotope(k))
+
+                MoleFractionMineral = MoleFractionMineralRare(isotopologue)
+
+
             END IF
           END IF
-          sumiap = sumiap - DLOG(MoleFractionMineral)
-!!!          IF (kIsotopologue == 1) THEN
-!!!             write(*,*) ' Rare:   ',sumiap
-!!!          end if
+
+          sumiap = sumiap - (mumin(1,kMineralCommon,iPrimaryCommon))*DLOG(MoleFractionMineral)
 
         ELSE IF (IsotopeMineralCommon(k)) THEN
+
           kIsotopologue = kPointerIsotope(k)
+
+          kMineralRare = kIsotopeRare(kIsotopologue)
+          KMineralCommon = kIsotopeCommon(kIsotopologue)
+          isotopologue = PointerToPrimaryIsotope(kIsotopologue)
+          iPrimaryCommon = isotopeCommon(Isotopologue)
+
           IF (isotopeBackReactionOption(kIsotopologue) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue)) THEN
-            isotopologue = PointerToPrimaryIsotope(kIsotopologue)
-            MoleFractionMineral = MoleFractionAqueousCommon(isotopologue)
+
+                MoleFractionMineral = MoleFractionAqueousCommon(isotopologue)
+
           ELSE
             IF (MoleFractionMineralCommon(kIsotopologue) == 0.0d0) THEN
               MoleFractionMineral = 1.0d0
             ELSE
-              MoleFractionMineral = MoleFractionMineralCommon(kPointerIsotope(k))
+
+                MoleFractionMineral = MoleFractionMineralCommon(isotopologue)
+
             END IF
           END IF
-          sumiap = sumiap - DLOG(MoleFractionMineral)
-!!!          IF (kIsotopologue == 1) THEN
-!!!             write(*,*) ' Common: ',sumiap
-!!!          end if
+
+          sumiap = sumiap - (mumin(1,kMineralCommon,iPrimaryCommon))*DLOG(MoleFractionMineral)
 
         ELSE
           CONTINUE
@@ -793,10 +807,8 @@ DO k = 1,nkin
 
       IF (AffinityDepend1(np,k) == 1.0D0) THEN
         term1 = sign*DABS(snorm(np,k) - 1.0D0)
-      ELSE
-          
+      ELSE      
         term1 = sign*DABS(snorm(np,k) - 1.0D0)**(AffinityDepend1(np,k))
-        
       END IF
 
       IF (imintype(np,k) == 5 .OR. UseDissolutionOnly) THEN                          !! Dissolution only
@@ -840,17 +852,34 @@ DO k = 1,nkin
 
         IF (nIsotopeMineral > 0) THEN
 
+
           IF (IsotopeMineralCommon(k)) THEN
+
+            kIsotopologue = kPointerIsotope(k)
+            kMineralRare = kIsotopeRare(kIsotopologue)
+            KMineralCommon = kIsotopeCommon(kIsotopologue)
+            isotopologue = PointerToPrimaryIsotope(kIsotopologue)
+            iPrimaryCommon = isotopeCommon(Isotopologue)
+
             IF (isotopeBackReactionOption(kIsotopologue) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue)) THEN
               isotopologue = PointerToPrimaryIsotope(kIsotopologue)
               MoleFractionMineral = MoleFractionAqueousCommon(isotopologue)
             ELSE
               MoleFractionMineral = MoleFractionMineralCommon(kPointerIsotope(k))
             END IF
+
           ELSE IF (IsotopeMineralRare(k)) THEN
+
+            kIsotopologue = kPointerIsotope(k)
+            kMineralRare = kIsotopeRare(kIsotopologue)
+            KMineralCommon = kIsotopeCommon(kIsotopologue)
+            isotopologue = PointerToPrimaryIsotope(kIsotopologue)
+            iPrimaryCommon = isotopeCommon(Isotopologue)
+
             IF (isotopeBackReactionOption(kIsotopologue) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue)) THEN
               isotopologue = PointerToPrimaryIsotope(kIsotopologue)
               MoleFractionMineral = MoleFractionAqueousRare(isotopologue)
+
 !!            Use the bulk surface area (common)
               surf(k) = surf(kIsotopeCommon(kIsotopologue))
             ELSE
@@ -858,6 +887,7 @@ DO k = 1,nkin
 !!            Use the bulk surface area (common)
               surf(k) = surf(kIsotopeCommon(kIsotopologue))
             END IF
+
           ELSE
             MoleFractionMineral = 1.0d0
           END IF

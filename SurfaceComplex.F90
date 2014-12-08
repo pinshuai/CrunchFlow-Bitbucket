@@ -73,10 +73,10 @@ DO jz = 1,nz
           LogTotalSites = LogTotalSurface(islink(ns),jx,jy,jz) 
           IF (musurf(ns,islink(ns)+ncomp) == 1.0) THEN
             LogTotalEquivalents = LogTotalSites - 0.0d0
-          ELSE IF (musurf(ns,islink(ns)+ncomp) == 2.0) THEN
-            LogTotalEquivalents = LogTotalSites - 0.30102999566398
+          ELSe IF (musurf(ns,islink(ns)+ncomp) == 2.0) THEN
+            LogTotalEquivalents = LogTotalSites - 0.693147180559945
           ELSE IF (musurf(ns,islink(ns)+ncomp) == 3.0) THEN
-            LogTotalEquivalents = LogTotalSites - 0.47712125471966
+            LogTotalEquivalents = LogTotalSites - 1.09861228866811
           ELSE IF (musurf(ns,islink(ns)+ncomp) == 0.0) THEN
             LogTotalEquivalents = 0.0d0
           ELSE
@@ -127,10 +127,10 @@ DO jz = 1,nz
           LogTotalSites = LogTotalSurface(islink(ns),jx,jy,jz) 
           IF (musurf(ns,islink(ns)+ncomp) == 1.0) THEN
             LogTotalEquivalents = LogTotalSites - 0.0d0
-          ELSE IF (musurf(ns,islink(ns)+ncomp) == 2.0) THEN
-            LogTotalEquivalents = LogTotalSites - 0.30102999566398
+          ELSe IF (musurf(ns,islink(ns)+ncomp) == 2.0) THEN
+            LogTotalEquivalents = LogTotalSites - 0.693147180559945
           ELSE IF (musurf(ns,islink(ns)+ncomp) == 3.0) THEN
-            LogTotalEquivalents = LogTotalSites - 0.47712125471966
+            LogTotalEquivalents = LogTotalSites - 1.09861228866811
           ELSE IF (musurf(ns,islink(ns)+ncomp) == 0.0) THEN
             LogTotalEquivalents = 0.0d0
           ELSE

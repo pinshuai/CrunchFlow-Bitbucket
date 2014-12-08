@@ -28,23 +28,34 @@ ksp = user(6)
  
 ! Tolerances for linear solver set here
 
-call KSPSetTolerances(ksp,rtolksp,atolksp,dtolksp,maxitsksp,ierr)
+!!!call KSPSetTolerances(ksp,rtolksp,atolksp,dtolksp,maxitsksp,ierr)
+call KSPSetTolerances(ksp,rtolksp,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,maxitsksp,ierr)
 
 ! Choose linear solver
 
 IF (GIMRT_SolverMethod == 'bcgs') THEN
   CALL KSPSetType(ksp,KSPBCGS,ierr)
 ELSE 
-  CALL KSPSetType(ksp,KSPGMRES,ierr)
+  CALL KSPSetType(ksp,KSPLGMRES,ierr)
+!!  CALL KSPGMRESSetRestart(ksp,30)
+!!  CALL KSPSetInitialGuessNonzero(ksp,PETSC_TRUE,ierr)
+!!  CALL KSPGMRESSetHapTol(ksp,1.0D-12)
 END IF
 
 ! Choose preconditioning method
 
 IF (GIMRT_PCMethod == 'ilu') THEN
+  call KSPGetPC(ksp,pc,ierr)
   CALL PCSetType(pc,PCILU,ierr)
   CALL PCFactorSetLevels(pc,GIMRTlevel,ierr)
+ELSE IF (GIMRT_PCMethod == 'lu') THEN
+  call KSPGetPC(ksp,pc,ierr)
+  CALL PCSetType(pc,PCLU,ierr)
+  CALL PCFactorSetLevels(pc,GIMRTlevel,ierr)
 ELSE
+  call KSPGetPC(ksp,pc,ierr)
   CALL PCSetType(pc,PCBJACOBI,ierr)
+!!!  CALL PCBJacobiSetLocalBlocks(pc,40,ierr)
   CALL PCFactorSetLevels(pc,GIMRTlevel,ierr)
 END IF
 
