@@ -1,0 +1,3 @@
+# parameters for regression tests
+
+testcf = general-reaction-cc.out = Time (days), A(aq), B(aq) = 1.0e-6, 1.0e-6, 1.0e-6 = general-reaction-cc.benchmark = absolute, space

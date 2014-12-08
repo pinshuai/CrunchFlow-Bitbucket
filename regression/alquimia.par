@@ -1,0 +1,11 @@
+# suite of regression tests 
+
+executablecf = CrunchTope, root
+
+testcf = calcite-short, fromAlquimia/calcite-short
+testcf = calcite-vf, fromAlquimia/calcite-vf
+testcf = general-reaction, fromAlquimia/general-reaction
+testcf = isotherms, fromAlquimia/isotherms
+testcf = ion-exchange-valocchi, fromAlquimia/ion-exchange-valocchi
+testcf = surface-complexation, fromAlquimia/surface-complexation
+

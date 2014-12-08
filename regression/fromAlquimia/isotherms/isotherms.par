@@ -1,0 +1,3 @@
+# parameters for regression tests, 'space' no interapolation req'd
+
+testcf = isotherms-cc.out = Time (days), A, C = 1.0e-6, 1.0e-6, 1.0e-6 = isotherms-cc.benchmark = absolute, space

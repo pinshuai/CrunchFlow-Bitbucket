@@ -115,7 +115,9 @@ class CrunchTest:
                 print line.split('=')[2]
                 print 'here' 
                 variables  = line.split('=')[2].split(',')
+                # print variables
                 tolerances = line.split('=')[3].split(',')
+                # print tolerances
               else:
                 print line.split('=')[2]
                 print 'there'
@@ -222,6 +224,8 @@ class CrunchTest:
 
         for filename in files:
           if ".out" in filename:
+             os.remove(filename)
+          if ".rst" in filename:
              os.remove(filename)
 
         return

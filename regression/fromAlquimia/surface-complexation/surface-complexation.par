@@ -1,0 +1,3 @@
+# parameters for regression tests, space --> no interpolation req'd
+
+testcf = surface-complexation-cc.out = Time (yrs),  H+, Na+, NO3-, Zn++, SURF-H+, SURF-Na+, SURF-NO3-, SURF-Zn++, >FeOH_s, >FeOH_w, >FeO-_w, >FeOH2+_w, >FeOHZn+_w, >FeO-_s, >FeOH2+_s, >FeOHZn+_s  = 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6 = surface-complexation-cc.benchmark = absolute, space

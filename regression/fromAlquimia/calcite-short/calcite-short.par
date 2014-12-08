@@ -1,0 +1,3 @@
+# parameters for regression tests
+
+testcf = calcite-short-cc.out = Time (sec), H+, HCO3-, Ca++, Calcite = 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6 = calcite-short-cc.benchmark = absolute, space

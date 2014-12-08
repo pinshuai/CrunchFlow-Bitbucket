@@ -1,0 +1,3 @@
+# parameters for regression tests
+
+testcf = ion-exchange-valocchi-cc.out = Time (yrs), Na+, Ca++, Mg++, EXCH-Na+, EXCH-Ca++, EXCH-Mg++, NaX, CaX2, MgX2 = 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6 = ion-exchange-valocchi-cc.benchmark = absolute, space
