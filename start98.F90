@@ -2305,7 +2305,7 @@ END DO
 
 npot = 0
 DO k = 1,nrct
-  IF (kPotential(k) == .TRUE.) THEN
+  IF (kPotential(k) .eqv. .TRUE.) THEN
      npot = npot + 1
      kpot(npot) = k
   END IF
