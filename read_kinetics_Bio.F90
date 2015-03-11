@@ -635,7 +635,7 @@ do_input_pathways: do kpath=1,npath
 !   store the stoichiometry in catabolic variable
     if (type == 'catabolic') then
 
-      keq_cat(ikin) = keq ! it is actually converted in reactkin * clg
+      keq_cat(ikin) = keq * clg ! it is actually converted in reactkin * clg
       
       do ic=1,ncomp
 
