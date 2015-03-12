@@ -1404,6 +1404,7 @@ DO WHILE (nn <= nend)
       DO jy = 1,ny
         DO jx = 1,nx
           CALL oldcon(ncomp,nspec,nexchange,nexch_sec,nsurf,nsurf_sec,jx,jy,jz)  
+          call oldkd(ncomp,jx,jy,jz) ! smr 
           IF (isaturate == 1) THEN
             CALL oldcongas(ncomp,ngas,jx,jy,jz)
           END IF

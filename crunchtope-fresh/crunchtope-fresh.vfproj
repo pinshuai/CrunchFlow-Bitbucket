@@ -197,6 +197,7 @@
 		<File RelativePath="..\NviewOutput.F90"/>
 		<File RelativePath="..\oldcon.F90"/>
 		<File RelativePath="..\oldcongas.F90"/>
+		<File RelativePath="..\oldkd.F90"/>
 		<File RelativePath="..\oldsurf.F90"/>
 		<File RelativePath="..\oldsurface.F90"/>
 		<File RelativePath="..\os3d_newton.F90"/>
