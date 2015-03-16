@@ -162,6 +162,7 @@ SOURCEF = \
           NviewInit.F90\
           NviewOutput.F90\
           oldcon.F90\
+          oldkd.F90\
           oldcongas.F90\
           oldsurf.F90\
           oldsurface.F90\
@@ -465,6 +466,7 @@ OBJSF  =  crunchtype.o\
           NviewInit.o\
           NviewOutput.o\
           oldcon.o\
+          oldkd.o\
           oldcongas.o\
           oldsurf.o\
           oldsurface.o\
