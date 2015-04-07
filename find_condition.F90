@@ -600,7 +600,7 @@ IF (found) THEN
           SolidDensity(nchem) = SolidDensity(nchem) + (volin(k,nchem)/sum)*0.001d0*wtmin(k)/volmol(k) 
         END IF
       END DO
-      porcond(nchem) = 1.0d0 - TotalVolumeMinerals
+!      porcond(nchem) = 1.0d0 - TotalVolumeMinerals
     END IF
     SolidSolutionRatio(nchem) = OneOverMassFraction(nchem)*1000.d0*SolidDensity(nchem)*(1.0-porcond(nchem))/(SaturationCond(nchem)*porcond(nchem)*rocond(nchem))
     IF (porcond(nchem) == 1.0d0 .AND. SolidDensity(nchem) /= 0.0d0) THEN
