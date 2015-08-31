@@ -178,7 +178,6 @@ SOURCEF = \
           Pressure.F90\
           PrimarySpeciesCheck.F90\
           ratecheck.F90\
-          RateFactorNumerical.F90\
           reactionTope.F90\
           reactkin.F90\
           read98.F90\
@@ -480,7 +479,6 @@ OBJSF  =  crunchtype.o\
           Pressure.o\
           PrimarySpeciesCheck.o\
           ratecheck.o\
-          RateFactorNumerical.o\
           reactionTope.o\
           reactkin.o\
           read98.o\
