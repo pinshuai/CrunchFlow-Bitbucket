@@ -194,6 +194,9 @@ DO jz = 1,nz
         ELSE
             
           volcheck = volmol(k)*dppt(k,jx,jy,jz)*dt
+          if (k==1 .and. dppt(k,jx,jy,jz)> 0.0) then
+              continue
+          end if
           volfx(k,jx,jy,jz) = volfx(k,jx,jy,jz) + volcheck
           volSaveByTimeStep(ncounter,k,jx,jy,jz) = volcheck
           volSave(k,jx,jy,jz) = volSave(k,jx,jy,jz) + volSaveByTimeStep(ncounter,k,jx,jy,jz)
