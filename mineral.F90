@@ -60,7 +60,6 @@ MODULE mineral
   REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: silog
   REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: siln
   REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: snorm
-  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: thresh
   REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: ssa
   REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: actenergy
   REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: pre_rmin

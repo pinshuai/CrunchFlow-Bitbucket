@@ -4814,10 +4814,9 @@ IF (nhet > 0) THEN
       OPEN(unit=98,file='FILE15.dat',status='old')
 
       jz = 1
-      do jy = 1,ny 
+      do jy = 1,ny
         do jx = 1,nx
 
-           read(98,*) dum1,dum2,PorosityRead,QuartzRead,ChloriteRead,IlliteRead,dum2,KaoliniteRead,SmectiteRead,FeOxideRead
            IF (PorosityRead == 0.00) THEN
              por(jx,jy,1) = 0.01d0
            ELSE
@@ -4837,6 +4836,7 @@ IF (nhet > 0) THEN
                  tortuosity(jx,jy,jz) = 0.007
              END IF
            END IF
+           
            IF (IlliteRead == 100.0) THEN
              volfx(3,jx,jy,1) = 0.99
            ELSE
@@ -6896,185 +6896,6 @@ IF (found) THEN
         WRITE(iunit2,*) '  Reading permeabilities from file: ',permfile(1:lfile)
         WRITE(iunit2,*)
         
-        IF (PermFileFormat == 'SingleFile3D') THEN
-            
-          INQUIRE(FILE=permfile,EXIST=ext)
-          IF (.NOT. ext) THEN
-            WRITE(*,*)
-            WRITE(*,*) ' 3D permeability file not found: ',permfile(1:lfile)
-            WRITE(*,*)
-            READ(*,*)   
-            STOP
-          END IF
-          
-          OPEN(UNIT=23,FILE=permfile,STATUS='old',ERR=8005)
-          FileTemp = permfile
-          CALL stringlen(FileTemp,FileNameLength)
-          DO jz = 1,nz
-            DO jy = 1,ny
-              DO jx = 1,nx
-                READ(23,*,END=1020) xdum,ydum,zdum,permx(jx,jy,jz),permdum,permy(jx,jy,jz)
-                permx(jx,jy,jz) = 0.001*permx(jx,jy,jz)/(9.81*997.075)
-                permy(jx,jy,jz) = 0.001*permy(jx,jy,jz)/(9.81*997.075)
- !!               permz(jx,jy,jz) = permz(jx,jy,jz)/(9.81*997.075)
-              END DO
-            END DO 
-          END DO
-          
-          jz = 1
-          do jy = 1,ny
-            permx(0,jy,jz) = permx(1,jy,jz)
-            permx(nx+1,jy,jz) = permx(nx,jy,jz)
-          end do
-          
-          perminx = permx
-          perminy = permy
-          perminx = permx
-          
-          CLOSE(UNIT=23,STATUS='keep')
-          
-!  Reading permeability distribution directly from input file
-
-        ALLOCATE(permzonex(0:mperm))
-        ALLOCATE(permzoney(0:mperm))
-        ALLOCATE(permzonez(0:mperm))
-      
-        ALLOCATE(jxxpermx_lo(mperm))
-        ALLOCATE(jxxpermx_hi(mperm))
-        ALLOCATE(jyypermx_lo(mperm))
-        ALLOCATE(jyypermx_hi(mperm))
-        ALLOCATE(jzzpermx_lo(mperm))
-        ALLOCATE(jzzpermx_hi(mperm))
-
-        ALLOCATE(jxxpermy_lo(mperm))
-        ALLOCATE(jxxpermy_hi(mperm))
-        ALLOCATE(jyypermy_lo(mperm))
-        ALLOCATE(jyypermy_hi(mperm))
-        ALLOCATE(jzzpermy_lo(mperm))
-        ALLOCATE(jzzpermy_hi(mperm))
-
-        ALLOCATE(jxxpermz_lo(mperm))
-        ALLOCATE(jxxpermz_hi(mperm))
-        ALLOCATE(jyypermz_lo(mperm))
-        ALLOCATE(jyypermz_hi(mperm))
-        ALLOCATE(jzzpermz_lo(mperm))
-        ALLOCATE(jzzpermz_hi(mperm))
-        
-        CALL read_permx(nout,nx,ny,nz,npermx)
-        
-!  Next, initialize permeability from various zones
-        
-        IF (npermx > 0) THEN
-          DO l = 1,npermx
-            DO jz = jzzpermx_lo(l),jzzpermx_hi(l)
-              DO jy = jyypermx_lo(l),jyypermx_hi(l)
-                DO jx = jxxpermx_lo(l),jxxpermx_hi(l)
-                  perminx(jx,jy,jz) = permzonex(l)
-                END DO
-              END DO
-            END DO
-          END DO
-        END IF
-        
-        permmaxx = 0.0
-        permx = perminx
-        permmaxx = MAXVAL(DABS(permx))
-        
-        DEALLOCATE(permzonex)
-        DEALLOCATE(jxxpermx_lo)
-        DEALLOCATE(jxxpermx_hi)
-        DEALLOCATE(jyypermx_lo)
-        DEALLOCATE(jyypermx_hi)
-        DEALLOCATE(jzzpermx_lo)
-        DEALLOCATE(jzzpermx_hi)
-
-        IF (ny == 1) THEN
-          permy = 0.0
-          perminy = 0.0
-          DEALLOCATE(permzoney)
-          DEALLOCATE(jxxpermy_lo)
-          DEALLOCATE(jxxpermy_hi)
-          DEALLOCATE(jyypermy_lo)
-          DEALLOCATE(jyypermy_hi)
-          DEALLOCATE(jzzpermy_lo)
-          DEALLOCATE(jzzpermy_hi)
-        ELSE
-          CALL read_permy(nout,nx,ny,nz,npermy)
-          
-!  Next, initialize permeability from various zones
-          
-          IF (npermy > 0) THEN
-            DO l = 1,npermy
-              DO jz = jzzpermy_lo(l),jzzpermy_hi(l)
-                DO jy = jyypermy_lo(l),jyypermy_hi(l)
-                  DO jx = jxxpermy_lo(l),jxxpermy_hi(l)
-                    perminy(jx,jy,jz) = permzoney(l)
-                  END DO
-                END DO
-              END DO
-            END DO       
-          END IF
-          
-          permmaxy = 0.0
-          permy = perminy
-          permmaxy = MAXVAL(DABS(permy))
-
-          DEALLOCATE(permzoney)
-          DEALLOCATE(jxxpermy_lo)
-          DEALLOCATE(jxxpermy_hi)
-          DEALLOCATE(jyypermy_lo)
-          DEALLOCATE(jyypermy_hi)
-          DEALLOCATE(jzzpermy_lo)
-          DEALLOCATE(jzzpermy_hi)
-          
-        END IF
-
-        IF (nz == 1) THEN
-          permz = 0.0
-          perminz = 0.0
-          DEALLOCATE(permzonez)
-          DEALLOCATE(jxxpermz_lo)
-          DEALLOCATE(jxxpermz_hi)
-          DEALLOCATE(jyypermz_lo)
-          DEALLOCATE(jyypermz_hi)
-          DEALLOCATE(jzzpermz_lo)
-          DEALLOCATE(jzzpermz_hi)
-
-        ELSE    
-
-          CALL read_permz(nout,nx,ny,nz,npermz)
-                    
-!  Next, initialize permeability from various zones
-
-          IF (npermz > 0) THEN
-            DO l = 1,npermz
-              DO jz = jzzpermz_lo(l),jzzpermz_hi(l)
-                DO jy = jyypermz_lo(l),jyypermz_hi(l)
-                  DO jx = jxxpermz_lo(l),jxxpermz_hi(l)
-                    perminz(jx,jy,jz) = permzonez(l)
-                  END DO
-                END DO
-              END DO
-            END DO       
-          END IF
-
-          permmaxz = 0.0
-          permz = perminz
-          permmaxz = MAXVAL(DABS(permz))
-
-          DEALLOCATE(permzonez)
-          DEALLOCATE(jxxpermz_lo)
-          DEALLOCATE(jxxpermz_hi)
-          DEALLOCATE(jyypermz_lo)
-          DEALLOCATE(jyypermz_hi)
-          DEALLOCATE(jzzpermz_lo)
-          DEALLOCATE(jzzpermz_hi)
-          
-        END IF
-
-!!!!!!!!!!!!!!!!!
-          
-        ELSE 
   
           permxfile(1:lfile) = permfile(1:lfile)
           permxfile(lfile+1:lfile+2) = '.x'
@@ -7235,9 +7056,7 @@ IF (found) THEN
             STOP
           END IF
           CLOSE(UNIT=23,STATUS='keep')
-        END IF
-        
-        END IF    !! 
+        END IF       
 
         permmaxX = 0.0d0
         permmaxy = 0.0d0
@@ -7338,9 +7157,13 @@ IF (found) THEN
         8005   WRITE(*,*) ' Error opening 3D permeability file: STOP'
         READ(*,*)
 
-        8004 CONTINUE
+8004    CONTINUE
       
-      ELSE
+        CONTINUE
+        
+      END IF
+      
+!!!!      ELSE
 
         ALLOCATE(permzonex(0:mperm))
         ALLOCATE(permzoney(0:mperm))
@@ -7370,7 +7193,7 @@ IF (found) THEN
 !  Reading permeability distribution directly from input file
         
         CALL read_permx(nout,nx,ny,nz,npermx)
-        IF (permzonex(0) == 0.0) THEN
+        IF (permzonex(0) == 0.0 .and. .NOT. ReadPerm) THEN
           WRITE(*,*)
           WRITE(*,*) ' No default X permeability given'
           WRITE(*,*) ' X permeability should be followed by "default" or blank string'
@@ -7385,11 +7208,10 @@ IF (found) THEN
 
 ! First, initialize X permeability to default permeability (permzonex(0))
         
-!!        DO jx = 1,nx
-!!          perminx(jx,:,:) = permzonex(0)
-!!        END DO
 
-        perminx = permzonex(0)
+        IF (.NOT. ReadPerm) THEN
+          perminx = permzonex(0)
+        END IF
         
 !  Next, initialize permeability from various zones
         
@@ -7429,7 +7251,7 @@ IF (found) THEN
           DEALLOCATE(jzzpermy_hi)
         ELSE
           CALL read_permy(nout,nx,ny,nz,npermy)
-          IF (permzoney(0) == 0.0) THEN
+          IF (permzoney(0) == 0.0 .and. .NOT.ReadPerm) THEN
             WRITE(*,*)
             WRITE(*,*) ' No default Y permeability given'
             WRITE(*,*) ' Y permeability should be followed by "default" or blank string'
@@ -7448,7 +7270,10 @@ IF (found) THEN
 !!          perminy(:,jy,:) = permzoney(0)
 !!        END DO
 
+        IF (.NOT. ReadPerm) THEN
           perminy = permzoney(0)
+        END IF
+
           
 !  Next, initialize permeability from various zones
           
@@ -7493,7 +7318,7 @@ IF (found) THEN
           
 
           CALL read_permz(nout,nx,ny,nz,npermz)
-          IF (permzonez(0) == 0.0) THEN
+          IF (permzonez(0) == 0.0 .and. .NOT.ReadPerm) THEN
             WRITE(*,*)
             WRITE(*,*) ' No default Z permeability given'
             WRITE(*,*) ' Z permeability should be followed by "default" or blank string'
@@ -7512,7 +7337,11 @@ IF (found) THEN
 !!          perminz(:,:,jz) = permzonez(0)
 !!        END DO
 
-        perminz = permzonez(0)
+        IF (.NOT. ReadPerm) THEN
+          perminz = permzonez(0)
+          permz = permzonez(0)
+        END IF
+
           
 !  Next, initialize permeability from various zones
 
@@ -7542,7 +7371,7 @@ IF (found) THEN
           
         END IF
 
-      END IF
+!!!  End of section where choosing between perm file read and zone specification      END IF
       
       CALL read_gravity(nout)
 
@@ -8774,7 +8603,10 @@ WRITE(iunit2,1111) alfl
 WRITE(iunit2,1112) alft
 WRITE(iunit2,*)
 
-CALL dispersivity(nx,ny,nz)
+!!CALL dispersivity(nx,ny,nz)
+dspx = 0.0
+dspy = 0.0
+dspz = 0.0
 
   IF (ReadGeochemicalConditions) THEN
 

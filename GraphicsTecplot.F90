@@ -189,6 +189,46 @@ CALL stringlen(char_time,ls)
 200 FORMAT(1PE9.2)
 
 IF (ny > 1 .AND. nz > 1) THEN                 !! 3D case
+    
+    IF (CalculateFlow) THEN
+    fn = 'permeability'
+    ilength = 12
+    CALL newfile(fn,suf1,fnv,nint,ilength)
+    OPEN(UNIT=8,FILE=fnv, ACCESS='sequential',STATUS='unknown')
+    WRITE(8,118)
+    WRITE(8,*) 'TITLE = "',char_time(1:ls),' Years"'
+    WRITE(8,1022)
+    WRITE(8,*) 'ZONE F=POINT,I=', nx,  ', J=',ny, ', K=',nz  
+    DO jz = 1,nz
+    DO jy = 1,ny
+      DO jx = 1,nx
+        WRITE(8,184) x(jx)*OutputDistanceScale,y(jy)*OutputDistanceScale,z(jz)*OutputDistanceScale,   &
+             Log10(permx(jx,jy,jz)),Log10(permy(jx,jy,jz)),Log10(permz(jx,jy,jz))
+      END DO
+    END DO
+    END DO
+    CLOSE(UNIT=8,STATUS='keep')
+END IF
+
+1022 FORMAT('VARIABLES = " X (meters)"," Y (meters)", " z (meters)","X-Permeability", "Y-Permeability", "Z-Permeability"')
+     
+  fn = 'porosity'
+  ilength = 8
+  CALL newfile(fn,suf1,fnv,nint,ilength)
+  OPEN(UNIT=8,FILE=fnv, ACCESS='sequential',STATUS='unknown')
+  WRITE(8,112)
+  WRITE(8,*) 'TITLE = "',char_time(1:ls),' Years"'
+  WRITE(8,1010)
+  WRITE(8,*) 'ZONE F=POINT,I=', nx 
+  do jz = 1,nz
+  DO jy = 1,ny
+    DO jx = 1,nx
+      porprt = por(jx,jy,jz)*1.0
+      WRITE(8,184) x(jx)*OutputDistanceScale,y(jy)*OutputDistanceScale,z(jz)*OutputDistanceScale,porprt
+    END DO
+  END DO
+  end do
+  CLOSE(UNIT=8,STATUS='keep')
   
   fn='totcon'
   ilength = 6
@@ -934,6 +974,7 @@ IF (isaturate == 1) THEN
   END DO
   CLOSE(UNIT=8,STATUS='keep')
 END IF
+
 
   IF (ikph /= 0) THEN
     fn='pH'
