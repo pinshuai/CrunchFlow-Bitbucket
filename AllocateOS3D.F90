@@ -102,9 +102,14 @@ INTEGER(I4B), INTENT(IN)                           :: nz
     DEALLOCATE(ssurfold)
   END IF
   ALLOCATE(ssurfold(ncomp,nx,ny,nz))
+  IF (ALLOCATED(skdold)) THEN
+    DEALLOCATE(skdold)
+  END IF
+  ALLOCATE(skdold(ncomp,nx,ny,nz))
   ssurfn = 0.0
   sexold = 0.0
   ssurfold = 0.0
+  skdold = 0.0
   IF (ALLOCATED(fxx)) THEN
     DEALLOCATE(fxx)
   END IF

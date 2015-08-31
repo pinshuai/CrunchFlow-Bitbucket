@@ -314,6 +314,7 @@ MODULE  concentration
   REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE        :: LogTotalSurface
   REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE        :: sexold
   REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE        :: ssurfold
+  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE        :: skdold
   REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE        :: spsurf
   REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE        :: spsurf10
   REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE        :: spsurfold 
