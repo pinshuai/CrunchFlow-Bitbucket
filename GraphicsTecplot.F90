@@ -148,13 +148,19 @@ CHARACTER (LEN=mls)                                        :: namtemp
 INTEGER(I4B)                                               :: ix
 INTEGER(I4B)                                               :: is
 
+REAL(DP)                                                   :: CellVolume
+REAL(DP)                                                   :: SumPorosity
+REAL(DP)                                                   :: SumVolumeAllMinerals
+REAL(DP), DIMENSION(nrct)                                  :: sumMineralRate
+REAL(DP), DIMENSION(nrct)                                  :: sumVolumeMineral
+REAL(DP), DIMENSION(nrct)                                  :: sumMoleMineral
 
 jz = 1
 PrintTime = realtime*OutputTimeScale
 rone = 1.0d0
 
-suf='.out'
-suf1 ='.out'
+suf='.dat'
+suf1 ='.dat'
 tab = CHAR(9)
 
 DO k = 1,nrct
@@ -200,6 +206,39 @@ IF (ny > 1 .AND. nz > 1) THEN                 !! 3D case
     END DO
   END DO
   CLOSE(UNIT=8,STATUS='keep')
+  
+  fn='totslice'
+  ilength = 8
+  CALL newfile(fn,suf1,fnv,nint,ilength)
+  OPEN(UNIT=8,FILE=fnv, ACCESS='sequential',STATUS='unknown')
+  WRITE(8,102)
+  WRITE(8,*) 'TITLE = "',char_time(1:ls),' Years"'
+  WRITE(8,2009) (ulab(ik),ik=1,ncomp)
+  jy = ny/2
+  WRITE(8,*) 'ZONE F=POINT,I=', nx,  ', J=',nz
+    DO jz = 1,nz
+      DO jx = 1,nx
+        WRITE(8,184) x(jx)*OutputDistanceScale,z(jz)*OutputDistanceScale,(s(i,jx,jy,jz),i = 1,ncomp)
+      END DO
+    END DO
+
+  CLOSE(UNIT=8,STATUS='keep')
+  
+  fn='totline'
+  ilength = 7
+  CALL newfile(fn,suf1,fnv,nint,ilength)
+  OPEN(UNIT=8,FILE=fnv, ACCESS='sequential',STATUS='unknown')
+  WRITE(8,102)
+  WRITE(8,*) 'TITLE = "',char_time(1:ls),' Years"'
+  WRITE(8,2009) (ulab(ik),ik=1,ncomp)
+  jy = ny/2
+  jz = nz/2
+  WRITE(8,*) 'ZONE F=POINT,I=', nx
+      DO jx = 1,nx
+        WRITE(8,184) x(jx)*OutputDistanceScale,(s(i,jx,jy,jz),i = 1,ncomp)
+      END DO
+  CLOSE(UNIT=8,STATUS='keep')
+  
  
   116 FORMAT('# Units: m^3 fluid/m^2 porous medium/yr')
 
@@ -505,6 +544,7 @@ IF (nrct > 0) THEN
   WRITE(8,*) 'TITLE = "',char_time(1:ls),' Years"'
   WRITE(8,1011) (umin(k),k=1,nrct)
   WRITE(8,*) 'ZONE F=POINT,I=', nx,  ', J=',ny
+  sumMineralRate = 0.0d0
   jz = 1
   DO jy = 1,ny
     DO jx = 1,nx
@@ -519,6 +559,8 @@ IF (nrct > 0) THEN
 !  For units of mol/L(BV)/sec, uncomment the following line and
 !!        dptprt(k) = dppt(k,jx,jy,jz)/(secyr*1000.0)    ! mol/L(BV)/sec
         dptprt(k) = dppt(k,jx,jy,jz)/(secyr*1000.0*por(jx,jy,jz))    ! mol/L fluid/sec
+        CellVolume = dxx(jx)*dyy(jy)*dzz(jx,jy,jz)
+        sumMineralRate(k) = sumMineralRate(k) + CellVolume*dppt(k,jx,jy,jz)/(secyr)    !!  mol/m^3 PorMed/sec
 !*************************************
         sum = sum + dptprt(k)
       END DO
@@ -527,6 +569,17 @@ IF (nrct > 0) THEN
     END DO
   END DO
   CLOSE(UNIT=8,STATUS='keep')
+  
+  fn='BulkRate'
+  ilength = 8
+  CALL newfile(fn,suf1,fnv,nint,ilength)
+  OPEN(UNIT=8,FILE=fnv, ACCESS='sequential',STATUS='unknown')
+  WRITE(8,108)
+  WRITE(8,*) 'TITLE = "',char_time(1:ls),' Years"'
+  WRITE(8,1011) (umin(k),k=1,nrct)
+  WRITE(8,184) (sumMineralRate(k),k=1,nrct) 
+  CLOSE(UNIT=8,STATUS='keep')
+  
 END IF
 
 !   Write out the reaction rates in units of mol/L(bulk vol.)/sec
@@ -564,17 +617,48 @@ IF (nrct > 0) THEN
   WRITE(8,*) 'TITLE = "',char_time(1:ls),' Years"'
   WRITE(8,1011) (umin(k),k=1,nrct)
   WRITE(8,*) 'ZONE F=POINT,I=', nx,  ', J=',ny
+  SumVolumeMineral = 0.0d0
   jz = 1
   DO jy = 1,ny
     DO jx = 1,nx
+      CellVolume = dxx(jx)*dyy(jy)*dzz(jx,jy,jz)
       DO k = 1,nrct
         dvolpr(k) = volfx(k,jx,jy,jz)*1.0
+        SumVolumeMineral(k) = SumVolumeMineral(k) + volfx(k,jx,jy,jz)*CellVolume
       END DO
       WRITE(8,184) x(jx)*OutputDistanceScale,y(jy)*OutputDistanceScale,(dvolpr(k),k=1,nrct)
     END DO
   END DO
   CLOSE(UNIT=8,STATUS='keep')
 END IF
+
+  fn='BulkMoles'
+  ilength = 9
+  CALL newfile(fn,suf1,fnv,nint,ilength)
+  OPEN(UNIT=8,FILE=fnv, ACCESS='sequential',STATUS='unknown')
+  WRITE(8,108)
+  WRITE(8,*) 'TITLE = "',char_time(1:ls),' Years"'
+  DO k = 1,nrct
+    SumMoleMineral(k) = SumVolumeMineral(k)/volmol(k)
+  END DO
+  WRITE(8,1011) (umin(k),k=1,nrct)
+  WRITE(8,184) (SumMoleMineral(k),k=1,nrct) 
+  CLOSE(UNIT=8,STATUS='keep')
+  
+  fn='BulkPorosity'
+  ilength = 12
+  CALL newfile(fn,suf1,fnv,nint,ilength)
+  OPEN(UNIT=8,FILE=fnv, ACCESS='sequential',STATUS='unknown')
+  WRITE(8,108)
+  WRITE(8,*) 'TITLE = "',char_time(1:ls),' Years"'
+  sumVolumeAllMinerals = 0.0d0
+  SumPorosity = 0.0d0
+  DO k = 1,nrct
+    sumVolumeAllMinerals = sumVolumeAllMinerals + SumVolumeMineral(k)
+  END DO
+  SumPorosity = 1.0d0 - sumVolumeAllMinerals/(x(nx)*y(ny))
+  WRITE(8,*) ' Bulk Porosity (m^3/m^3) = ',SumPorosity 
+  CLOSE(UNIT=8,STATUS='keep')
 
 !!  Bulk areas in m2/m3 
   fn='area'

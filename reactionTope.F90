@@ -91,8 +91,12 @@ INTEGER(I4B)                                                    :: kIsotopologue
 INTEGER(I4B)                                                    :: Isotopologue
 INTEGER(I4B)                                                    :: kMineralRare
 INTEGER(I4B)                                                    :: kMineralCommon
+INTEGER(I4B)                                                    :: kMineralRarePoint
+INTEGER(I4B)                                                    :: kMineralCommonPoint
 INTEGER(I4B)                                                    :: iPrimaryRare
 INTEGER(I4B)                                                    :: iPrimaryCommon
+
+INTEGER(I4B)                                                    :: kIsotopologuePoint
 
 REAL(DP)                                                        :: SaturationCloseToEquilibrium
 REAL(DP)                                                        :: Term1RateConstant
@@ -101,6 +105,11 @@ REAL(DP)                                                        :: CheckRateAt2
 REAL(DP)                                                        :: CallItEquilibrium
 
 REAL(DP)                                                        :: CalciumCarbonateRatioEffect
+
+
+REAL(DP)                                                        :: PoreFillFactor
+REAL(DP)                                                        :: MineralVolumeSum
+REAL(DP)                                                        :: PorosityFromSum
 
 ! biomass
 INTEGER(I4B)                                                    :: ib, jj
@@ -112,6 +121,16 @@ INTEGER(I4B)                                                    :: ib, jj
 !! CrystalSizeDistribution
 REAL(DP)                                                        :: SizeDepKeq
 REAL(DP)                                                        :: AdjustKeq
+
+!! Nucleation
+!!!REAL(DP)                                                        :: SigmaNucleation
+!!!REAL(DP)                                                        :: Bnucleation
+!!!REAL(DP)                                                        :: Anucleation
+REAL(DP)                                                        :: surfTotal
+REAL(DP)                                                        :: BtimesSigma
+
+REAL(DP)                                                        :: DecayTerm
+
 
 rmin = 0.0d0
 
@@ -125,8 +144,12 @@ tk = t(jx,jy,jz) + 273.15D0
 tkinv = 1.0D0/tk
 reft = 1.0D0/298.15D0
 
+MineralVolumeSum = 0.0d0
+DO k = 1,nrct
+    MineralVolumeSum = MineralVolumeSum + volfx(k,jx,jy,jz)
+END DO
+
 porfactor = (por(jx,jy,jz)/porin(jx,jy,jz))**(0.666666D0)
-porfactor = 1.0d0
 !!porfactor = 1.0d0
 !!porfactor = por(jx,jy,jz)
 IF (DampRateInLowPorosity .AND. por(jx,jy,jz) < 0.001) THEN
@@ -142,29 +165,71 @@ END IF
 !! For isotopes, calculate mole fractions based on aqueous geochemistry (for No Back Reaction case)
 
 DO kIsotopologue = 1,nIsotopeMineral
+
   kMineralRare = kIsotopeRare(kIsotopologue)
   KMineralCommon = kIsotopeCommon(kIsotopologue)
+  
+!!  Decay in a mineral, within a isotope system
+  
+  IF (lambda(kIsotopologue) /= 0.0) THEN
+      
+!! Should be in units of yr-1 to match the time step "delt" in years
+      
+      DecayTerm = volfx(kMineralRare,jx,jy,jz)*DEXP(-lambda(kIsotopologue)*delt)
+      volfx(kMineralCommon,jx,jy,jz) = volfx(kMineralCommon,jx,jy,jz) + DecayTerm
+      volfx(kMineralRare,jx,jy,jz)   = volfx(kMineralRare,jx,jy,jz)   - DecayTerm
+      
+  END IF
+
+!!  Check to make sure that both the rare and common minerals are associated with another mineral
+
+  IF ( MineralAssociate(kMineralRare) .NEQV. MineralAssociate(kMineralCommon) ) THEN
+    WRITE(*,*)
+    WRITE(*,*) ' If Rare isotope mineral is associated with another phase, then so should the Common '
+    WRITE(*,*)
+    STOP
+  END IF
+
+  IF (MineralAssociate(kMineralRare)) THEN
+    kMineralRarePoint = MineralID(kMineralRare)
+  ELSE
+    kMineralRarePoint = kMineralRare
+  END IF
+  IF (MineralAssociate(kMineralCommon)) THEN
+    kMineralCommonPoint = MineralID(kMineralCommon)
+  ELSE
+    kMineralCommonPoint = kMineralCommon
+  END IF
+
+  IF (MineralAssociate(kMineralCommon)) THEN
+    kIsotopologuePoint = kPointerIsotope( MineralID(kMineralCommon) )
+  ELSE
+    kIsotopologuePoint = kIsotopologue
+  END IF
+
   isotopologue = PointerToPrimaryIsotope(kIsotopologue)
   iPrimaryCommon = isotopeCommon(Isotopologue)
-  IF (IsotopeBackReactionOption(kIsotopologue) == 'bulk' .OR. time < LagSurface/365.0) THEN
-    denominator = volfx(kMineralRare,jx,jy,jz) + volfx(kMineralCommon,jx,jy,jz) 
+
+  IF (IsotopeBackReactionOption(kIsotopologuePoint) == 'bulk' .OR. time < LagSurface/365.0) THEN
+    denominator = volfx(kMineralRarePoint,jx,jy,jz) + volfx(kMineralCommonPoint,jx,jy,jz) 
     IF (denominator == 0.0d0 .OR. time < LagSurface/365.0) THEN
       UseAqueousMoleFraction(kIsotopologue) = .TRUE.
     ELSE
-      MoleFractionMineralRare(kIsotopologue) = (volfx(kMineralRare,jx,jy,jz)/denominator)
-      MoleFractionMineralCommon(kIsotopologue) = (volfx(kMineralCommon,jx,jy,jz)/denominator)
+      MoleFractionMineralRare(kIsotopologue) = (volfx(kMineralRarePoint,jx,jy,jz)/denominator)
+      MoleFractionMineralCommon(kIsotopologue) = (volfx(kMineralCommonPoint,jx,jy,jz)/denominator)
     END IF
-  ELSE IF (IsotopeBackReactionOption(kIsotopologue) == 'surface') THEN
-    denominator = volsave(kMineralRare,jx,jy,jz) + volsave(kMineralCommon,jx,jy,jz)
+  ELSE IF (IsotopeBackReactionOption(kIsotopologuePoint) == 'surface') THEN
+    denominator = volsave(kMineralRarePoint,jx,jy,jz) + volsave(kMineralCommonPoint,jx,jy,jz)
     IF (denominator == 0.0d0 .OR. time<LagSurface/365.0) THEN
       UseAqueousMoleFraction(kIsotopologue) = .TRUE.
     ELSE
-      MoleFractionMineralRare(kIsotopologue) = volsave(kMineralRare,jx,jy,jz)/denominator
-      MoleFractionMineralCommon(kIsotopologue) = volsave(kMineralCommon,jx,jy,jz)/denominator
+      MoleFractionMineralRare(kIsotopologue) = volsave(kMineralRarePoint,jx,jy,jz)/denominator
+      MoleFractionMineralCommon(kIsotopologue) = volsave(kMineralCommonPoint,jx,jy,jz)/denominator
     END IF
   ELSE
     UseAqueousMoleFraction(kIsotopologue) = .TRUE.
   END IF
+
 END DO
 
 DO Isotopologue = 1,nIsotopePrimary
@@ -174,17 +239,6 @@ DO Isotopologue = 1,nIsotopePrimary
   MoleFractionAqueousRare(Isotopologue) = (sp10(iPrimaryRare,jx,jy,jz)/denominator)
   MoleFractionAqueousCommon(Isotopologue) = (sp10(iPrimaryCommon,jx,jy,jz)/denominator)
 END DO
-
-
-!! For dissolution, use the mole fraction of 44Ca and 40Ca in the mineral from previous time step
-
-!!!!!!  IF (volfx(6,jx,jy,jz) == 0.0d0 .AND. volfx(5,jx,jy,jz) == 0.0d0 .OR. UseAqueousMoleFraction) THEN
-
-!!!!!!    IF (time < LagSurface/365.0 .OR. UseBulkMineral) THEN
-!!!!!      MoleFraction44Mineral = volfx(6,jx,jy,jz)/( volfx(6,jx,jy,jz) + volfx(5,jx,jy,jz) )
-
-!!!!!      MoleFraction44Mineral = VolSave(6,jx,jy,jz)/( VolSave(6,jx,jy,jz) + VolSave(5,jx,jy,jz) )
-
 
 decay_correct = 1.0D0
 snorm = 0.0d0
@@ -232,16 +286,18 @@ DO k = 1,nkin
 !!  Imintype = 7 --> Reverse one-way, surface area = 1.0 while mineral is present
 !!  Imintype = 8 --> Microbially mediated monod with theormodynamic factor, and biomass
 !!  Imintype = 9 --> biomass first order decay !!smr-2011-04-29
+!!  Imintype = 10 -> Nucleation
 
 !!  Calculate thermodynamic term
+    
     IF (imintype(np,k) == 3 .OR. imintype(np,k) == 2) THEN  !! Simple Monod (Option 2 with no Ft) or Irreversible (Option 3)
 
       silog(np,k) = -500.0D0
       si(np,k) = 0.0D0
 
-    ELSE
+    ELSE   !!  Everything else but "simple Monod" (Option 2) and "Irreversible" (Option 3)
 
-!!  Cross-Affinity Case
+!!    Cross-Affinity Case
       IF (kcrossaff(np,k) /= 0) THEN
 
         kk = kcrossaff(np,k)
@@ -296,9 +352,9 @@ DO k = 1,nkin
 
         silog(np,k) = (sumiap - keqminTMP(np,jj) - BQ_min(np,jj)/(rgas*Tk))/clg    !!  BQ in kJ/e-mole
         siln(np,k) = clg*silog(np,k)
-        si(np,k) = 10**(silog(np,k))
+        si(np,k) = 10**(silog(np,k))  
 
-!!  Base case
+!!    Base Case
       ELSE    
             
         IF (ikh2o /= 0) THEN     
@@ -320,72 +376,84 @@ DO k = 1,nkin
           END DO
 
         END IF
+        
+!!!     *******************************************************************
+!!      Start of isotope section
    
         IF (nIsotopeMineral > 0) THEN
 
-!!  Now modify the Ion Activity Product (Q) for the case of a solid solution (activity /= 1)
+!!        Now modify the Ion Activity Product (Q) for the case of a solid solution (activity /= 1)
 
-        IF (IsotopeMineralRare(k)) THEN
+          IF (IsotopeMineralRare(k)) THEN
 
-          kIsotopologue = kPointerIsotope(k)
+            kIsotopologue = kPointerIsotope(k)
 
-          kMineralRare = kIsotopeRare(kIsotopologue)
-          KMineralCommon = kIsotopeCommon(kIsotopologue)
-          isotopologue = PointerToPrimaryIsotope(kIsotopologue)
-          iPrimaryCommon = isotopeCommon(Isotopologue)
+            kMineralRare = kIsotopeRare(kIsotopologue)
+            KMineralCommon = kIsotopeCommon(kIsotopologue)
 
-          IF (isotopeBackReactionOption(kIsotopologue) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue)) THEN
-
-              MoleFractionMineral = MoleFractionAqueousRare(isotopologue)
-
-          ELSE
-
-            IF (MoleFractionMineralRare(kIsotopologue) == 0.0d0) THEN
-              MoleFractionMineral = 1.0d0
+            IF (MineralAssociate(kMineralRare)) THEN
+              kMineralRarePoint = MineralID(kMineralRare)
             ELSE
-
-                MoleFractionMineral = MoleFractionMineralRare(isotopologue)
-
-
+              kMineralRarePoint = kMineralRare
             END IF
-          END IF
-
-          sumiap = sumiap - (mumin(1,kMineralCommon,iPrimaryCommon))*DLOG(MoleFractionMineral)
-
-        ELSE IF (IsotopeMineralCommon(k)) THEN
-
-          kIsotopologue = kPointerIsotope(k)
-
-          kMineralRare = kIsotopeRare(kIsotopologue)
-          KMineralCommon = kIsotopeCommon(kIsotopologue)
-          isotopologue = PointerToPrimaryIsotope(kIsotopologue)
-          iPrimaryCommon = isotopeCommon(Isotopologue)
-
-          IF (isotopeBackReactionOption(kIsotopologue) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue)) THEN
-
-                MoleFractionMineral = MoleFractionAqueousCommon(isotopologue)
-
-          ELSE
-            IF (MoleFractionMineralCommon(kIsotopologue) == 0.0d0) THEN
-              MoleFractionMineral = 1.0d0
+            IF (MineralAssociate(kMineralCommon)) THEN
+              kMineralCommonPoint = MineralID(kMineralCommon)
             ELSE
+              kMineralCommonPoint = kMineralCommon
+            END IF
+
+            isotopologue = PointerToPrimaryIsotope(kIsotopologue)
+            iPrimaryCommon = isotopeCommon(Isotopologue)
+
+            IF (isotopeBackReactionOption(kIsotopologue) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue)) THEN
+              MoleFractionMineral = MoleFractionAqueousRare(isotopologue)
+            ELSE
+
+              IF (MoleFractionMineralRare(kIsotopologue) == 0.0d0) THEN
+                MoleFractionMineral = 1.0d0
+              ELSE
+                MoleFractionMineral = MoleFractionMineralRare(isotopologue)
+              END IF
+            END IF
+
+            sumiap = sumiap - (mumin(1,kMineralCommon,iPrimaryCommon))*DLOG(MoleFractionMineral)
+
+          ELSE IF (IsotopeMineralCommon(k)) THEN
+
+            kIsotopologue = kPointerIsotope(k)
+
+            kMineralRare = kIsotopeRare(kIsotopologue)
+            KMineralCommon = kIsotopeCommon(kIsotopologue)
+            isotopologue = PointerToPrimaryIsotope(kIsotopologue)
+            iPrimaryCommon = isotopeCommon(Isotopologue)
+
+            IF (isotopeBackReactionOption(kIsotopologue) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue)) THEN
+
+              MoleFractionMineral = MoleFractionAqueousCommon(isotopologue)
+
+            ELSE
+              IF (MoleFractionMineralCommon(kIsotopologue) == 0.0d0) THEN
+                MoleFractionMineral = 1.0d0
+              ELSE
 
                 MoleFractionMineral = MoleFractionMineralCommon(isotopologue)
 
+              END IF
             END IF
+
+            sumiap = sumiap - (mumin(1,kMineralCommon,iPrimaryCommon))*DLOG(MoleFractionMineral)
+
+          ELSE
+            CONTINUE
           END IF
 
-          sumiap = sumiap - (mumin(1,kMineralCommon,iPrimaryCommon))*DLOG(MoleFractionMineral)
-
-        ELSE
-          CONTINUE
-        END IF
-
         END IF   !! Block where nIsotopeMineral > 0
+        
+!!!     ******************* End of isotopes ***************************************************
 
         silog(np,k) = (sumiap - keqmin(np,k,jx,jy,jz))/clg
-        siln(np,k) = clg*silog(np,k)
-        si(np,k) = 10**(silog(np,k))
+        siln(np,k)  = clg*silog(np,k)
+        si(np,k)    = 10**(silog(np,k))
         
 !!CSD!!  **********  CrystalSizeDistribution  **********************************
 !!CSD        IF (CrystalSizeDistribution(k)) THEN
@@ -411,7 +479,11 @@ DO k = 1,nkin
       END IF
 
     END IF
+    
+!!!  ******************  End of thermodynamic calculation ********************************
 
+!!!  *********************  Start of calculation of surface area  **************************
+    
 !!  Decide on the value of the reactive surface area depending on
 !!  whether the mineral is under or super-saturated and whether
 !!  it has a zero volume fraction.
@@ -421,25 +493,25 @@ DO k = 1,nkin
     
     IF (silog(np,k) >= 0.0D0 .AND. iarea(k,jinit(jx,jy,jz)) == 0) THEN       !! Supersaturated AND bulk_surface_area option
 
-!!  Associate mineral with another mineral (surface area and volume fraction)
+!!    Associate mineral with another mineral (surface area and volume fraction)
       IF (MineralAssociate(k)) THEN
 
         IF (MineralID(k) < k) THEN                  !!  NOTE: This requires that the mineral that is associated with is earlier in list
-          surf(k) = surf(MineralID(k))
+          surf(np,k) = surf(np,MineralID(k))
         ELSE
-          surf(k) = areain(MineralID(k),jinit(jx,jy,jz))*porfactor
+          surf(np,k) = areain(MineralID(k),jinit(jx,jy,jz))*porfactor
         END IF
 
       ELSE
 
 !! NOTE:  Perhaps should change this to a specific option for supersaturation, with default = .TRUE.  ??
         IF (SetSurfaceAreaConstant) THEN
-          surf(k) = areain(k,jinit(jx,jy,jz))*porfactor
+          surf(np,k) = areain(k,jinit(jx,jy,jz))*porfactor
         ELSE
-          surf(k) = area(k,jx,jy,jz)*porfactor            
+          surf(np,k) = area(k,jx,jy,jz)*porfactor            
         END IF
 
-        surf(k) = areain(k,jinit(jx,jy,jz))*porfactor
+        surf(np,k) = areain(k,jinit(jx,jy,jz))*porfactor
 
       END IF
 
@@ -449,63 +521,69 @@ DO k = 1,nkin
 
       IF (MineralAssociate(k)) THEN
 
-        if (MineralID(k) < k) then
-          surf(k) = surf(MineralID(k))
-        else
-
+        IF (MineralID(k) < k) THEN
+          surf(np,k) = surf(np,MineralID(k))
+        ELSE
           IF (porfactor < 0.01d0) THEN
-            surf(k) = area(MineralID(k),jx,jy,jz)*porfactor
+            surf(np,k) = area(MineralID(k),jx,jy,jz)*porfactor
           ELSE
-            surf(k) = area(MineralID(k),jx,jy,jz)
+            surf(np,k) = area(MineralID(k),jx,jy,jz)
           END IF
-
-        end if
+        END IF
 
       ELSE
 
         IF (porfactor < 0.01d0) THEN
-          surf(k) = area(k,jx,jy,jz)*porfactor
+          surf(np,k) = area(k,jx,jy,jz)*porfactor
         ELSE
-          surf(k) = area(k,jx,jy,jz)
+          surf(np,k) = area(k,jx,jy,jz)
         END IF
 
 !!!        IF (SetSurfaceAreaConstant) THEN
-!!!          surf(k) = areain(k,jinit(jx,jy,jz))*porfactor
+!!!          surf(np,k) = areain(k,jinit(jx,jy,jz))*porfactor
 !!!        ELSE
-!!!          surf(k) = area(k,jx,jy,jz)*porfactor
+!!!          surf(np,k) = area(k,jx,jy,jz)*porfactor
 !!!        END IF
 
       END IF
 
     END IF
-
+    
 !! Reset surface area for irreversible or Monod reaction
     IF (imintype(np,k) == 3 .OR. imintype(np,k) == 2) THEN
 
       IF (MineralAssociate(k)) THEN
-        surf(k) = area(MineralID(k),jx,jy,jz)
+        surf(np,k) = area(MineralID(k),jx,jy,jz)
       ELSE
-        surf(k) = area(k,jx,jy,jz)
+        surf(np,k) = area(k,jx,jy,jz)
       END IF
 
-    END IF
-
-    IF (KateMaher) THEN
-      IF (k==KUcalcite .AND. rlabel(np,k) == 'recrystallize') THEN
-        surf(k) = area(kMarineCalcite,jx,jy,jz)
-      END IF
     END IF
     
-    IF (surf(k) == 0.0D0) THEN
+!! Reset surface area to 1.0 for irreversible cases (imintype = 6, 7)
+    
+    IF (imintype(np,k) == 6 .OR. imintype(np,k) == 7) THEN  
+      surf(np,k) = 1.0d0
+    END IF
+    
+!! Reset surface area of nucleation case (imintype =10)
+    
+    IF (imintype(np,k) == 10) THEN  
+      surf(np,k) = 1.0d0
+    END IF
 
-      rmin(np,k) = 0.0D0
-      dppt(k,jx,jy,jz) = 0.0D0
+!!!  *********************  End of calculation of surface area  **************************
+    
+    IF (surf(np,k) == 0.0D0) THEN
+
+!!      rmin(np,k) = 0.0D0
+!!      dppt(k,jx,jy,jz) = 0.0D0
       pre_rmin(np,k) = 1.0D0
 
     ELSE
           
 !!    TST, irreversible, or PrecipitationOnly
-      IF (imintype(np,k) == 1 .OR. imintype(np,k) == 3 .OR. imintype(np,k) == 4 .OR. imintype(np,k) == 5) THEN 
+      IF (imintype(np,k) == 1 .OR. imintype(np,k) == 3 .OR. imintype(np,k) == 4 .OR. imintype(np,k) == 5 .OR. imintype(np,k) == 10 ) THEN 
         
         term2 = 0.0D0
         DO kk = 1,ndepend(np,k)
@@ -563,7 +641,7 @@ DO k = 1,nkin
         term2 = 1.0D0
         DO kk = 1,nmonod(np,k)
           IF (imonod(kk,np,k) == 0 .AND. kmonod(kk,np,k) == 1) THEN                !! Mineral Monod reaction depends on its own concentration
-            surf(k) = 1.0d0                                                        !! Resets surface area to a constant 1
+            surf(np,k) = 1.0d0                                                        !! Resets surface area to a constant 1
             MinConvert = volfx(k,jx,jy,jz)/(volmol(k)*por(jx,jy,jz)*ro(jx,jy,jz))  !! Converts mineral volume fraction to moles mineral per kg fluid (molality)                                  
             checkmonod =  MinConvert/(MinConvert+halfsat(kk,np,k))
             term2 = term2 * checkmonod 
@@ -587,11 +665,7 @@ DO k = 1,nkin
             term2 = term2 * rinhibit(kk,np,k)/(rinhibit(kk,np,k)+sp10(i,jx,jy,jz))
           END IF
         END DO
-!!        IF (umin(k)=='JapaneseGlassSilicaOnly') THEN 
-!!          kJapaneseGlassNoSilica = 2                                                     
-!!          checkmonod =  0.01d0/(volfx(kJapaneseGlassNoSilica,jx,jy,jz) + 0.01d0)
-!!          term2 = term2 * checkmonod 
-!!        END IF
+
       ELSE IF (imintype(np,k) == 6 .OR. imintype(np,k) == 7) THEN  !! Forward or reverse, with surface area set constant at 1.0
 
         CONTINUE
@@ -642,7 +716,7 @@ DO k = 1,nkin
         term2 = 1.0D0
         DO kk = 1,nmonod(np,k)
           IF (imonod(kk,np,k) == 0 .AND. kmonod(kk,np,k) == 1) THEN                !! Mineral Monod reaction depends on its own concentration
-            surf(k) = 1.0d0                                                        !! Resets surface area to a constant 1
+            surf(np,k) = 1.0d0                                                        !! Resets surface area to a constant 1
             MinConvert = volfx(k,jx,jy,jz)/(volmol(k)*por(jx,jy,jz)*ro(jx,jy,jz))  !! Converts mineral volume fraction to moles mineral per kg fluid (molality)                                  
             checkmonod =  MinConvert/(MinConvert+halfsat(kk,np,k))
             term2 = term2 * checkmonod 
@@ -680,6 +754,7 @@ DO k = 1,nkin
         
 ! end sergi: first order biomass decay - may 2011
 
+        
       ELSE
 
         WRITE(*,*)
@@ -729,20 +804,14 @@ DO k = 1,nkin
         sign = -1.0D0
       END IF
 
-      IF (KateMaher) THEN
-        IF (k == KUCalcite .AND. rlabel(np,k) == 'recrystallize') THEN
-          sign = 1.0D0
-        END IF
-      END IF
-
       IF (imintype(np,k) == 3 .OR. imintype(np,k) == 2) THEN     !!  Monod or irreversible
 
         snorm(np,k) = 0.0D0
 
-! biomass
+!!    biomass
       ELSE IF (imintype(np,k) == 8) THEN    !!  Monod, but with thermodynamic factor (Ft) a la Jin and Bethke
 
-! added
+!! added
         jj = p_cat_min(k)
 
 !!  Add in here the thermodynamic factor, F_T
@@ -776,7 +845,7 @@ DO k = 1,nkin
           AffinityTerm = MIN(0.0d0,term1)
         ENDIF
               
-! end Monodbiomass
+!!      end Monodbiomass
 
 ! sergi: first order biomass decay - may 2011
       
@@ -786,6 +855,51 @@ DO k = 1,nkin
         AffinityTerm = 1.0d0
       
 ! end sergi: first order biomass decay - may 2011
+        
+!!!  ******** Nucleation option  *********************
+        
+      ELSE IF (imintype(np,k) == 10) THEN
+          
+        pre_rmin(np,k) = 0.0d0
+        actenergy(np,k) = 0.0d0
+        
+!!!        SigmaNucleation = 97.0
+!!!!        Bnucleation = 0.0009045710    !! 25C
+!!!        Bnucleation = 0.000480339     !! 95C
+
+!!!        Anucleation = 0.001
+        
+        IF (si(np,k) > 1.0) THEN
+            
+          BtimesSigma = Bnucleation(np,k)*SigmaNucleation(np,k)*SigmaNucleation(np,k)*SigmaNucleation(np,k)
+          AffinityTerm = Azero25C(np,k)*DEXP(-BtimesSigma/( siln(np,k)*siln(np,k) ) )
+          rate0(np,k) = 1.0d0
+          actenergy(np,k) = 1.0d0
+          pre_rmin(np,k) = 1.0d0
+          
+          IF (HomogeneousNucleation(np,k)) THEN
+              surf(np,k) = 1.0d0
+          ELSE 
+              IF (SumMineralSurfaceArea(np,k)) THEN
+                surfTotal = 0.0d0
+                do kk = 1,nrct
+                  surfTotal = surfTotal + surf(np,kk)
+                end do
+                surf(np,k) = surfTotal
+              ELSE
+                kk = NucleationSurface(np,k) 
+                surf(np,k) = area(kk,jx,jy,jz)
+              END IF
+          END IF
+                    
+        ELSE       !! Undersaturated case
+            
+          AffinityTerm = 0.0d0
+          surf(np,k) = 0.0d0
+          
+        END IF
+        
+!!!  ******** End of nucleation option  *********************
 
       ELSE
 
@@ -813,6 +927,8 @@ DO k = 1,nkin
 !!        END IF
       ELSE IF (imintype(np,k) == 4) THEN                               !! Precipitation only
         AffinityTerm = MAX(0.0d0,term1)
+      ELSE IF (imintype(np,k) == 10) THEN
+        CONTINUE
       ELSE
 !! General case, which uses (or not) the exponents in "snorm"
         AffinityTerm = term1
@@ -834,10 +950,10 @@ DO k = 1,nkin
         ib = ibiomass_min(jj)
 
         IF (UseMetabolicLagMineral(np,jj)) THEN
-          rmin(np,k) = MetabolicLagMineral(np,jj,jx,jy,jz)*surf(k)*rate0(np,k)*           &
+          rmin(np,k) = MetabolicLagMineral(np,jj,jx,jy,jz)*surf(np,k)*rate0(np,k)*           &
               actenergy(np,k)*pre_rmin(np,k)*volfx(ib,jx,jy,jz)*AffinityTerm
         ELSE
-          rmin(np,k) = surf(k)*rate0(np,k)*           &
+          rmin(np,k) = surf(np,k)*rate0(np,k)*           &
              actenergy(np,k)*pre_rmin(np,k)*volfx(ib,jx,jy,jz)*AffinityTerm
         END IF     
 ! biomass end
@@ -845,7 +961,6 @@ DO k = 1,nkin
       ELSE
 
         IF (nIsotopeMineral > 0) THEN
-
 
           IF (IsotopeMineralCommon(k)) THEN
 
@@ -875,11 +990,11 @@ DO k = 1,nkin
               MoleFractionMineral = MoleFractionAqueousRare(isotopologue)
 
 !!            Use the bulk surface area (common)
-              surf(k) = surf(kIsotopeCommon(kIsotopologue))
+              surf(np,k) = surf(np,kIsotopeCommon(kIsotopologue))
             ELSE
               MoleFractionMineral = MoleFractionMineralRare(kPointerIsotope(k))
 !!            Use the bulk surface area (common)
-              surf(k) = surf(kIsotopeCommon(kIsotopologue))
+              surf(np,k) = surf(np,kIsotopeCommon(kIsotopologue))
             END IF
 
           ELSE
@@ -890,13 +1005,35 @@ DO k = 1,nkin
           MoleFractionMineral = 1.0d0
         END IF
 
-        rmin(np,k) = MoleFractionMineral*surf(k)*rate0(np,k)*actenergy(np,k)*pre_rmin(np,k)*AffinityTerm
+!!!         kcalcite = 1
+!!!         kACC = 2
+        
+        IF (Qingyun) THEN
+            
+          PoreThreshold = 0.25d0
+          PoreFill = 3.0d0
+          PorosityFromSum = 1.0d0 - MineralVolumeSum
+          PoreFillFactor = (PorosityFromSum/PoreThreshold)**PoreFill
+          IF (PoreFillFactor > 1.0d0) THEN
+            PoreFillFactor = 1.0d0
+          END IF
+          surf(np,k) = surf(np,k)*PoreFillFactor
+
+        END IF
+        
+        rmin(np,k) = MoleFractionMineral*surf(np,k)*rate0(np,k)*actenergy(np,k)*pre_rmin(np,k)*AffinityTerm
+        if (imintype(np,k) == 10 .and. si(np,k) > 1.0) then
+            continue
+        end if
               
       END IF
 
     END IF
 
     dppt(k,jx,jy,jz) = dppt(k,jx,jy,jz) + rmin(np,k)
+    if (jx==12 .and. k==1 .and. si(1,k)> 1.0) then
+        continue
+    end if
   
   END DO   !  End of npth parallel reaction
   

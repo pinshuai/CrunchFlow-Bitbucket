@@ -561,6 +561,8 @@ IF (icomplete /= 1) THEN
       WRITE(*,*)
     END IF
     
+!!!  Now, check for nucleation (or not)
+    
   ELSE
     WRITE(*,*) ' No kinetic reactions involving minerals specified'
     WRITE(*,*)

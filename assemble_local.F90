@@ -146,7 +146,7 @@ IF (ActiveCell(jx,jy,jz) == 0) GO TO 800
 
 !  Surface charge calculation
 
-CALL SurfaceCharge(ncomp,nspec,nsurf,nsurf_sec,npot,jx,jy,jz)
+CALL SurfaceCharge(ncomp,nspec,nsurf,nsurf_sec,npot,jx,jy,jz,time)
 
 sum = 0.0D0
 DO ik = 1,ncomp+nspec

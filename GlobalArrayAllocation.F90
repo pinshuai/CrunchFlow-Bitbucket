@@ -501,6 +501,10 @@ IF (ALLOCATED(rmin)) THEN
 ELSE
   ALLOCATE(rmin(nreactmax,nrct))
 END IF
+
+
+
+
 IF (ALLOCATED(jac_rmin)) THEN
   DEALLOCATE(jac_rmin)
   ALLOCATE(jac_rmin(ncomp+nexchange+nsurf,nreactmax,nrct))

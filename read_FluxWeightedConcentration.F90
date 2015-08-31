@@ -236,13 +236,15 @@ ELSE                  ! Zero length trailing string
   STOP
 END IF
 
+!  Now it should be the Z coordinate
+
 id = ids + ls
 CALL sschaine_hyph(zone,id,iff,ssch_a,ssch_b,ids,ls_a,ls_b,ls)
 IF (ls /= 0) THEN
   lzs=ls_a
   CALL convan(ssch_a,lzs,res)
   IF (res == 'n') THEN
-    jyFluxWeightedConcentration_lo(nFluxWeightedConcentrationFile) = JNUM(ssch_a)
+    jzFluxWeightedConcentration_lo(nFluxWeightedConcentrationFile) = JNUM(ssch_a)
   ELSE                !  An ascii string--so bag it.
     WRITE(*,*)
     WRITE(*,*) ' A grid location should follow specification of FluxWeightedConcentrationFile'
@@ -253,7 +255,7 @@ IF (ls /= 0) THEN
     lzs=ls_b
     CALL convan(ssch_b,lzs,res)
     IF (res == 'n') THEN
-      jyFluxWeightedConcentration_hi(nFluxWeightedConcentrationFile) = JNUM(ssch_b)
+      jzFluxWeightedConcentration_hi(nFluxWeightedConcentrationFile) = JNUM(ssch_b)
     ELSE                !  An ascii string--so bag it.
       WRITE(*,*)
       WRITE(*,*) ' A grid location should follow specification of FluxWeightedConcentrationFile'
@@ -261,11 +263,11 @@ IF (ls /= 0) THEN
       STOP
     END IF
   ELSE
-    jyFluxWeightedConcentration_hi(nFluxWeightedConcentrationFile) = jyFluxWeightedConcentration_lo(nFluxWeightedConcentrationFile)   !  Assume jxAqueousFluxSeries_hi=jxAqueousFluxSeries_lo
+    jzFluxWeightedConcentration_hi(nFluxWeightedConcentrationFile) = jzFluxWeightedConcentration_lo(nFluxWeightedConcentrationFile)   !  Assume jxAqueousFluxSeries_hi=jxAqueousFluxSeries_lo
   END IF
 ELSE                  ! Zero length trailing string
   WRITE(*,*)
-  WRITE(*,*) ' No X or Y grid location given for FluxWeightedConcentrationFile'
+  WRITE(*,*) ' No Z grid location given for FluxWeightedConcentrationFile'
   WRITE(*,*) ' FluxWeightedConcentration zone ',nFluxWeightedConcentrationFile
   WRITE(*,*)
   STOP

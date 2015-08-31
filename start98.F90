@@ -508,12 +508,56 @@ REAL(DP)                                                      :: RateGeneric
 REAL(DP)                                                      :: denmol
 REAL(DP)                                                      :: tk
 
+REAL(DP)  :: dum1
+REAL(DP)  :: dum2
+REAL(DP)  :: PorosityRead
+REAL(DP)  :: QuartzRead
+REAL(DP)  :: ChloriteRead
+REAL(DP)  :: IlliteRead
+REAL(DP)  :: KaoliniteRead
+REAL(DP)  :: SmectiteRead
+REAL(DP)  :: FeOxideRead
+
 CHARACTER (LEN=12)                                            :: dumm1
 CHARACTER (LEN=12)                                            :: dumm2
 CHARACTER (LEN=12)                                            :: dumm3
 INTEGER(I4B), DIMENSION(8)                                    :: curr_time
 
-ALLOCATE(realmult(100))
+
+CHARACTER (LEN=mls)                                           :: NameMineral
+CHARACTER (LEN=mls)                                           :: label
+CHARACTER (LEN=mls)                                           :: Surface
+
+CHARACTER (LEN=mls), DIMENSION(:), ALLOCATABLE                :: NucleationMineral
+CHARACTER (LEN=mls), DIMENSION(:), ALLOCATABLE                :: NameNucleationPathway
+
+
+REAL(DP)                                                      :: A_zero25C
+REAL(DP)                                                      :: B_nucleation
+REAL(DP)                                                      :: Sigma_mJm2
+REAL(DP)                                                      :: SSA_m2g
+
+
+INTEGER(I4B)                                                  :: knucl
+INTEGER(I4B)                                                  :: ios
+INTEGER(I4B)                                                  :: nucleationpaths
+INTEGER(I4B)                                                  :: kFlag
+INTEGER(I4B)                                                  :: npFlag
+
+LOGICAL(LGT)                                                  :: NeedNucleationBlock
+
+namelist /Nucleation/                                          NameMineral,        &
+                                                               label,              &
+                                                               A_zero25C,          &
+                                                               B_nucleation,       &
+                                                               Sigma_mJm2,         &
+                                                               SSA_m2g,            &
+                                                               Surface
+
+
+
+
+ALLOCATE(realmult(100)) 
 
 pi = DACOS(-1.0d0)
 
@@ -547,7 +591,7 @@ dist_scale = 1.0d0
 OutputTimeScale = 1.0d0
 OutputDistanceScale = 1.0d0
 constantpor = 1.0d0
-MinimumPorosity = 1.D-14
+MinimumPorosity = 1.0D-14
 
 nscratch = 9
 
@@ -1219,8 +1263,18 @@ IF (found) THEN
   parfind = ' '
   ReadGeochemicalConditions = .false.
   CALL read_logical(nout,lchar,parchar,parfind,ReadGeochemicalConditions)
+  
+  parchar = 'ReadGautier'
+  parfind = ' '
+  ReadGautier = .false.
+  CALL read_logical(nout,lchar,parchar,parfind,ReadGautier)
 
 
+  parchar = 'Qingyun'
+  parfind = ' '
+  Qingyun = .false.
+  CALL read_logical(nout,lchar,parchar,parfind,Qingyun)
+  
   parchar = 'HanfordStrontium'
   parfind = ' '
   HanfordStrontium = .false.
@@ -1718,6 +1772,226 @@ LocalEquilibrium = .FALSE.
 
 CALL read98(ncomp,nspec,nkin,nrct,ngas,nsurf,nsurf_sec,data1,icomplete,  &
     ispeciate,igenericrates,GMSsecondary,GMSmineral,RateGeneric)
+
+!!  Check to see if a NUCLEATION block is required based on what is in database file (type = nucleation, imintype = 10)
+
+NeedNucleationBlock = .FALSE.
+DO k = 1,nrct
+  DO np = 1,nreactmin(k)
+    IF (imintype(np,k) == 10) THEN
+       npFlag = np
+       kFlag = k
+       NeedNucleationBlock = .TRUE.
+    END IF
+  END DO
+END DO
+        
+
+!!  Now check for nucleation block
+
+!      *****************NUCLEATION SECTION***********************
+
+section = 'nucleation'
+    
+CALL readblock(nin,nout,section,found,ncount)
+
+IF (found) THEN
+    
+IF (ALLOCATED(NucleationMineral)) THEN
+  DEALLOCATE(NucleationMineral)
+END IF
+ALLOCATE(NucleationMineral(50))
+NucleationMineral = ' '
+
+IF (ALLOCATED(NameNucleationPathway)) THEN
+  DEALLOCATE(NameNucleationPathway)
+END IF
+ALLOCATE(NameNucleationPathway(50))
+NameNucleationPathway = ' '
+
+IF (ALLOCATED(NucleationSurface)) THEN
+  DEALLOCATE(NucleationSurface)
+END IF
+ALLOCATE(NucleationSurface(nreactmax,nrct))
+NucleationSurface = 0
+
+IF (ALLOCATED(kNucleationPath)) THEN
+  DEALLOCATE(kNucleationPath)
+END IF
+ALLOCATE(kNucleationPath(50))
+kNucleationPath = 0
+IF (ALLOCATED(npNucleationPath)) THEN
+  DEALLOCATE(npNucleationPath)
+END IF
+ALLOCATE(npNucleationPath(50))
+npNucleationPath = 0
+    
+  IF (ALLOCATED(Azero25C)) THEN
+    DEALLOCATE(Azero25C)
+    ALLOCATE(Azero25C(nreactmax,nrct))
+  ELSE
+    ALLOCATE(Azero25C(nreactmax,nrct))
+  END IF
+  Azero25C = 0.0d0
+  IF (ALLOCATED(Bnucleation)) THEN
+    DEALLOCATE(Bnucleation)
+    ALLOCATE(Bnucleation(nreactmax,nrct))
+  ELSE
+    ALLOCATE(Bnucleation(nreactmax,nrct))
+  END IF
+  Bnucleation = 0.0d0
+  IF (ALLOCATED(sigmaNucleation)) THEN
+    DEALLOCATE(sigmaNucleation)
+    ALLOCATE(sigmaNucleation(nreactmax,nrct))
+  ELSE
+    ALLOCATE(sigmaNucleation(nreactmax,nrct))
+  END IF
+  sigmaNucleation = 0.0d0
+    IF (ALLOCATED(SurfaceAreaNucleation)) THEN
+    DEALLOCATE(SurfaceAreaNucleation)
+    ALLOCATE(SurfaceAreaNucleation(nreactmax,nrct))
+  ELSE
+    ALLOCATE(SurfaceAreaNucleation(nreactmax,nrct))
+  END IF
+  SurfaceAreaNucleation = 0.0d0
+  IF (ALLOCATED(SumMineralSurfaceArea)) THEN
+    DEALLOCATE(SumMineralSurfaceArea)
+    ALLOCATE(SumMineralSurfaceArea(nreactmax,nrct))
+  ELSE
+    ALLOCATE(SumMineralSurfaceArea(nreactmax,nrct))
+  END IF
+  IF (ALLOCATED(HomogeneousNucleation)) THEN
+    DEALLOCATE(HomogeneousNucleation)
+    ALLOCATE(HomogeneousNucleation(nreactmax,nrct))
+  ELSE
+    ALLOCATE(HomogeneousNucleation(nreactmax,nrct))
+  END IF
+  SumMineralSurfaceArea = .FALSE.
+  HomogeneousNucleation = .FALSE.
+  
+!!  Based on MINERAL block in input file, identify nucleation pathways
+
+  knucl = 0
+  DO k = 1,nrct
+    DO np = 1,nreactmin(k)
+      IF (imintype(np,k) == 10) THEN
+        knucl = knucl + 1
+        NucleationMineral(knucl) = umin(k)
+        NameNucleationPathway(knucl) =   rlabel(np,k)
+        kNucleationPath(knucl) = k
+        npNucleationPath(knucl) = np
+      END IF
+    END DO
+  END DO
+
+  NucleationPaths = knucl
+
+  REWIND nout
+  
+!!! Loop over nucleation pathways provided in input file (or database file)
+  do_input_pathways: DO knucl=1,nucleationpaths
+
+! read all necessary pathways (reactions) from file
+    do_nucleationpathways: DO     !!  This is a loop through the multiple? namelist entries in the NUCLEATION block
+
+!!!   initialize namelist variables before reading it in from file
+!!!  Mineral        = Calcite
+!!!  label          = nucleatecalcite
+!!!  Azero25C       = 0.01
+!!!  Bnucleation    = 0.009
+!!!  Sigma(mJ/m2)   = 97.0
+!!!  SSA(m2/g)      = 1.0
+!!!  Surface        = all
+      
+      
+!     read 'Nucleation' namelist from file
+      read(nout,nml=Nucleation,iostat=ios)     
+
+!     result from read (IOS)
+      IF (ios == 0) THEN
+
+!     successful read, compare to nucleation pathway specified in input file (or database file??)
+
+!! Point from list of names derived from input file (or database) to what is read in the namelist
+        IF (NucleationMineral(knucl) == NameMineral .and. NameNucleationPathway(knucl)== label) THEN
+   
+          k = kNucleationPath(knucl)
+          np = npNucleationPath(knucl)
+          Azero25C(np,k) = A_zero25C
+          Bnucleation(np,k) = B_nucleation
+          SigmaNucleation(np,k) = Sigma_mJm2
+          SurfaceAreaNucleation(np,k) = SSA_m2g
+        
+          IF (surface == 'none' .OR. surface == 'NONE' .OR. surface == 'None.') THEN
+            HomogeneousNucleation(np,k) = .TRUE.
+          ELSE IF (surface == 'all' .OR. surface == 'ALL' .OR. surface == 'All') THEN
+            HomogeneousNucleation(np,k) = .FALSE.
+            SumMineralSurfaceArea(np,k) = .TRUE.
+          ELSE
+            HomogeneousNucleation(np,k) = .FALSE.
+            SumMineralSurfaceArea(np,k) = .FALSE.
+            !! Find the mineral number for the nucleation surface
+          NucleationSurface(np,k) = 0
+          DO kk = 1,nrct
+            IF (umin(kk) == Surface) then
+              NucleationSurface(np,k) = kk
+            END IF
+          END DO
+      
+          IF (NucleationSurface(np,k) == 0) THEN
+            WRITE(*,*)
+            WRITE(*,*) ' Mineral surface for nucleation not found in list'
+            WRITE(*,*) ' Looking for: ', Surface
+            WRITE(*,*)
+            READ(*,*)
+            STOP
+          END IF
+          END IF
+
+          
+          rewind(nout)
+          
+          EXIT do_nucleationpathways
+          
+        ELSE
+      
+          CYCLE do_nucleationpathways
+
+        END IF
+
+    else if (ios < 0) then
+
+!     no more nucleation pathways to read
+      write(*,*)'End of file'
+      exit do_nucleationpathways
+
+    else if (ios > 0) then
+
+!!      write(*,nml=Nucleation)
+      write(*,*)' Error reading Nucleation namelist: goodbye'
+      stop
+
+    end if
+
+  end do do_nucleationpathways
+  
+end do do_input_pathways
+  
+ELSE
+  
+  IF (NeedNucleationBlock) THEN
+    WRITE(*,*)
+    WRITE(*,*) ' Nucleation type rate law found listed in database'
+    WRITE(*,*) ' No NUCLEATION block found'
+    WRITE(*,*)
+    write(*,*) ' Mineral: ',umin(kFlag)
+    WRITE(*,*) ' Label:   ',rlabel(npFlag,kFlag)
+    WRITE(*,*)
+    READ(*,*)
+    STOP
+  END IF
+  
+END IF
 
 IF (master == ' ') then
   DO ik = 1,ncomp+nspec
@@ -2602,6 +2876,46 @@ IF (found) THEN
     END IF
   END IF
   
+  PoreFill = 0.0d0
+  parchar = 'porosity_exponent'
+  parfind = ' '
+  realjunk = 0.0
+  CALL read_par(nout,lchar,parchar,parfind,realjunk,section)
+  IF (parfind == ' ') THEN  ! Parameter minimum_porosity not found
+    CONTINUE               
+  ELSE
+    IF (realjunk >= 0.0d0) THEN
+      PoreFill = realjunk
+    ELSE
+      WRITE(*,*)
+      WRITE(*,*) ' Porosity exponent should be greater than or equal to zero'
+      WRITE(*,*) ' Porosity exponent: ', realjunk
+      WRITE(*,*)
+      READ(*,*)
+      STOP
+    END IF
+  END IF
+  
+  PoreThreshold = 1.0d0
+  parchar = 'porosity_threshold'
+  parfind = ' '
+  realjunk = 0.0d0
+  CALL read_par(nout,lchar,parchar,parfind,realjunk,section)
+  IF (parfind == ' ') THEN  ! Parameter minimum_porosity not found
+    CONTINUE                ! Use mineral volume fractions
+  ELSE
+    IF (realjunk > 0.0 .AND. realjunk <= 1.0d0) THEN
+      PoreThreshold = realjunk
+    ELSE
+      WRITE(*,*)
+      WRITE(*,*) ' Porosity threshold should be greater than zero and less than 1.0'
+      WRITE(*,*) ' Porosity threshold: ', realjunk
+      WRITE(*,*)
+      READ(*,*)
+      STOP
+    END IF
+  END IF
+  
   parchar = 'read_porosityfile'
   parfind = ' '
   PorosityFile = ' '
@@ -2647,7 +2961,7 @@ ELSE
   WRITE(*,*) ' Porosity parameters not found'
   WRITE(*,*) ' Using defaults'
   jpor = 1
-  MinimumPorosity = 1.D-14
+  MinimumPorosity = 1.0E-14
   
 END IF
 
@@ -4214,9 +4528,7 @@ CALL REALLOCATE(ncomp,nspec,nrct,nkin,ngas,nsurf,nexchange,ikin,nexch_sec,nsurf_
 call read_CatabolicPath(ncomp,nkin,ikin)
 ! biomass end
 
-IF (genericrates) THEN
-  thresh = 0.0d0
-END IF
+
 
 IF (nradmax > 0) THEN
   ALLOCATE(mumin_decay(ndim1,ndim2,ndim3,nx,ny,nz))
@@ -4462,8 +4774,107 @@ IF (nhet > 0) THEN
     ELSE
       continue
     END IF
+    
+      END IF    !! End of ReadGeochemicalConditions = .TRUE.
+    
+    IF (ReadGautier) THEN
 
-  END IF    !! End of ReadGeochemicalConditions = .TRUE.
+      IF (ALLOCATED(tortuosity)) THEN
+        DEALLOCATE(tortuosity)
+        ALLOCATE(tortuosity(nx,ny,nz))
+      ELSE
+        ALLOCATE(tortuosity(nx,ny,nz))
+      END IF
+
+      tortuosity = 0.1d0
+
+    INQUIRE(FILE='FILE15.dat',EXIST=ext)
+
+!!%% 1st column = averaged pixel number (65536 averaged pixels = 65536 rows)
+!!%% 2nd column = most abundant mineral in the averaged pixel. 
+!!Number ID: 1= PORE/EMPTINESS ; 2= QUARTZ ; 3= CHLORITE ; 4=ILLITE/MICA ; 5=TI OXIDE; 6=KAOLINITE ; 7=ILLITE/SMECTITE ; 8=FE OXIDE
+!!%% 3rd column = PORE percentage in the averaged pixel
+!!%% 4th column = QUARTZ percentage in the averaged pixel 
+!!%% 5th column = CHLORITE percentage in the averaged pixel 
+!!%% 6th column = ILLITE/MICA percentage in the averaged pixel 
+!!%% 7th column = TI OXIDE percentage in the averaged pixel 
+!!%% 8th column = KAOLINITE percentage in the averaged pixel
+!!%% 9th column = ILLITE/SMECTITE percentage in the averaged pixel 
+!!%% 10th column = FE OXIDE percentage in the averaged pixel
+
+!! Quartz = 1
+!! Chlorite = 2
+!! Illite = 3
+!! Kaolinite = 4
+!! Smectite = 5
+!! FeOxide = 6
+
+    IF (ext) THEN
+
+      OPEN(unit=98,file='FILE15.dat',status='old')
+
+      jz = 1
+      do jy = 1,ny 
+        do jx = 1,nx
+
+           read(98,*) dum1,dum2,PorosityRead,QuartzRead,ChloriteRead,IlliteRead,dum2,KaoliniteRead,SmectiteRead,FeOxideRead
+           IF (PorosityRead == 0.00) THEN
+             por(jx,jy,1) = 0.01d0
+           ELSE
+             por(jx,jy,1) = PorosityRead/100.0d0
+           END IF
+           IF (QuartzRead == 100.0) THEN
+             volfx(1,jx,jy,1) = 0.99
+           ELSE
+             volfx(1,jx,jy,1) = QuartzRead/100.0d0
+           END IF
+           IF (ChloriteRead == 100.0) THEN
+             volfx(2,jx,jy,1) = 0.99
+           ELSE
+             volfx(2,jx,jy,1) = ChloriteRead/100.0d0
+             IF (volfx(2,jx,jy,1) > 0.50) THEN
+!! Use estimate from FIB-SEM modeling
+                 tortuosity(jx,jy,jz) = 0.007
+             END IF
+           END IF
+           IF (IlliteRead == 100.0) THEN
+             volfx(3,jx,jy,1) = 0.99
+           ELSE
+             volfx(3,jx,jy,1) = IlliteRead/100.0d0
+           END IF
+           IF (KaoliniteRead == 100.0) THEN
+             volfx(4,jx,jy,1) = 0.99
+           ELSE
+             volfx(4,jx,jy,1) = KaoliniteRead/100.0d0
+           END IF
+           IF (SmectiteRead == 100.0) THEN
+             volfx(5,jx,jy,1) = 0.99
+           ELSE
+             volfx(5,jx,jy,1) = SmectiteRead/100.0d0
+           END IF
+           IF (FeOxideRead == 100.0) THEN
+             volfx(6,jx,jy,1) = 0.99
+           ELSE
+             volfx(6,jx,jy,1) = FeOxideRead/100.0d0
+           END IF
+           IF (por(jx,jy,jz) < 0.05) THEN
+             tortuosity(jx,jy,jz) = 0.001
+           ELSE
+             tortuosity(jx,jy,jz) = 0.1
+           END IF
+
+        end do
+      end do
+
+
+      close(unit=98,status='keep')
+
+    ELSE
+      continue
+    END IF
+
+      END IF    !! End of ReadGautier = .TRUE.
+      
   
 ELSE
   WRITE(*,*)
@@ -4785,7 +5196,9 @@ DO jz = 1,nz
       END DO
       sum = 0.0
       DO k = 1,nrct
-        volfx(k,jx,jy,jz) = volin(k,jinit(jx,jy,jz))
+        IF (.NOT. ReadGautier) THEN
+          volfx(k,jx,jy,jz) = volin(k,jinit(jx,jy,jz))
+        END IF
         VolumeLastTimeStep(k,jx,jy,jz) = volfx(k,jx,jy,jz)
         area(k,jx,jy,jz) = areain(k,jinit(jx,jy,jz))
         sum = sum + volfx(k,jx,jy,jz)
@@ -4796,7 +5209,7 @@ DO jz = 1,nz
         vrSave(jx,jy,jz) = vrInitial(jinit(jx,jy,jz))
       END IF
 
-      IF (constantpor /= 0.0) THEN
+      IF (constantpor /= 0.0 .AND. .NOT. ReadGautier) THEN
          porin(jx,jy,jz) = constantpor
          por(jx,jy,jz) = constantpor
          porOld(jx,jy,jz) = por(jx,jy,jz)
@@ -4809,7 +5222,9 @@ DO jz = 1,nz
       END IF
 !!      satliq(jx,jy,jz) = SaturationCond(jinit(jx,jy,jz))
 
-      por(jx,jy,jz) = porin(jx,jy,jz)
+      IF (.NOT. ReadGautier) THEN
+        por(jx,jy,jz) = porin(jx,jy,jz)
+      END IF
       porOld(jx,jy,jz) = por(jx,jy,jz)
       IF (por(jx,jy,jz) <= 0.0) THEN
         WRITE(*,*)
@@ -7486,18 +7901,18 @@ IF (readvelocity) THEN
 !!    qx(jx,1,1) = qg(1,1,1)/(2.0*pi*( x(jx) + 0.5*dxx(jx) )*dyy(1))
 !  END DO
 
-  jz = 1
-  do jy = 1,ny
-    do jx = 1,nx
-      qx(jx-1,jy,jz) = qx(jx,jy,jz)
-    end do
-  end do
+!!! jz = 1
+!!!  do jy = 1,ny
+!!!    do jx = 1,nx
+!!!      qx(jx-1,jy,jz) = qx(jx,jy,jz)
+!!!    end do
+!!!  end do
 
-  do jx = 1,nx
-    do jy = 1,ny
-      qy(jx,jy-1,jz) = qy(jx,jy,jz)
-    end do
-  end do
+!!!  do jx = 1,nx
+!!!    do jy = 1,ny
+!!!      qy(jx,jy-1,jz) = qy(jx,jy,jz)
+!!!    end do
+!!!  end do
    
   qx = qx/(time_scale*dist_scale)
   qxmax = MAXVAL(qx)
@@ -8029,7 +8444,7 @@ IF (found) THEN
 
       CALL read_TortuosityByZone(nout,nx,ny,nz)
 
-      IF (TortuosityZone(0) == 0.0d0 .AND. nTortuosityZone==0) THEN
+       IF (TortuosityZone(0) == 0.0d0 .AND. nTortuosityZone==0) THEN
 !!        WRITE(*,*)
 !!        WRITE(*,*) ' No default tortuosity given'
 !!        WRITE(*,*) ' Tortuosity should be followed by "default" or blank string'
@@ -8097,7 +8512,7 @@ IF (found) THEN
           READ(*,*)
           STOP
         END IF
-        MillingtonQuirk = .TRUE.
+        MillingtonQuirk = .FALSE.
         OPEN(UNIT=52,FILE=TortuosityFile,STATUS='OLD',ERR=6002) 
         FileTemp = TortuosityFile
         CALL stringlen(FileTemp,FileNameLength)
@@ -8459,6 +8874,18 @@ IF (ALLOCATED(XfluxWeightedConcentration)) THEN
 END IF
 ALLOCATE(XfluxWeightedConcentration(nplotFluxWeightedConcentration))
 XfluxWeightedConcentration = 0.0d0
+
+IF (ALLOCATED(YfluxWeightedConcentration)) THEN
+  DEALLOCATE(YfluxWeightedConcentration)
+END IF
+ALLOCATE(YfluxWeightedConcentration(nplotFluxWeightedConcentration))
+YfluxWeightedConcentration = 0.0d0
+
+IF (ALLOCATED(ZfluxWeightedConcentration)) THEN
+  DEALLOCATE(ZfluxWeightedConcentration)
+END IF
+ALLOCATE(ZfluxWeightedConcentration(nplotFluxWeightedConcentration))
+ZfluxWeightedConcentration = 0.0d0
 
 
 3001 FORMAT('VARIABLES = "Time (yrs)"',                   100(', "',A16,'"'))

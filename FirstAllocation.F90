@@ -367,11 +367,11 @@ IF (ALLOCATED(rate0)) THEN
 ELSE
   ALLOCATE(rate0(mreact,mrct))
 END IF
-IF (ALLOCATED(thresh)) THEN
-  DEALLOCATE(thresh)
-  ALLOCATE(thresh(mreact,mrct))
+IF (ALLOCATED(ssa)) THEN
+  DEALLOCATE(ssa)
+  ALLOCATE(ssa(mreact,mrct))
 ELSE
-  ALLOCATE(thresh(mreact,mrct))
+  ALLOCATE(ssa(mreact,mrct))
 END IF
 IF (ALLOCATED(imintype)) THEN
   DEALLOCATE(imintype)

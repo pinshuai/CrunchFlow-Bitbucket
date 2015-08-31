@@ -50,6 +50,9 @@ LOGICAL(LGT)                                :: TrueFalse
 
 REAL(DP)                                    :: DummyReal
 REAL(DP), DIMENSION(:), ALLOCATABLE         :: tempreal
+REAL(DP), DIMENSION(:), ALLOCATABLE         :: RealDummyArray
+INTEGER(I4B)                                :: nxyz
+
 
 ! ******************** PETSC declarations ********************************
 PetscFortranAddr     userC(6),userD(6),userP(6),user(6)
@@ -163,10 +166,25 @@ END IF
     READ(iures) qxgas
     READ(iures) qygas
     READ(iures) qzgas
-    READ(iures) dspx
-    READ(iures) dspy
-    READ(iures) dspz
-    READ(iures) qg
+    READ(iures) pres
+!!!    READ(iures) dspx
+!!!    READ(iures) dspy
+!!!    READ(iures) dspz
+!!!    READ(iures) qg
+    
+    nxyz = nx*ny*nz
+    IF (ALLOCATED(RealDummyArray)) THEN
+      DEALLOCATE(RealDummyArray)
+    END IF
+    ALLOCATE(RealDummyArray(nxyz))
+
+    READ(iures) RealDummyArray
+    READ(iures) RealDummyArray
+    READ(iures) RealDummyArray
+    
+
+    
+    DEALLOCATE(RealDummyArray)
     READ(iures) ActiveCell
     READ(iures) VolSaveByTimeStep
     READ(iures) Volsave

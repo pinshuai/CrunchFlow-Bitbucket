@@ -39,7 +39,7 @@ MODULE mineral
   CHARACTER (LEN=mls), DIMENSION(:,:), ALLOCATABLE :: crossaff
   CHARACTER (LEN=mls), DIMENSION(:), ALLOCATABLE   :: namAssociate
 
-  REAL(DP), DIMENSION(:), ALLOCATABLE              :: surf
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE              :: surf
   REAL(DP), DIMENSION(:), ALLOCATABLE              :: volmol
   REAL(DP), DIMENSION(:), ALLOCATABLE              :: wtmin
   REAL(DP), DIMENSION(:), ALLOCATABLE              :: alnk
@@ -61,9 +61,26 @@ MODULE mineral
   REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: siln
   REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: snorm
   REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: thresh
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: ssa
   REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: actenergy
   REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: pre_rmin
   REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: rmin
+  
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: Azero25C
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: Bnucleation
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: sigmaNucleation
+    REAL(DP), DIMENSION(:,:), ALLOCATABLE          :: SurfaceAreaNucleation
+  
+
+  LOGICAL(LGT), DIMENSION(:,:), ALLOCATABLE        :: HomogeneousNucleation
+  LOGICAL(LGT), DIMENSION(:,:), ALLOCATABLE        :: SumMineralSurfaceArea
+  
+  INTEGER(I4B), DIMENSION(:,:), ALLOCATABLE        :: NucleationSurface
+  
+  INTEGER(I4B), DIMENSION(:), ALLOCATABLE          :: kNucleationPath
+  INTEGER(I4B), DIMENSION(:), ALLOCATABLE          :: npNucleationPath
+  
+  
   REAL(DP), DIMENSION(:,:,:), ALLOCATABLE          :: depend
   REAL(DP), DIMENSION(:,:,:), ALLOCATABLE          :: halfsat
   REAL(DP), DIMENSION(:,:,:), ALLOCATABLE          :: rinhibit

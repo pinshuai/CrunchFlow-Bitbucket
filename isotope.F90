@@ -51,6 +51,9 @@ MODULE isotope
   INTEGER(I4B), DIMENSION(:), ALLOCATABLE          :: PointerToPrimaryIsotope
 
   LOGICAL(LGT), DIMENSION(:), ALLOCATABLE          :: UseAqueousMoleFraction
+  
+  LOGICAL(LGT), DIMENSION(:), ALLOCATABLE          :: decay
+  REAL(DP), DIMENSION(:), ALLOCATABLE              :: lambda 
 
 
 

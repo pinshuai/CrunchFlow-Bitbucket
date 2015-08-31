@@ -58,7 +58,7 @@ sumjackin = 0.0
 IF (ALLOCATED(surf)) THEN
   DEALLOCATE(surf)
 END IF
-ALLOCATE(surf(nrct))
+ALLOCATE(surf(nreactmax,nrct))
 surf = 0.0
 IF (ALLOCATED(jac_sat)) THEN
   DEALLOCATE(jac_sat)

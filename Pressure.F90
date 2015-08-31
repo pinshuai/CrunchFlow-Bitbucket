@@ -84,8 +84,12 @@ REAL(DP), PARAMETER                                                   :: ctStead
 REAL(DP), PARAMETER                                                   :: big=100000.0D0
 REAL(DP), PARAMETER                                                   :: zero=0.0d0
 REAL(DP), PARAMETER                                                   :: grav=9.806d0
+REAL(DP), PARAMETER                                                   :: alphaUnsat=0.001d0
+REAL(DP), PARAMETER                                                   :: alphaSat=0.0d0
 
 REAL(DP), DIMENSION(-3:3)                                             :: coef
+
+REAL(DP)                                                              :: alphaBear
 
 CHARACTER (LEN=1)                                                     :: Coordinate
 
@@ -109,6 +113,7 @@ ELSE
 END IF
 
 ct = ctTransient
+
 
 CALL MatZeroEntries(amatP,ierr)
 
@@ -147,7 +152,8 @@ IF (nx > 1 .AND. ny ==1 .AND. nz == 1) THEN           ! 1D problem assuming jx i
       CALL MatSetValues(amatP,1,j,1,j,coef(0),INSERT_VALUES,ierr)
       check = visc
       check = secyr
-      tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+!!!      tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) *pres(jx,jy,jz)/ (dt*secyr)
       pumpterm = visc*ro(jx,jy,jz)*qg(jx,jy,jz)/(secyr*dxx(jx)*dyy(jy)*dzz(jx,jy,jz))
       BodyForceX = -COSD(x_angle)*grav*SignGravity*(RoAveRight*RoAveRight*harx(jx,jy,jz) - RoAveLeft*RoAveLeft*harx(jx-1,jy,jz))/dxx(jx)
       BvecCrunchP(j) = (pumpterm + tdepend + BodyForceX) 
@@ -178,7 +184,8 @@ IF (nx > 1 .AND. ny ==1 .AND. nz == 1) THEN           ! 1D problem assuming jx i
       coef(-1) = 0.0d0
     END IF
 
-    tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/ (dt*secyr)
+!!!    tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/ (dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) / (dt*secyr)
     coef(0) = tdepend - ( coef(-1) + coef(1) )
 
     CALL MatSetValues(amatP,1,j,1,j+1,coef(1),INSERT_VALUES,ierr)
@@ -216,7 +223,9 @@ IF (nx > 1 .AND. ny ==1 .AND. nz == 1) THEN           ! 1D problem assuming jx i
       coef(1) = 0.0d0
     END IF
 
-    tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/ (dt*secyr)
+!!!    tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/ (dt*secyr)
+    !!!    tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/ (dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) / (dt*secyr)
     coef(0) = tdepend - ( coef(-1) + coef(1) )
 
     CALL MatSetValues(amatP,1,j,1,j-1,coef(-1),INSERT_VALUES,ierr)
@@ -243,6 +252,11 @@ ELSE                !!  2D or 3D problem
     DO jy = 2,ny-1
       DO jx = 2,nx-1
         j = (jz-1)*nx*ny + (jy-1)*nx + jx - 1 
+        if (jy>=70) then
+            alphaBear = alphaUnsat
+        else
+            alphaBear = alphaSat
+        endif
         IF (activecellPressure(jx,jy,jz) == 0) THEN
           CALL MatSetValues(amatP,1,j,1,j-1,zero,INSERT_VALUES,ierr)
           CALL MatSetValues(amatP,1,j,1,j+1,zero,INSERT_VALUES,ierr)
@@ -265,7 +279,8 @@ ELSE                !!  2D or 3D problem
           coef(2)  = -2.0d0*RoAveRight*hary(jx,jy,jz)/(dyy(jy) *(dyy(jy+1)+dyy(jy) )) 
           BodyForceY = -COSD(y_angle)*grav*SignGravity*(RoAveRight*RoAveRight*hary(jx,jy,jz) - RoAveLeft*RoAveLeft*hary(jx,jy-1,jz))/dyy(jy) 
  
-          tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/(dt*secyr)
+ !!!         tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/(dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) / (dt*secyr)
           coef(0) = tdepend - ( coef(-2) + coef(-1) + coef(1) + coef(2) )
 
           CALL MatSetValues(amatP,1,j,1,j-1,coef(-1),INSERT_VALUES,ierr)
@@ -274,11 +289,14 @@ ELSE                !!  2D or 3D problem
           CALL MatSetValues(amatP,1,j,1,j+nx,coef(2),INSERT_VALUES,ierr)
           CALL MatSetValues(amatP,1,j,1,j,coef(0),INSERT_VALUES,ierr)
 
-          tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+!!!          tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) *pres(jx,jy,jz)/ (dt*secyr)
+          coef(0) = tdepend - ( coef(-2) + coef(-1) + coef(1) + coef(2) )
           pumpterm = visc*ro(jx,jy,jz)*qg(jx,jy,jz)/(secyr*dxx(jx)*dyy(jy)*dzz(jx,jy,jz))
           BvecCrunchP(j) = (pumpterm + tdepend + BodyForceX + BodyForceY) 
           XvecCrunchP(j) = pres(jx,jy,jz)
         END IF
+        
       END DO
     END DO
 
@@ -315,7 +333,8 @@ ELSE                !!  2D or 3D problem
             coef(-2) = 0.0d0
           END IF
 
-          tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/(dt*secyr)
+ !!!         tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/(dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) / (dt*secyr)
           coef(0) = tdepend - ( coef(-2) + coef(-1) + coef(1) + coef(2) )
 
           CALL MatSetValues(amatP,1,j,1,j-1,coef(-1),INSERT_VALUES,ierr)
@@ -323,7 +342,8 @@ ELSE                !!  2D or 3D problem
           CALL MatSetValues(amatP,1,j,1,j+nx,coef(2),INSERT_VALUES,ierr)
           CALL MatSetValues(amatP,1,j,1,j,coef(0),INSERT_VALUES,ierr)
 
-          tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+!!!          tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) *pres(jx,jy,jz)/ (dt*secyr)
           pumpterm = visc*ro(jx,jy,jz)*qg(jx,jy,jz)/(secyr*dxx(jx)*dyy(jy)*dzz(jx,jy,jz))
           IF (activecellPressure(jx,0,jz) == 0) THEN  
             AddPressureY =  2.0d0*ro(jx,jy,jz)*hary(jx,jy,jz)*pres(jx,0,jz)/(dyy(jy)*dyy(jy))   
@@ -336,6 +356,11 @@ ELSE                !!  2D or 3D problem
       END DO
 
       jy = ny
+        if (jy>=70) then
+            alphaBear = alphaUnsat
+        else
+            alphaBear = alphaSat
+        endif
       DO jx = 2,nx-1
         j = (jz-1)*nx*ny + (jy-1)*nx + jx - 1 
         IF (activecellPressure(jx,jy,jz) == 0) THEN
@@ -367,7 +392,8 @@ ELSE                !!  2D or 3D problem
             coef(2) = 0.0d0     
           END IF
           
-          tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/(dt*secyr)
+ !!!         tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/(dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) / (dt*secyr)
           coef(0) = tdepend - ( coef(-2) + coef(-1) + coef(1) + coef(2) )
 
           CALL MatSetValues(amatP,1,j,1,j-1,coef(-1),INSERT_VALUES,ierr)
@@ -375,7 +401,8 @@ ELSE                !!  2D or 3D problem
           CALL MatSetValues(amatP,1,j,1,j-nx,coef(-2),INSERT_VALUES,ierr)
           CALL MatSetValues(amatP,1,j,1,j,coef(0),INSERT_VALUES,ierr)
 
-          tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+!!!          tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) *pres(jx,jy,jz)/ (dt*secyr)
           pumpterm = visc*ro(jx,jy,jz)*qg(jx,jy,jz)/(secyr*dxx(jx)*dyy(jy)*dzz(jx,jy,jz))
 
           IF (activecellPressure(jx,ny+1,jz) == 0) THEN  
@@ -391,6 +418,11 @@ ELSE                !!  2D or 3D problem
       jx = 1
       DO jy = 2,ny-1
         j = (jz-1)*nx*ny + (jy-1)*nx + jx - 1 
+        if (jy>=70) then
+            alphaBear = alphaUnsat
+        else
+            alphaBear = alphaSat
+        endif
         IF (activecellPressure(jx,jy,jz) == 0) THEN
 !!          CALL MatSetValues(amatP,1,j,1,j-1,zero,INSERT_VALUES,ierr)
           CALL MatSetValues(amatP,1,j,1,j+1,zero,INSERT_VALUES,ierr)
@@ -421,7 +453,8 @@ ELSE                !!  2D or 3D problem
             coef(-1) = 0.0d0
           END IF
 
-          tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/(dt*secyr)
+ !!!         tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/(dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) / (dt*secyr)
           coef(0) = tdepend - ( coef(-2) + coef(-1) + coef(1) + coef(2) )
 
           CALL MatSetValues(amatP,1,j,1,j+1,coef(1),INSERT_VALUES,ierr)
@@ -429,7 +462,8 @@ ELSE                !!  2D or 3D problem
           CALL MatSetValues(amatP,1,j,1,j+nx,coef(2),INSERT_VALUES,ierr)
           CALL MatSetValues(amatP,1,j,1,j,coef(0),INSERT_VALUES,ierr)
 
-          tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+!!!          tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) *pres(jx,jy,jz)/ (dt*secyr)
           pumpterm = visc*ro(jx,jy,jz)*qg(jx,jy,jz)/(secyr*dxx(jx)*dyy(jy)*dzz(jx,jy,jz))
           IF (activecellPressure(0,jy,jz) == 0) THEN  
             AddPressureX =  2.0d0*ro(jx,jy,jz)*harx(jx,jy,jz)*pres(0,jy,jz)/(dxx(jx)*dxx(jx))  
@@ -443,6 +477,11 @@ ELSE                !!  2D or 3D problem
 
       jx = nx
       DO jy = 2,ny-1
+        if (jy>=70) then
+            alphaBear = alphaUnsat
+        else
+            alphaBear = alphaSat
+        endif
         j = (jz-1)*nx*ny + (jy-1)*nx + jx - 1 
         IF (activecellPressure(jx,jy,jz) == 0) THEN
           CALL MatSetValues(amatP,1,j,1,j-1,zero,INSERT_VALUES,ierr)
@@ -473,7 +512,8 @@ ELSE                !!  2D or 3D problem
             coef(1) = 0.0d0
           END IF
 
-          tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/(dt*secyr)
+ !!!         tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/(dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) / (dt*secyr)
           coef(0) = tdepend - ( coef(-2) + coef(-1) + coef(1) + coef(2) )
 
           CALL MatSetValues(amatP,1,j,1,j-1,coef(-1),INSERT_VALUES,ierr)
@@ -481,7 +521,8 @@ ELSE                !!  2D or 3D problem
           CALL MatSetValues(amatP,1,j,1,j+nx,coef(2),INSERT_VALUES,ierr)
           CALL MatSetValues(amatP,1,j,1,j,coef(0),INSERT_VALUES,ierr)
 
-          tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+!!!          tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) *pres(jx,jy,jz)/ (dt*secyr)
           pumpterm = visc*ro(jx,jy,jz)*qg(jx,jy,jz)/(secyr*dxx(jx)*dyy(jy)*dzz(jx,jy,jz))
           IF (activecellPressure(nx+1,jy,jz) == 0) THEN  
             AddPressureX =  2.0d0*ro(jx,jy,jz)*harx(jx,jy,jz)*pres(nx+1,jy,jz)/(dxx(jx)*dxx(jx))   
@@ -534,14 +575,16 @@ ELSE                !!  2D or 3D problem
             coef(-2) = 0.0d0
           END IF
 
-          tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/(dt*secyr)
+ !!!         tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/(dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) / (dt*secyr)
           coef(0) = tdepend - ( coef(-2) + coef(-1) + coef(1) + coef(2) )
 
           CALL MatSetValues(amatP,1,j,1,j+1,coef(1),INSERT_VALUES,ierr)
           CALL MatSetValues(amatP,1,j,1,j+nx,coef(2),INSERT_VALUES,ierr)
           CALL MatSetValues(amatP,1,j,1,j,coef(0),INSERT_VALUES,ierr)
 
-          tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+!!!          tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) *pres(jx,jy,jz)/ (dt*secyr)
           pumpterm = visc*ro(jx,jy,jz)*qg(jx,jy,jz)/(secyr*dxx(jx)*dyy(jy)*dzz(jx,jy,jz))
           IF (activecellPressure(0,jy,jz) == 0) THEN  
             AddPressureX =  2.0d0*ro(jx,jy,jz)*harx(jx,jy,jz)*pres(0,jy,jz)/(dxx(jx)*dxx(jx))   
@@ -598,14 +641,16 @@ ELSE                !!  2D or 3D problem
             coef(-2) = 0.0d0
           END IF
  
-          tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/(dt*secyr)
+ !!!         tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/(dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) / (dt*secyr)
           coef(0) = tdepend - ( coef(-2) + coef(-1) + coef(1) + coef(2) )
 
           CALL MatSetValues(amatP,1,j,1,j-1,coef(-1),INSERT_VALUES,ierr)
           CALL MatSetValues(amatP,1,j,1,j+nx,coef(2),INSERT_VALUES,ierr)
           CALL MatSetValues(amatP,1,j,1,j,coef(0),INSERT_VALUES,ierr)
 
-          tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+!!!          tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) *pres(jx,jy,jz)/ (dt*secyr)
           pumpterm = visc*ro(jx,jy,jz)*qg(jx,jy,jz)/(secyr*dxx(jx)*dyy(jy)*dzz(jx,jy,jz))
           IF (activecellPressure(nx+1,jy,jz) == 0) THEN  
             AddPressureX =  2.0d0*ro(jx,jy,jz)*harx(jx,jy,jz)*pres(nx+1,jy,jz)/(dxx(jx)*dxx(jx))   
@@ -623,6 +668,11 @@ ELSE                !!  2D or 3D problem
 
       jx = 1
       jy = ny
+              if (jy>=70) then
+            alphaBear = alphaUnsat
+        else
+            alphaBear = alphaSat
+        endif
         j = (jz-1)*nx*ny + (jy-1)*nx + jx - 1 
         IF (activecellPressure(jx,jy,jz) == 0) THEN
 !!          CALL MatSetValues(amatP,1,j,1,j-1,zero,INSERT_VALUES,ierr)
@@ -662,14 +712,16 @@ ELSE                !!  2D or 3D problem
             coef(2) = 0.0d0       
           END IF
 
-          tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/(dt*secyr)
+ !!!         tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/(dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) / (dt*secyr)
           coef(0) = tdepend - ( coef(-2) + coef(-1) + coef(1) + coef(2) )
 
           CALL MatSetValues(amatP,1,j,1,j+1,coef(1),INSERT_VALUES,ierr)
           CALL MatSetValues(amatP,1,j,1,j-nx,coef(-2),INSERT_VALUES,ierr)
           CALL MatSetValues(amatP,1,j,1,j,coef(0),INSERT_VALUES,ierr)
 
-          tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+!!!          tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) *pres(jx,jy,jz)/ (dt*secyr)
           pumpterm = visc*ro(jx,jy,jz)*qg(jx,jy,jz)/(secyr*dxx(jx)*dyy(jy)*dzz(jx,jy,jz))
           IF (activecellPressure(0,jy,jz) == 0) THEN  
             AddPressureX =  2.0d0*ro(jx,jy,jz)*harx(jx,jy,jz)*pres(0,jy,jz)/(dxx(jx)*dxx(jx))   
@@ -687,6 +739,11 @@ ELSE                !!  2D or 3D problem
 
       jx = nx
       jy = ny
+              if (jy>=70) then
+            alphaBear = alphaUnsat
+        else
+            alphaBear = alphaSat
+        endif
         j = (jz-1)*nx*ny + (jy-1)*nx + jx - 1 
         IF (activecellPressure(jx,jy,jz) == 0) THEN
           CALL MatSetValues(amatP,1,j,1,j-1,zero,INSERT_VALUES,ierr)
@@ -726,14 +783,16 @@ ELSE                !!  2D or 3D problem
             coef(2) = 0.0d0       
           END IF
  
-          tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/(dt*secyr)
+ !!!         tdepend = ScaleFactor*visc*ct*por(jx,jy,jz)/(dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) / (dt*secyr)
           coef(0) = tdepend - ( coef(-2) + coef(-1) + coef(1) + coef(2) )
 
           CALL MatSetValues(amatP,1,j,1,j-1,coef(-1),INSERT_VALUES,ierr)
           CALL MatSetValues(amatP,1,j,1,j-nx,coef(-2),INSERT_VALUES,ierr)
           CALL MatSetValues(amatP,1,j,1,j,coef(0),INSERT_VALUES,ierr)
 
-          tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+!!!          tdepend = visc*ct*por(jx,jy,jz)*pres(jx,jy,jz)/ (dt*secyr)
+      tdepend = (visc*ro(jx,jy,jz)*alphaBear*(1.0d0-por(jx,jy,jz)) + visc*ct*por(jx,jy,jz) ) *pres(jx,jy,jz)/ (dt*secyr)
           pumpterm = visc*ro(jx,jy,jz)*qg(jx,jy,jz)/(secyr*dxx(jx)*dyy(jy)*dzz(jx,jy,jz))
           IF (activecellPressure(nx+1,jy,jz) == 0) THEN  
             AddPressureX =  2.0d0*ro(jx,jy,jz)*harx(jx,jy,jz)*pres(nx+1,jy,jz)/(dxx(jx)*dxx(jx))  
