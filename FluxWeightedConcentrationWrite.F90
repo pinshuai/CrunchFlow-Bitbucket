@@ -105,12 +105,12 @@ IF (nplotFluxWeightedConcentration > 0) THEN
         Z_CapturePlane = .FALSE.
       END IF
 
-      IF (ny > 1 .AND. jy_lo == jy_hi .AND. X_CapturePlane==.FALSE.) THEN
+      IF (ny > 1 .AND. jy_lo == jy_hi .AND. X_CapturePlane .eqv. .FALSE.) THEN
         Y_CapturePlane = .TRUE.
         Z_CapturePlane = .FALSE.
       END IF
 
-      IF (nz > 1 .AND. jz_lo == jz_hi .AND. X_CapturePlane==.FALSE. .AND. Y_CapturePlane==.FALSE.) THEN
+      IF (nz > 1 .AND. jz_lo == jz_hi .AND. X_CapturePlane .eqv. .FALSE. .AND. Y_CapturePlane .eqv. .FALSE.) THEN
         Z_CapturePlane = .TRUE.
       END IF
 

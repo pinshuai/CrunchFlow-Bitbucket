@@ -240,7 +240,7 @@ allocate(UseMetabolicLag_(mpre)); UseMetabolicLag_ = .false.
 allocate(LagTime_(mpre)); LagTime_ = 0.0d0
 allocate(RampTime_(mpre)); RampTime_ = 0.0d0
 allocate(ThresholdConcentration_(mpre)); ThresholdConcentration_ = 0.0d0
-allocate(SubstrateForLag_(mpre)); SubstrateForLag_ = ' '
+allocate(SubstrateForLag_(mpre)); SubstrateForLag_ = 0
 
 allocate(name_pathway(mpre)); name_pathway(:) = ''
 ALLOCATE(iuser(7)); iuser = 0
