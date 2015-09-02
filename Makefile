@@ -7,7 +7,9 @@ ALL: CrunchMain
 ## FFLAGS = -fp-model strict
 
 ## gnu compiler; Macbook Air, Yosemite
-FFLAGS  = -O3 -mtune=native
+## FFLAGS  = -O3 -mtune=native
+## for Alquimia
+FFLAGS  = -O3 -mtune=native -DALQUIMIA
 
 ## no options
 ## FFLAGS  = 
