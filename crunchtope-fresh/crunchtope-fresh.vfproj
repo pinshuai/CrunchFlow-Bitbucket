@@ -212,8 +212,6 @@
 		<File RelativePath="..\Pressure.F90"/>
 		<File RelativePath="..\PrimarySpeciesCheck.F90"/>
 		<File RelativePath="..\ratecheck.F90"/>
-		<File RelativePath="..\RateFactorNumerical.F90"/>
-		<File RelativePath="..\ReactionNumerical.F90"/>
 		<File RelativePath="..\reactionTope.F90"/>
 		<File RelativePath="..\reactkin.F90"/>
 		<File RelativePath="..\read98.F90"/>
