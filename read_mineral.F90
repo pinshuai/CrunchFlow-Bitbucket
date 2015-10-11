@@ -230,21 +230,21 @@ IF(ls /= 0) THEN
             voltemp(k,isolution) = DNUM(ssch)  
           ELSE
             WRITE(*,*)
-            WRITE(*,*) ' Specification of a specific surface area should be followed by a threshold volume fraction where initial volume fraction = 0'
-            WRITE(*,*) ' For mineral ', minlabel(1:lmin)
-            WRITE(*,*) ' In geochemical condition: ', labeltemp(1:lcond)   
-            WRITE(*,*)
-            READ(*,*)
-            STOP
+!!!            WRITE(*,*) ' Specification of a specific surface area should be followed by a threshold volume fraction where initial volume fraction = 0'
+!!!            WRITE(*,*) ' For mineral ', minlabel(1:lmin)
+!!!            WRITE(*,*) ' In geochemical condition: ', labeltemp(1:lcond)   
+!!!            WRITE(*,*)
+!!!            READ(*,*)
+!!!            STOP
           ENDIF
         ELSE
           WRITE(*,*)
-          WRITE(*,*) ' Specification of a specific surface area should be followed by a threshold volume fraction where initial volume fraction = 0'
-          WRITE(*,*) ' For mineral ', minlabel(1:lmin)
-          WRITE(*,*) ' In geochemical condition: ', labeltemp(1:lcond)   
-          WRITE(*,*)
-          READ(*,*)
-          STOP
+!!!          WRITE(*,*) ' Specification of a specific surface area should be followed by a threshold volume fraction where initial volume fraction = 0'
+!!!          WRITE(*,*) ' For mineral ', minlabel(1:lmin)
+!!!          WRITE(*,*) ' In geochemical condition: ', labeltemp(1:lcond)   
+!!!          WRITE(*,*)
+!!!          READ(*,*)
+!!!          STOP
         ENDIF 
       END IF
 

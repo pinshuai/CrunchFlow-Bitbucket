@@ -3,11 +3,16 @@ ALL: CrunchMain
 ## intel, margaux
 ## FFLAGS  = -mmacosx-version-min=10.5
 
-## gnu compiler
-FFLAGS  = -ffree-line-length-none
+## intel, Latache (linux)
+## FFLAGS = -fp-model strict
+
+## gnu compiler; Macbook Air, Yosemite
+## FFLAGS  = -O3 -mtune=native
+## for Alquimia
+FFLAGS  = -O3 -mtune=native -DALQUIMIA
 
 ## no options
-##FFLAGS  = 
+## FFLAGS  = 
 
 %.o: %.mod
 
@@ -124,7 +129,6 @@ SOURCEF = \
           graphics3d.F90\
           GraphicsKaleidagraph.F90\
           GraphicsTecplot.F90\
-          GraphicsXmgr.F90\
           harmonic.F90\
           InitializeCalciteStoichiometry.F90\
           jac_exchange.F90\
@@ -176,8 +180,6 @@ SOURCEF = \
           Pressure.F90\
           PrimarySpeciesCheck.F90\
           ratecheck.F90\
-          RateFactorNumerical.F90\
-          ReactionNumerical.F90\
           reactionTope.F90\
           reactkin.F90\
           read98.F90\
@@ -428,7 +430,6 @@ OBJSF  =  crunchtype.o\
           graphics3d.o\
           GraphicsKaleidagraph.o\
           GraphicsTecplot.o\
-          GraphicsXmgr.o\
           harmonic.o\
           InitializeCalciteStoichiometry.o\
           jac_exchange.o\
@@ -480,8 +481,6 @@ OBJSF  =  crunchtype.o\
           Pressure.o\
           PrimarySpeciesCheck.o\
           ratecheck.o\
-          RateFactorNumerical.o\
-          ReactionNumerical.o\
           reactionTope.o\
           reactkin.o\
           read98.o\
@@ -627,6 +626,9 @@ LOCDIR   = ${CrunchTope_Dir}
 ## For PETSc 3.2X
 include ${PETSC_DIR}/conf/variables
 include ${PETSC_DIR}/conf/rules
+## For PETSc >3.6.0
+##include ${PETSC_DIR}/lib/petsc/conf/variables
+##include ${PETSC_DIR}/lib/petsc/conf/rules
 
 CrunchMain : ${OBJSF} chkopts 
 	-${FLINKER} -o CrunchTope ${OBJSF} ${PETSC_FORTRAN_LIB} ${PETSC_LIB} ${FFLAGS}

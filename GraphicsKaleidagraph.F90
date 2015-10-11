@@ -143,6 +143,9 @@ REAL(DP)                                                   :: Del34S_sulfate
 REAL(DP)                                                   :: Del34S_sulfide
 REAL(DP)                                                   :: DelCa44
 
+REAL(DP)                                                   :: MineralVolumeSum
+REAL(DP)                                                   :: PorosityFromSum
+
 CHARACTER (LEN=mls)                                        :: namtemp
 
 INTEGER(I4B)                                               :: ix
@@ -156,6 +159,10 @@ REAL(DP)                                                   :: tk
 REAL(DP)                                                   :: MoleFraction40Mineral, MoleFraction44Mineral, MoleFraction40, MoleFraction44
 
 REAL(DP)                                                        :: pi
+
+REAL(DP), DIMENSION(ikin)                                  :: satlogWrite
+REAL(DP), DIMENSION(ikin)                                  :: satkinWrite
+
 
 pi = DACOS(-1.0d0)
 
@@ -502,6 +509,7 @@ ENDIF
 !   Write out the reaction rates in units of mol/kgw/sec
 
 IF (ikin > 0) THEN
+
 fn='AqRate'
 ilength = 6
 CALL newfile(fn,suf1,fnv,nint,ilength)
@@ -517,6 +525,33 @@ DO jx = 1,nx
   WRITE(8,184) x(jx)*OutputDistanceScale,(raq_tot(ir,jx,jy,jz),ir=1,ikin)
 END DO
 CLOSE(UNIT=8,STATUS='keep')
+
+END IF
+
+IF (ikin > 0) THEN
+  fn='AqSat'
+ilength = 5
+CALL newfile(fn,suf1,fnv,nint,ilength)
+OPEN(UNIT=8,FILE=fnv, ACCESS='sequential',STATUS='unknown')
+WRITE(8,2283) PrintTime
+WRITE(8,119)
+119 FORMAT('# Units: Log Q/Keq (dimensionless)')
+WRITE(8,2285)  (namkin(ir),ir=1,ikin)
+jy = 1
+jz = 1
+DO jx = 1,nx
+  DO ir = 1,ikin
+    sum = 0.0d0
+    DO i = 1,ncomp
+      sum = sum + mukin(ir,i)*sp(i,jx,jy,jz)
+    END DO
+    satlogWrite(ir) = sum - clg*keqkin(ir)
+    satkinWrite(ir) = satlog(ir,jx,jy,jz)/clg
+  END DO
+  WRITE(8,184) x(jx)*OutputDistanceScale,(satkinWrite(ir),ir=1,ikin)
+END DO
+CLOSE(UNIT=8,STATUS='keep')
+
 END IF
 
 IF (ikin > 0) THEN
@@ -693,12 +728,17 @@ CALL newfile(fn,suf1,fnv,nint,ilength)
 OPEN(UNIT=8,FILE=fnv, ACCESS='sequential',STATUS='unknown')
 WRITE(8,2283) PrintTime
 WRITE(8,112)
-112 FORMAT('# Units: % Porosity')
+112 FORMAT('# Units:           Transport Porosity  Mineral Porosity')
 jy = 1
 jz = 1
 DO jx = 1,nx
-  porprt = por(jx,jy,jz)*100.0
-  WRITE(8,184) x(jx)*OutputDistanceScale,porprt
+  MineralVolumeSum = 0.0d0
+  DO k = 1,nrct
+    MineralVolumeSum = MineralVolumeSum + volfx(k,jx,jy,jz)
+  END DO
+  porprt = por(jx,jy,jz)
+  PorosityFromSum = 1.0d0 - MineralVolumeSum
+  WRITE(8,184) x(jx)*OutputDistanceScale,porprt, PorosityFromSum
 END DO
 CLOSE(UNIT=8,STATUS='keep')
 
@@ -876,7 +916,7 @@ END IF
 504 FORMAT('END')
 182 FORMAT(80(1X,1PE12.4))
 183 FORMAT(1PE12.4,2X,1PE12.4)
-184 FORMAT(100(1X,1PE16.8))
+184 FORMAT(100(1X,1PE16.7))
 
 !2283 FORMAT('# Time (yrs) ',2X,1PE12.4)
 2283 FORMAT('# Time      ',2X,1PE12.4)

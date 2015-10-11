@@ -349,7 +349,7 @@ DO jy = 1,ny
       ELSE
         dharm = GeometricMean(dume,dumpx)
       END IF
-      AreaE = dyy(jy)
+      AreaE = dyy(jy)*dzz(jx,jy,jz)
       dspe = avgro*dspx(jx,jy,jz)
       de = AreaE*dspe/dxe
       fe = AreaE*avgro*(qx(jx,jy,jz) + FluidBuryX(jx))
@@ -358,7 +358,7 @@ DO jy = 1,ny
       de_d = AreaE*dharm/dxe
       ae_d = de_d
       
-      AreaW = dyy(jy)
+      AreaW = dyy(jy)*dzz(jx,jy,jz)
       avgro = ro(jx,jy,jz)
       dharm = dumpx
       dspw = avgro*dspx(jx,jy,jz)
@@ -390,7 +390,7 @@ DO jy = 1,ny
       
     ELSE IF (jx == nx) THEN
       
-      AreaE = dyy(jy)
+      AreaE = dyy(jy)*dzz(jx,jy,jz)
       avgro = ro(jx,jy,jz)
       dharm = dumpx
       dspe = avgro*dspx(jx,jy,jz)
@@ -418,7 +418,7 @@ DO jy = 1,ny
       ELSE
         dharm = GeometricMean(dumw,dumpx)
       END IF
-      AreaW = dyy(jy)
+      AreaW = dyy(jy)*dzz(jx,jy,jz)
       dspw = avgro*dspx(jx-1,jy,jz)
       dw = AreaW*dspw/dxw
       fw = AreaW*avgro*(qx(jx-1,jy,jz) + FluidBuryX(jx-1))
@@ -444,7 +444,7 @@ DO jy = 1,ny
       ELSE
         dharm = GeometricMean(dume,dumpx)
       END IF
-      AreaE = dyy(jy)
+      AreaE = dyy(jy)*dzz(jx,jy,jz)
       dspe = avgro*dspx(jx,jy,jz)
       de = AreaE*dspe/dxe
       fe = AreaE*avgro*(qx(jx,jy,jz) + FluidBuryX(jx))
@@ -461,7 +461,7 @@ DO jy = 1,ny
       ELSE
         dharm = GeometricMean(dumw,dumpx)
       END IF
-      AreaW = dyy(jy)
+      AreaW = dyy(jy)*dzz(jx,jy,jz)
       dspw = avgro*dspx(jx-1,jy,jz)
       dw = AreaW*dspw/dxw
       fw = AreaW*avgro*(qx(jx-1,jy,jz) + FluidBuryX(jx-1))
@@ -487,7 +487,7 @@ DO jy = 1,ny
       ELSE
         dharm = GeometricMean(dumn,dumpy)
       END IF
-      AreaN = dxx(jx)
+      AreaN = dxx(jx)*dzz(jx,jy,jz)
       dspn = avgro*dspy(jx,jy,jz)
       dn = AreaN*dspn/dyn
       fn = AreaN*avgro*(qy(jx,jy,jz) + FluidBuryY(jy))
@@ -496,7 +496,7 @@ DO jy = 1,ny
       an_d = dn_d
       
       avgro = ro(jx,jy,jz)
-      AreaS = dxx(jx)
+      AreaS = dxx(jx)*dzz(jx,jy,jz)
       dsps = avgro*dspy(jx,jy,jz) 
       ds = AreaS*dsps/dys
       fs = AreaS*avgro*(qy(jx,jy-1,jz) + FluidBuryY(jy-1))
@@ -527,7 +527,7 @@ DO jy = 1,ny
     ELSE IF (jy == ny) THEN
       
       avgro = ro(jx,jy,jz)
-      AreaN = dxx(jx)
+      AreaN = dxx(jx)*dzz(jx,jy,jz)
       dspn = avgro*dspy(jx,jy-1,jz) 
       dn = AreaN*dspn/dyn
       fn = AreaN*avgro*(qy(jx,jy,jz) + FluidBuryY(jy))
@@ -554,7 +554,7 @@ DO jy = 1,ny
       ELSE
         dharm = GeometricMean(dums,dumpy)
       END IF
-      AreaS = dxx(jx)
+      AreaS = dxx(jx)*dzz(jx,jy,jz)
       dsps = avgro*dspy(jx,jy-1,jz) 
       ds = AreaS*dsps/dys
       fs = AreaS*avgro*(qy(jx,jy-1,jz) + FluidBuryY(jy-1))
@@ -580,7 +580,7 @@ DO jy = 1,ny
       ELSE
         dharm = GeometricMean(dumn,dumpy)
       END IF
-      AreaN = dxx(jx)
+      AreaN = dxx(jx)*dzz(jx,jy,jz)
       dspn = avgro*dspy(jx,jy,jz)
       dn = AreaN*dspn/dyn
       fn = AreaN*avgro*(qy(jx,jy,jz) + FluidBuryY(jy))
@@ -596,7 +596,7 @@ DO jy = 1,ny
       ELSE
         dharm = GeometricMean(dums,dumpy)
       END IF
-      AreaS = dxx(jx)
+      AreaS = dxx(jx)*dzz(jx,jy,jz)
       dsps = avgro*dspy(jx,jy-1,jz) 
       ds = AreaS*dsps/dys
       fs = AreaS*avgro*(qy(jx,jy-1,jz) + FluidBuryY(jy-1))

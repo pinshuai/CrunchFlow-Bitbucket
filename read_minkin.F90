@@ -237,7 +237,7 @@ IF(ls /= 0) THEN
   rlabel(npar,nkin) = 'default'
   crossaff(npar,nkin) = 'none'
   kcrossaff(npar,nkin) = 0
-  thresh(npar,nkin) = 0.0
+  ssa(npar,nkin) = 0.0
   
   ndep = 0
   monod = 0
@@ -255,22 +255,24 @@ IF(ls /= 0) THEN
     rlabel(npar,nkin) = ssch
   ELSE IF (ssch == '-local_equilibrium' .OR. ssch == '-equilibrium' .OR. ssch == '-localequilibrium') THEN
     LocalEquilibrium(nkin) = .TRUE.
-  ELSE IF (ssch == '-threshold' .OR. ssch == '-suppress_ppt' .OR. ssch == '-suppress_precipitation') THEN
+  
+  ELSE IF (ssch == '-SSA' .OR. ssch == '-ssa') THEN
     id = ids + ls
     CALL sschaine(zone,id,iff,ssch,ids,ls)
     lzs = ls
     CALL stringtype(ssch,lzs,res)
     IF (res == 'a') THEN
       WRITE(*,*)
-      WRITE(*,*) ' "-threshold" or "suppress_ppt" should be followed by a number'
+      WRITE(*,*) ' "-SSA" should be followed by a number'
       WRITE(*,*) ' Mineral = ',namdum(1:lsave)
       WRITE(*,*) ' String = ',ssch(1:ls)
       WRITE(*,*)
       READ(*,*)
       STOP
     ELSE
-      thresh(npar,nkin) = DNUM(ssch)
+      ssa(npar,nkin) = DNUM(ssch)
     END IF
+    
   ELSE IF (ssch == '-cross_affinity') THEN
     id = ids + ls
     CALL sschaine(zone,id,iff,ssch,ids,ls)
@@ -434,6 +436,8 @@ IF(ls /= 0) THEN
       imintype(npar,nkin) = 1
     ELSE IF (ssch == 'monod') THEN
       imintype(npar,nkin) = 2
+    ELSE IF (ssch == 'nucleation') THEN
+      imintype(npar,nkin) = 10
     ELSE IF (ssch == 'irreversible') THEN
       imintype(npar,nkin) = 3
     ELSE
@@ -713,6 +717,8 @@ IF (ssch == tempmin) THEN
             imintype(npar,nkin) = 1
           ELSE IF (ssch == 'monod' .OR. ssch == 'Monod' .OR. ssch == 'MONOD') THEN
             imintype(npar,nkin) = 2
+          ELSE IF (ssch == 'nucleation') THEN
+            imintype(npar,nkin) = 10
           ELSE IF (ssch == 'irreversible' .OR. ssch == 'Irreversible') THEN
             imintype(npar,nkin) = 3
           ELSE IF (ssch == 'PrecipitationOnly' .OR. ssch == 'Precipitationonly' .OR. ssch == 'precipitationonly') THEN

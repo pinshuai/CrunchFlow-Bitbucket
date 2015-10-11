@@ -31,6 +31,7 @@ USE temperature
 USE io
 USE ReadFlow
 USE modflowModule
+USE CrunchFunctions
 !!USE fparser
 USE CrunchFunctions
 
@@ -217,6 +218,8 @@ INTEGER(I4B)                                               :: npt
 INTEGER(I4B)                                               :: ls
 INTEGER(I4B)                                               :: ncount
 INTEGER(I4B)                                               :: idummy
+INTEGER(I4B)                                               :: jxmax
+INTEGER(I4B)                                               :: jymax
 
 REAL(DP)                                                   :: dtold
 REAL(DP)                                                   :: tempc
@@ -744,12 +747,17 @@ IF (CalculateFlow) THEN
         checkPlus = RoAveRight*qz(jx,jy,jz)*dxx(jx)*dyy(jy)
         checkMinus = RoAveLeft*qz(jx,jy,jz-1)*dxx(jx)*dyy(jy)
         RealSum = ro(jx,jy,jz)*qg(jx,jy,jz) + checkw+checks+checkMinus-checkn-checke-CheckPlus
-       MaxDivergence = DMAX1(MaxDivergence,DABS(RealSum))
+        IF (DABS(RealSum) > MaxDivergence) THEN
+            jxmax = jx
+            jymax = jy
+        END IF
+        MaxDivergence = DMAX1(MaxDivergence,DABS(RealSum))
       END DO
     END DO
   END DO
 
   WRITE(*,*) ' Maximum divergence in flow field = ', MaxDivergence
+  write(*,*) ' At grid cells: ',jxmax,jymax
   WRITE(*,*)
 
   SteadyFlow = .FALSE.
@@ -770,6 +778,7 @@ InitialTotalMass = SUM(InitialMass)
 
 WRITE(*,*)
 WRITE(*,*) ' Initial mass in system = ', InitialTotalMass
+WRITE(*,*)
 
 IF (KateMaher) THEN
   CALL InitializeCalciteStoichiometry(nx,ny,nz)
@@ -1283,7 +1292,7 @@ DO WHILE (nn <= nend)
 !  *********  End NUFT block within time stepping  ****************
 
   IF (gimrt) THEN         !  Update dispersivity
-    CALL dispersivity(nx,ny,nz)
+!!    CALL dispersivity(nx,ny,nz)
   END IF
 
 !  **************  OS3D BLOCK    **********************
@@ -1370,7 +1379,7 @@ DO WHILE (nn <= nend)
 
       IF (xflow .OR. yflow .OR. zflow) THEN
         call CourantStepAlt(nx,ny,nz,dtmaxcour)
-        CALL dispersivity(nx,ny,nz)
+!!        CALL dispersivity(nx,ny,nz)
       END IF
 
     END IF
@@ -1403,8 +1412,8 @@ DO WHILE (nn <= nend)
     DO jz = 1,nz
       DO jy = 1,ny
         DO jx = 1,nx
-          CALL oldcon(ncomp,nspec,nexchange,nexch_sec,nsurf,nsurf_sec,jx,jy,jz)  
-          call oldkd(ncomp,jx,jy,jz) ! smr 
+          CALL oldcon(ncomp,nspec,nexchange,nexch_sec,nsurf,nsurf_sec,jx,jy,jz)
+          CALL oldkd(ncomp,jx,jy,jz)  
           IF (isaturate == 1) THEN
             CALL oldcongas(ncomp,ngas,jx,jy,jz)
           END IF
@@ -1524,7 +1533,6 @@ DO WHILE (nn <= nend)
           END DO
 
           CALL KSPSetOperators(ksp,amatD,amatD,ierr)
-!!CALL KSPSetOperators(ksp,amatD,amatD,SAME_NONZERO_PATTERN,ierr)
           CALL KSPSolve(ksp,BvecD,XvecD,ierr)
           CALL KSPGetIterationNumber(ksp,itsiterate,ierr)
 
@@ -1604,7 +1612,6 @@ DO WHILE (nn <= nend)
         END DO
 
         CALL KSPSetOperators(ksp,amatD,amatD,ierr)
-!!CALL KSPSetOperators(ksp,amatD,amatD,SAME_NONZERO_PATTERN,ierr)
         CALL KSPSolve(ksp,BvecD,XvecD,ierr)
         CALL KSPGetIterationNumber(ksp,itsiterate,ierr)
 
@@ -3001,8 +3008,12 @@ END DO
            ndecay,ikin,nx,ny,nz,time,nn,nint,ikmast,ikph,delt,jpor)
       END IF
       IF (xmgr) THEN
-        CALL GraphicsXmgr(ncomp,nrct,nkin,nspec,nexchange,nexch_sec,nsurf,nsurf_sec,  &
-           ndecay,ikin,nx,ny,nz,time,nn,nint,ikmast,ikph,delt)
+!!        CALL GraphicsXmgr(ncomp,nrct,nkin,nspec,nexchange,nexch_sec,nsurf,nsurf_sec,  &
+!!           ndecay,ikin,nx,ny,nz,time,nn,nint,ikmast,ikph,delt)
+          write(*,*) ' XMGR graphics option no longer supported'
+          write(*,*)
+          read(*,*)
+          stop
       END IF
       IF (xtool) THEN
         CALL xtoolOutput(ncomp,nrct,nkin,nspec,nexchange,nexch_sec,nsurf,  &
@@ -3071,12 +3082,20 @@ END DO
         checkPlus = RoAveRight*qz(jx,jy,jz)*dxx(jx)*dyy(jy)
         checkMinus = RoAveLeft*qz(jx,jy,jz-1)*dxx(jx)*dyy(jy)
         RealSum = ro(jx,jy,jz)*qg(jx,jy,jz) + checkw+checks+checkMinus-checkn-checke-CheckPlus
-       MaxDivergence = DMAX1(MaxDivergence,DABS(RealSum))
+        IF (DABS(RealSum) > MaxDivergence) THEN
+            jxmax = jx
+            jymax = jy
+        END IF
+        MaxDivergence = DMAX1(MaxDivergence,DABS(RealSum))
       END DO
     END DO
   END DO
 
   WRITE(*,*) ' Maximum divergence in flow field = ', MaxDivergence
+  write(*,*) ' At grid cells: ',jxmax,jymax
+!!  write(*,*) qx(jxmax,jymax,1), qx(jxmax-1,jymax,1)
+!!  write(*,*) qy(jxmax,jymax,1), qy(jxmax,jymax-1,1)
+!!  read(*,*)
   WRITE(*,*)
 !!  READ(*,*)
 
@@ -3197,7 +3216,7 @@ END DO
     WRITE(iures) qxgas
     WRITE(iures) qygas
     WRITE(iures) qzgas
-    WRITE(iures) dspx
+    WRITE(iures) pres
     WRITE(iures) dspy
     WRITE(iures) dspz
     WRITE(iures) qg
@@ -3305,11 +3324,11 @@ STOP
 217 FORMAT(2X,'Number of Newton iterations = ',i2)
 218 FORMAT(2X,'# of SOR iterations = ',i3)
 224 FORMAT(2X,a18,2X,'Max residual = ',1PE12.4,2X,'Grid pt =',i3)
-225 FORMAT(2X,'Time (yrs) = ',1PE10.3,2X,'Delt (yrs) =',1PE10.3)
-2251 FORMAT(2X,'Time (days) = ',1PE10.3,2X,'Delt (days) =',1PE10.3)
-2252 FORMAT(2X,'Time (hrs) = ',1PE10.3,2X,'Delt (hrs) =',1PE10.3)
-2253 FORMAT(2X,'Time (mins) = ',1PE10.3,2X,'Delt (mins) =',1PE10.3)
-2254 FORMAT(2X,'Time (secs) = ',1PE10.3,2X,'Delt (secs) =',1PE10.3)
+225 FORMAT(2X,'Time (yrs) = ',1PE12.5,2X,'Delt (yrs) =',1PE10.3)
+2251 FORMAT(2X,'Time (days) = ',1PE12.5,2X,'Delt (days) =',1PE10.3)
+2252 FORMAT(2X,'Time (hrs) = ',1PE12.5,2X,'Delt (hrs) =',1PE10.3)
+2253 FORMAT(2X,'Time (mins) = ',1PE12.5,2X,'Delt (mins) =',1PE10.3)
+2254 FORMAT(2X,'Time (secs) = ',1PE12.5,2X,'Delt (secs) =',1PE10.3)
 2260 FORMAT(2X,'Time (yrs) = ',1PE10.3)
 2261 FORMAT(2X,'Time (days) = ',1PE10.3)
 2262 FORMAT(2X,'Time (hrs) = ',1PE10.3)

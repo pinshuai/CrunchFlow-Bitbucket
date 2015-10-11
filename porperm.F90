@@ -41,7 +41,7 @@ permxOld = permx
 permyOld = permy
 permzOld = permz
 
-jz = 1
+do jz = 1,nz
 DO jy = 1,ny
   DO jx = 1,nx
 !!    permx(jx,jy,jz) = permxOld(jx,jy,jz) * ( por(jx,jy,jz)          )**3.0/ ( ( 1.0d0-por(jx,jy,jz) )**2.0 ) * &
@@ -51,11 +51,15 @@ DO jy = 1,ny
                                            ( 1.0d0-porOld(jx,jy,jz) )**2.0/ ( (porOld(jx,jy,jz)     )**3.0 )  
     permz(jx,jy,jz) = permzOld(jx,jy,jz) * ( por(jx,jy,jz)          )**3.0/ ( ( 1.0d0-por(jx,jy,jz) )**2.0 ) * &
                                            ( 1.0d0-porOld(jx,jy,jz) )**2.0/ ( (porOld(jx,jy,jz)     )**3.0 )  
+    if (jx==12) then
+        continue
+    end if
 !!    permx(jx,jy,jz) = perminx(jx,jy,jz)*( por(jx,jy,jz)/porin(jx,jy,jz) )**3  * ( (1.0d0-porin(jx,jy,jz))/(1.0d0-por(jx,jy,jz)) )**2.0d0
 !!    permy(jx,jy,jz) = perminy(jx,jy,jz)*( por(jx,jy,jz)/porin(jx,jy,jz) )**3  * ( (1.0d0-porin(jx,jy,jz))/(1.0d0-por(jx,jy,jz)) )**2.0d0 
 !!    permz(jx,jy,jz) = perminz(jx,jy,jz)*( por(jx,jy,jz)/porin(jx,jy,jz) )**3  * ( (1.0d0-porin(jx,jy,jz))/(1.0d0-por(jx,jy,jz)) )**2.0d0 
   END DO
 END DO
+end do
 
 
 !!DO jy = 1,ny

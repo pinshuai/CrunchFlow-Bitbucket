@@ -57,9 +57,7 @@ DO i = 1,ncomp
 END DO
 silogTMP = (sumiap - keqmin(np,k,jx,jy,jz))/clg
   
-IF (silogTMP < -2.0d0*thresh(np,k)) THEN
-  RateFactor = 1.0d0
-ELSE IF (silogTMP >= 0.0d0) THEN
+IF (silogTMP >= 0.0d0) THEN
   RateFactor = 0.0d0
 ELSE 
   CorrectedTerm = silogTMP + thresh(np,k)

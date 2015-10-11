@@ -934,6 +934,9 @@ DO jy = 1,ny
         DO k = 1,nkin
           DO np = 1,nreactmin(k)
             sumrct = sumrct + decay_correct(i,k)*mumin(np,k,i)*rmin(np,k)
+            if (imintype(np,k) == 10 .and. si(np,k) > 1.0 .and. jx==12) then
+                 continue
+            end if
           END DO
         END DO
       ENDIF
@@ -945,8 +948,7 @@ DO jy = 1,ny
       
 !  Update the residual, adding reaction terms and exchange terms
       
-      fxx(ind) = fxx(ind) + MultiplyCell*(sumrct  &
-          + satl*xgram(jx,jy,jz)*portemp*rotemp*sumkin)
+      fxx(ind) = fxx(ind) + MultiplyCell*(sumrct + satl*xgram(jx,jy,jz)*portemp*rotemp*sumkin)
  
       sumrd = 0.0d0
       sumjackin = 0.0d0

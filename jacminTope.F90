@@ -152,6 +152,8 @@ INTEGER(I4B)                                                    :: kMineralCommo
 INTEGER(I4B)                                                    :: iPrimaryRare
 INTEGER(I4B)                                                    :: iPrimaryCommon
 
+INTEGER(I4B)                                                    :: kIsotopologuePoint
+
 !!!REAL(DP), DIMENSION(NCOMP)                           :: dMoleFraction40
 !!!REAL(DP), DIMENSION(NCOMP)                           :: dMoleFraction44
 !!!REAL(DP)                                             :: MoleFraction40Tmp
@@ -195,10 +197,21 @@ REAL(DP)                                                        :: MoleFractionM
 INTEGER(I4B)                                                    :: ib, jj
 ! biomass end
 
+!! Nucleation
+!!!REAL(DP)                                                        :: SigmaNucleation
+!!!REAL(DP)                                                        :: Bnucleation
+!!!REAL(DP)                                                        :: Anucleation
+REAL(DP)                                                        :: AffinityTMP
+REAL(DP)                                                        :: sumiap
+REAL(DP)                                                        :: silnTMP
+
+REAL(DP)                                                        :: BtimesSigma
+
 SetToAqueousMoleFraction = .FALSE.
 
 
 IF (JacobianNumerical) THEN
+    
   perturb = 1.d-09 
   sppTMP = sp(:,jx,jy,jz)
   sppTMP10(:) = sp10(:,jx,jy,jz)
@@ -214,7 +227,7 @@ tk = t(jx,jy,jz) + 273.15D0
 tkinv = 1.0d0/tk
 reft = 1.0d0/298.15d0
 porfactor = (por(jx,jy,jz)/porin(jx,jy,jz))**(0.666666D0)
-porfactor = 1.0d0
+!!porfactor = 1.0d0
 !!porfactor = por(jx,jy,jz)
 IF (DampRateInLowPorosity .AND. por(jx,jy,jz) < 0.001) THEN
   porfactor = porfactor*PorosityDamp
@@ -241,27 +254,6 @@ DO Isotopologue = 1,nIsotopePrimary
 
 END DO
 
-
-!! JennyDruhan block   ********************************************************
-!!!IF (JennyDruhan) THEN      
-!!CIS Hardwired for 44Ca40CaCO3
-!!  NOTE:  Species 6 is 40Ca, Species 7 is 44Ca
-!!!  Denom = ( sppTMP10(6) + sppTMP10(7) )
-!!!  DenomSquared = ( sppTMP10(6) + sppTMP10(7) ) * ( sppTMP10(6) + sppTMP10(7) )
-!!!  tmp1 = -sppTMP10(6)/DenomSquared + 1.0d0/Denom
-!!!  tmp2 = -sppTMP10(6)/DenomSquared
-!!!  tmp3 = -sppTMP10(7)/DenomSquared + 1.0d0/Denom
-!!!  tmp4 = -sppTMP10(7)/DenomSquared
-
-!!!  dMoleFraction40(6) = spptmp10(6)*tmp1
-!!!  dMoleFraction40(7) = spptmp10(7)*tmp2
-!!!  dMoleFraction44(6) = spptmp10(6)*tmp4
-!!!  dMoleFraction44(7) = spptmp10(7)*tmp3
-!!CIS Hardwired for 44Ca40CaCO3
-
-!!!END IF    
-!!  End of JennyDruhan block  ********************************************************
-
 jac_rmin = 0.0d0
 
 DO k = 1,nkin
@@ -283,6 +275,7 @@ DO k = 1,nkin
   IF (ivolume(k) == 1 .OR. imintype(1,k) == 6 .OR. imintype(1,k) == 7) THEN
 
     jac_rmin(:,:,k) = 0.0d0
+    
 
   ELSE   !! Case where Jacobian of mineral reactions are calculated (block above skips all computation of Jacobian)
     
@@ -296,18 +289,13 @@ DO k = 1,nkin
       
 !!  Taken from reaction.F90
       
+      
 ! ************* Saturation state dependence of rate ********
    
       IF (si(np,k) >= 1.0d0) THEN
         sign = 1.0d0
       ELSE
         sign = -1.0d0
-      END IF  
-
-      IF (KateMaher) THEN
-        IF (k == KUCalcite .AND. rlabel(np,k) == 'recrystallize') THEN
-          sign = 1.0d0
-        END IF
       END IF
 
 !!    If .NOT. biomass
@@ -316,7 +304,7 @@ DO k = 1,nkin
         IF (AffinityDepend1(np,k) == 1.0D0) THEN
           term1 = sign*DABS(snorm(np,k) - 1.0D0)
         ELSE
-!!! Should be the general case, with nonlinear exponenets on "snorm" term possible (calculated in reactionTope)
+!!! Should be the general case, with nonlinear exponents on "snorm" term possible (calculated in reactionTope)
           term1 = sign*DABS(snorm(np,k) - 1.0D0)**(AffinityDepend1(np,k))
         END IF
 
@@ -332,6 +320,25 @@ DO k = 1,nkin
         ELSE IF (imintype(np,k) == 4) THEN                               !! Precipitation only
 
           AffinityTerm = MAX(0.0d0,term1)
+          
+        ELSE IF (imintype(np,k) == 10) THEN                            !! Nucleation case
+
+!!!        SigmaNucleation = 97.0
+!!!!        Bnucleation = 0.0009045710    !! 25C
+!!!        Bnucleation = 0.000480339     !! 95C
+!!!        Anucleation = 0.001
+        
+        
+          IF (si(np,k) > 1.0) THEN
+              
+            BtimesSigma = Bnucleation(np,k)*SigmaNucleation(np,k)*SigmaNucleation(np,k)*SigmaNucleation(np,k)
+            AffinityTerm = Azero25C(np,k)*DEXP(-BtimesSigma/( siln(np,k)*siln(np,k) ) )
+            
+          ELSE
+              
+            AffinityTerm = 0.0d0
+            
+          END IF
 
         ELSE
 
@@ -345,9 +352,46 @@ DO k = 1,nkin
 
         IF (imintype(np,k) /= 3 .AND. imintype(np,k) /= 2) THEN         !! Everything but Monod and irreversible
             
-!!  Strictly first order TST type rate laws:
+!!        First do nucleation case (imintype = 10)
+            
+          IF (imintype(np,k) == 10) THEN
+              
+            IF (si(np,k) > 1.0d0) THEN
+!!!  **********  Numerical derivative **********************
+            perturb = 1.0D-09
+            sppTMP(:)   = sp(:,jx,jy,jz)
+            sppTMP10(:) = sp10(:,jx,jy,jz)
 
-          IF (AffinityDepend1(np,k) == 1.0d0 .AND. AffinityDepend2(np,k) == 1.0d0 .AND. AffinityDepend3(np,k) == 1.0d0) THEN
+            AffinityInitial = AffinityTerm
+            DO i = 1,ncomp
+              sppTMP(i) = sppTMP(i) + perturb
+              sppTMP10(i) = DEXP(sppTMP(i))
+              
+              sumiap = 0.0D0
+              DO i2 = 1,ncomp
+                IF (ulab(i2) == 'H2O') THEN
+                  sumiap = sumiap + mumin(1,k,i2)*(gam(i2,jx,jy,jz))
+                ELSE
+                  sumiap = sumiap + mumin(1,k,i2)*( sppTMP(i2) + gam(i2,jx,jy,jz) )
+                END IF
+              END DO
+              
+              silnTMP = (sumiap - keqmin(1,k,jx,jy,jz))
+              
+              BtimesSigma = Bnucleation(np,k)*SigmaNucleation(np,k)*SigmaNucleation(np,k)*SigmaNucleation(np,k)
+              AffinityTMP = Azero25C(np,k)*DEXP(-BtimesSigma/(silnTMP*silnTMP ) )
+            
+              jac_sat(i) = (AffinityTMP - AffinityInitial)/perturb
+!!!              jac_sat(i) = jac_check(i)
+              sppTMP(i) = sp(i,jx,jy,jz) 
+              sppTMP10(i) = sp10(i,jx,jy,jz)
+            END DO
+!!!  *******************************************************
+            ELSE
+                jac_sat = 0.0d0
+            END IF
+!!        Then strictly first order TST type rate laws:
+          ELSE IF (AffinityDepend1(np,k) == 1.0d0 .AND. AffinityDepend2(np,k) == 1.0d0 .AND. AffinityDepend3(np,k) == 1.0d0) THEN
 
               IF (IsotopeMineralRare(k)) THEN
 
@@ -366,7 +410,13 @@ DO k = 1,nkin
                 iPrimaryCommon = isotopeCommon(Isotopologue)
                 iPrimaryRare   = isotopeRare(Isotopologue)
 
-                IF (isotopeBackReactionOption(kIsotopologue) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue)) THEN
+                IF (MineralAssociate(kMineralCommon)) THEN
+                  kIsotopologuePoint = kPointerIsotope( MineralID(kMineralCommon) )
+                ELSE
+                  kIsotopologuePoint = kIsotopologue
+                END IF
+
+                IF (isotopeBackReactionOption(kIsotopologuePoint) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue)) THEN
 
 
                     jac_sat(iPrimaryRare)   = jac_sat(iPrimaryRare) + si(np,k) *                                                       &
@@ -434,8 +484,13 @@ DO k = 1,nkin
                 iPrimaryCommon = isotopeCommon(Isotopologue)
                 iPrimaryRare   = isotopeRare(Isotopologue)
 
-                IF (isotopeBackReactionOption(kIsotopologue) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue)) THEN
+                IF (MineralAssociate(kMineralCommon)) THEN
+                  kIsotopologuePoint = kPointerIsotope( MineralID(kMineralCommon) )
+                ELSE
+                  kIsotopologuePoint = kIsotopologue
+                END IF
 
+                IF (isotopeBackReactionOption(kIsotopologuePoint) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue)) THEN
 
 
                     jac_sat(iPrimaryCommon) = jac_sat(iPrimaryCommon) + si(np,k) *                                                &
@@ -531,7 +586,7 @@ DO k = 1,nkin
               END IF
 
               IF (imintype(np,k) == 5 .AND. silog(np,k) > 0.0d0) THEN   !! Dissolution only
-                  jac_sat(i) = 0.0d0
+                jac_sat(i) = 0.0d0
               END IF
 
             END DO     
@@ -610,9 +665,9 @@ DO k = 1,nkin
 !!          end do
 !!          read(*,*)
 
-        END IF
+        END IF      !!! END of imintype(np,k) /= 2 or 3
 
-      END IF !!! END of imintype(np,k) /= 8
+      END IF        !!! END of imintype(np,k) /= 8
 
       IF (imintype(np,k) == 8) THEN                   !! Monod, with thermodynamic factor, F_T
 
@@ -666,8 +721,8 @@ DO k = 1,nkin
      
 !******** Far from equilibrium dependence of rate *********
  
-      IF (imintype(np,k) == 1 .OR. imintype(np,k) == 3 .OR. imintype(np,k) == 4) THEN  !! TST, irreversible, or ppt only
-!!      +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++IF (imintype(np,k) == 1 .OR. imintype(np,k) == 3 .OR. imintype(np,k) == 4) THEN  !! TST, irreversible, or ppt only
+      IF (imintype(np,k) == 1 .OR. imintype(np,k) == 3 .OR. imintype(np,k) == 4 .OR. imintype(np,k) == 10) THEN  !! TST, irreversible, or ppt only
+!!      +++++++++++++++++++++++++++++++++++++++++IF (imintype(np,k) == 1 .OR. imintype(np,k) == 3 .OR. imintype(np,k) == 4) THEN  !! TST, irreversible, or ppt only
 
           DO kk = 1,ndepend(np,k)
             i = idepend(kk,np,k)
@@ -804,6 +859,7 @@ DO k = 1,nkin
               END IF
             END IF
           END IF
+          
         END DO
 !!      biomass end
 
@@ -814,81 +870,111 @@ DO k = 1,nkin
 !!     DO i = 1,ncomp+nexchange+nsurf
      
       IF (imintype(np,k) == 8) THEN
+          
 !!      pointer to biomass for current reaction
         jj = p_cat_min(k)
         ib = ibiomass_min(jj)
         IF (UseMetabolicLagMineral(np,jj)) THEN
-          do i = 1,ncomp
-            jac_rmin(i,np,k) =  MetabolicLagMineral(np,jj,jx,jy,jz)*surf(k)*actenergy(np,k)*rate0(np,k)*volfx(ib,jx,jy,jz)* &
+            
+          DO i = 1,ncomp
+            jac_rmin(i,np,k) =  MetabolicLagMineral(np,jj,jx,jy,jz)*surf(np,k)*actenergy(np,k)*rate0(np,k)*volfx(ib,jx,jy,jz)* &
                           ( pre_rmin(np,k)*jac_sat(i) + jac_pre(i,np)*AffinityTerm  )
-          end do
+          END DO
+          
         ELSE
-          do i = 1,ncomp
-            jac_rmin(i,np,k) =  surf(k)*actenergy(np,k)*rate0(np,k)*volfx(ib,jx,jy,jz)* &
+            
+          DO i = 1,ncomp
+            jac_rmin(i,np,k) =  surf(np,k)*actenergy(np,k)*rate0(np,k)*volfx(ib,jx,jy,jz)* &
                           ( pre_rmin(np,k)*jac_sat(i) + jac_pre(i,np)*AffinityTerm  )
-          end do
+          END DO
+          
         END IF
-
+!!    biomass end     
+        
       ELSE
 
-       IF (nIsotopeMineral > 0) THEN
+        IF (nIsotopeMineral > 0) THEN
 
-        IF (IsotopeMineralCommon(k)) THEN
-          kIsotopologue = kPointerIsotope(k)
-            IF (isotopeBackReactionOption(kIsotopologue) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue) ) THEN
+          IF (IsotopeMineralCommon(k)) THEN
+            kIsotopologue = kPointerIsotope(k)
+
+            IF (MineralAssociate(kMineralCommon)) THEN
+              kIsotopologuePoint = kPointerIsotope( MineralID(kMineralCommon) )
+            ELSE
+              kIsotopologuePoint = kIsotopologue
+            END IF
+
+            IF (isotopeBackReactionOption(kIsotopologuePoint) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue) ) THEN
               isotopologue = PointerToPrimaryIsotope(kIsotopologue)
               MoleFractionMineral = MoleFractionAqueousCommon(isotopologue)
               DO i = 1,ncomp
-                jac_rmin(i,np,k) =  surf(k)*actenergy(np,k)*rate0(np,k)* &
+                jac_rmin(i,np,k) =  surf(np,k)*actenergy(np,k)*rate0(np,k)* &
                      ( MoleFractionMineral*pre_rmin(np,k)*jac_sat(i) + MoleFractionMineral*jac_pre(i,np)*AffinityTerm  +  &
                       pre_rmin(np,k)*AffinityTerm*dMoleFractionAqueousCommon(i,isotopologue)  )
               END DO
             ELSE
               MoleFractionMineral = MoleFractionMineralCommon(kPointerIsotope(k))
               DO i = 1,ncomp
-                jac_rmin(i,np,k) =  MoleFractionMineral*surf(k)*actenergy(np,k)*rate0(np,k)* &
+                jac_rmin(i,np,k) =  MoleFractionMineral*surf(np,k)*actenergy(np,k)*rate0(np,k)* &
                      ( pre_rmin(np,k)*jac_sat(i) + jac_pre(i,np)*AffinityTerm )
               END DO
             END IF
+
           ELSE IF (IsotopeMineralRare(k)) THEN
-            IF (isotopeBackReactionOption(kIsotopologue) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue)) THEN
+
+            kIsotopologue = kPointerIsotope(k)
+
+            IF (MineralAssociate(kMineralCommon)) THEN
+              kIsotopologuePoint = kPointerIsotope( MineralID(kMineralCommon) )
+            ELSE
+              kIsotopologuePoint = kIsotopologue
+            END IF
+
+            IF (isotopeBackReactionOption(kIsotopologuePoint) == 'none' .OR. UseAqueousMoleFraction(kIsotopologue)) THEN
+
               isotopologue = PointerToPrimaryIsotope(kIsotopologue)
               MoleFractionMineral = MoleFractionAqueousRare(isotopologue)
 !!            Use the bulk surface area (common)
-              surf(k) = surf(kIsotopeCommon(kIsotopologue))
+              surf(np,k) = surf(np,kIsotopeCommon(kIsotopologue))
               DO i = 1,ncomp
-                jac_rmin(i,np,k) =  surf(k)*actenergy(np,k)*rate0(np,k)* &
+                jac_rmin(i,np,k) =  surf(np,k)*actenergy(np,k)*rate0(np,k)* &
                      ( MoleFractionMineral*pre_rmin(np,k)*jac_sat(i) +   &
                       MoleFractionMineral*jac_pre(i,np)*AffinityTerm  +  &
                       pre_rmin(np,k)*AffinityTerm*dMoleFractionAqueousRare(i,isotopologue)  )
               END DO
+              
             ELSE
+                
               MoleFractionMineral = MoleFractionMineralRare(kPointerIsotope(k))
 !!            Use the bulk surface area (common)
-              surf(k) = surf(kIsotopeCommon(kIsotopologue))
+              surf(np,k) = surf(np,kIsotopeCommon(kIsotopologue))
               DO i = 1,ncomp
-                jac_rmin(i,np,k) =  MoleFractionMineral*surf(k)*actenergy(np,k)*rate0(np,k)* &
+                jac_rmin(i,np,k) =  MoleFractionMineral*surf(np,k)*actenergy(np,k)*rate0(np,k)* &
                      ( pre_rmin(np,k)*jac_sat(i) + jac_pre(i,np)*AffinityTerm )
               END DO
+              
             END IF
 
           ELSE
+              
             DO i = 1,ncomp
-              jac_rmin(i,np,k) =  surf(k)*actenergy(np,k)*rate0(np,k)* &
+              jac_rmin(i,np,k) =  surf(np,k)*actenergy(np,k)*rate0(np,k)* &
                      ( pre_rmin(np,k)*jac_sat(i) + jac_pre(i,np)*AffinityTerm )
-
             END DO
+            
           END IF
 
-        ELSE
+        ELSE    !!  Non-isotope case
+            
           DO i = 1,ncomp
-            jac_rmin(i,np,k) =  surf(k)*actenergy(np,k)*rate0(np,k)* &
+            jac_rmin(i,np,k) =  surf(np,k)*actenergy(np,k)*rate0(np,k)* &
                      ( pre_rmin(np,k)*jac_sat(i) + jac_pre(i,np)*AffinityTerm )
           END DO
+          
         END IF
 
       END IF    
-!!    biomass end     
+
       
     END DO    !! End of np loop through parallel reactions
     

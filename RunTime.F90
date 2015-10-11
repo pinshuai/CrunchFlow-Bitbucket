@@ -45,6 +45,8 @@ MODULE runtime
   LOGICAL(LGT)                                                :: SetSurfaceAreaConstant
 !!  LOGICAL(LGT)                                                :: UseAqueousMoleFraction
   LOGICAL(LGT)                                                :: ReadGeochemicalConditions
+  LOGICAL(LGT)                                                :: ReadGautier
+  LOGICAL(LGT)                                                :: Qingyun
   LOGICAL(LGT)                                                :: CylindricalDivideVolume
   LOGICAL(LGT)                                                :: Benchmark
   LOGICAL(LGT)                                                :: DampRateInLowPorosity

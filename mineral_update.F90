@@ -19,7 +19,7 @@
 SUBROUTINE mineral_update(nx,ny,nz,nrct,dt,dtnew,ineg,jpor,deltmin)
 USE crunchtype
 USE params
-USE runtime, ONLY: voltol,inagaki,inagaki2,ncounter
+USE runtime, ONLY: voltol,inagaki,inagaki2,ncounter,ReadGautier
 USE concentration
 USE mineral
 USE medium
@@ -79,6 +79,7 @@ REAL(DP)                                                    :: DensificationFact
 CHARACTER (LEN=mls)                                         :: dumstring
 
 INTEGER(I4B)                                                :: nn 
+INTEGER(I4B)                                                :: np
 
 
 !!  ********* Hardwired for ripening/densification reaction
@@ -178,27 +179,27 @@ ncounter = ncounter + 1
 DO jz = 1,nz
   DO jy = 1,ny
     DO jx = 1,nx
+        
       DO k = 1,nrct
 
         IF (MineralAssociate(k)) THEN
+            
           kk = MineralID(k)
           volcheck = volmol(kk)*dppt(k,jx,jy,jz)*dt   !  Point to volume fraction of associated mineral
           volfx(kk,jx,jy,jz) = volfx(kk,jx,jy,jz) + volcheck
           IF (volfx(kk,jx,jy,jz) < 0.0) THEN
             volfx(kk,jx,jy,jz) = 0.0
           END IF
+          
         ELSE
+            
           volcheck = volmol(k)*dppt(k,jx,jy,jz)*dt
+          if (k==1 .and. dppt(k,jx,jy,jz)> 0.0) then
+              continue
+          end if
           volfx(k,jx,jy,jz) = volfx(k,jx,jy,jz) + volcheck
           volSaveByTimeStep(ncounter,k,jx,jy,jz) = volcheck
           volSave(k,jx,jy,jz) = volSave(k,jx,jy,jz) + volSaveByTimeStep(ncounter,k,jx,jy,jz)
-
-!!          if (jx==4 .and. k == 5) then
-!!            write(*,*) volsave(k,jx,jy,jz)
-!!          end if
-!!          if (jx==4 .and. k == 6) then
-!!            write(*,*) (47.153/(volsave(5,jx,jy,jz)/volsave(6,jx,jy,jz)) - 1.0)*1000.0
-!!          end if
 
           IF (ncounter > 100) then
             volSave(k,jx,jy,jz) = volSave(k,jx,jy,jz) - volSaveByTimeStep(1,k,jx,jy,jz)
@@ -269,6 +270,7 @@ DO jz = 1,nz
       DO k = 1,nrct
 
         vinit = volin(k,jinit(jx,jy,jz))
+        
         IF (LocalEquilibrium(k)) THEN                      !! Local equilibrium fantasy, so don't change the surface area
           IF (volfx(k,jx,jy,jz) > 0.0d0) THEN
             area(k,jx,jy,jz) = areain(k,jinit(jx,jy,jz))
@@ -279,6 +281,7 @@ DO jz = 1,nz
         ELSE                                               !! Update reactive surface area
 
           IF (iarea(k,jinit(jx,jy,jz)) == 0) THEN                     !!  Bulk surface area
+              
             IF (vinit == 0.0d0) THEN
               area(k,jx,jy,jz) = areain(k,jinit(jx,jy,jz))* (volfx(k,jx,jy,jz)/0.01)**0.6666
               if (mintype(k) == 0) sum = sum + volfx(k,jx,jy,jz)
@@ -288,14 +291,26 @@ DO jz = 1,nz
                 sum = sum + volfx(k,jx,jy,jz)
               end if
             END IF
+            
           ELSE                                                        !!  Specific surface area
+              
             IF ( volin(k,jinit(jx,jy,jz)) == 0.0d0 .AND. volfx(k,jx,jy,jz) < voltemp(k,jinit(jx,jy,jz)) ) THEN   !!  Initially a zero volume fraction, so use "threshold" volume fraction
               area(k,jx,jy,jz) = voltemp(k,jinit(jx,jy,jz))*specific(k,jinit(jx,jy,jz))*wtmin(k)/volmol(k)
             ELSE
               area(k,jx,jy,jz) = volfx(k,jx,jy,jz)*specific(k,jinit(jx,jy,jz))*wtmin(k)/volmol(k)
             END IF
             if (mintype(k) == 0) sum = sum + volfx(k,jx,jy,jz)
+            
           END IF
+          
+          DO np = 1,nreactmin(k)
+            IF (imintype(np,k) == 10) THEN
+              area(k,jx,jy,jz) = volfx(k,jx,jy,jz)*SurfaceAreaNucleation(np,k)*wtmin(k)/volmol(k)
+              IF (volfx(k,jx,jy,jz) > 0.0d0) THEN
+                CONTINUE
+              END IF
+            END IF
+          END DO
 
         END IF
 
@@ -304,7 +319,7 @@ DO jz = 1,nz
 !!  Update porosity, with a save of the porosity to porOld
 
       porold(jx,jy,jz) = por(jx,jy,jz)
-      IF (jpor /= 1) THEN
+      IF (jpor /= 1 .AND. .NOT. ReadGautier) THEN
         por(jx,jy,jz) = porin(jx,jy,jz)
       ELSE
         por(jx,jy,jz) = 1.0 - sum

@@ -176,6 +176,17 @@ IF (ALLOCATED(dMoleFractionAqueousRare)) THEN
 END IF
 ALLOCATE(dMoleFractionAqueousRare(ncomp,15))
 
+IF (ALLOCATED(lambda)) THEN
+  DEALLOCATE(lambda)
+END IF
+ALLOCATE(lambda(nrct))
+lambda = 0.0d0
+
+IF (ALLOCATED(decay)) THEN
+  DEALLOCATE(decay)
+END IF
+ALLOCATE(decay(nrct))
+
 iPointerIsotope = 0
 IsotopePrimaryRare   = .FALSE.
 IsotopePrimaryCommon = .FALSE.
@@ -412,7 +423,30 @@ ELSE IF (ssch == 'mineral') THEN
        WRITE(*,*)
        READ(*,*)
        STOP 
-     END IF 
+    END IF 
+    
+  id = ids + ls
+  CALL sschaine(zone,id,iff,ssch,ids,ls)
+  IF(ls /= 0) THEN
+    lzs=ls
+    CALL convan(ssch,lzs,res)
+    CALL stringtype(ssch,lzs,res)
+    
+    IF (res == 'a') THEN
+      WRITE(*,*)
+      WRITE(*,*) ' Following mineral isotope option, reading number for decay constant lambda' 
+      WRITE(*,*) ' Should be a number, not a character string'
+      WRITE(*,*) '   String found: ', ssch(1:30)
+      WRITE(*,*) '       ABORTING RUN  '
+      WRITE(*,*)
+      READ(*,*)
+      STOP
+    END IF
+    
+    lambda(nIsotopeMineral) = DNUM(ssch)
+    
+    END IF
+  
   ELSE
 
     WRITE(*,*)
@@ -422,7 +456,9 @@ ELSE IF (ssch == 'mineral') THEN
     READ(*,*)
     STOP
 
-  END IF     
+  END IF  
+  
+
     
 ELSE
 

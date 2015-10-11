@@ -79,6 +79,7 @@ INTEGER(I4B)                                  :: ix
 INTEGER(I4B)                                  :: is
 INTEGER(I4B)                                  :: npt
 INTEGER(I4B)                                  :: info
+INTEGER(I4B)                                  :: round
 
 REAL(DP), PARAMETER                           :: atol=1.e-08
 REAL(DP), PARAMETER                           :: rtol=1.e-06
@@ -93,6 +94,8 @@ CHARACTER (LEN=1)                             :: trans
 trans = 'N'
 icvg = 0
 iterat = 0
+
+round = 1
 
 DO ne = 1,newton
   iterat = iterat + 1
@@ -134,7 +137,7 @@ DO ne = 1,newton
   CALL JacPotentialLocal(ncomp,nsurf,nsurf_sec,npot,jx,jy,jz)
 
   CALL reaction(ncomp,nkin,nrct,nspec,nexchange,nsurf,ndecay,jx,jy,jz,delt,time)
-  CALL jacmin(ncomp,nspec,nexchange,nsurf,nkin,nrct,jx,jy,jz,time)
+  CALL jacmin(ncomp,nspec,nexchange,nsurf,nkin,nrct,jx,jy,jz,time,round)
     
   CALL reactkin(ncomp,nspec,nrct,ikin,jx,jy,jz,AqueousToBulk,time)
   CALL jacrkin(ncomp,nspec,nrct,ikin,jx,jy,jz,AqueousToBulk)

@@ -219,6 +219,8 @@ MODULE  concentration
   REAL(DP), DIMENSION(:,:), ALLOCATABLE            :: CumulativeXflux
   REAL(DP), DIMENSION(:), ALLOCATABLE              :: InstantaneousXflux
   REAL(DP), DIMENSION(:), ALLOCATABLE              :: XfluxWeightedConcentration
+  REAL(DP), DIMENSION(:), ALLOCATABLE              :: YfluxWeightedConcentration
+  REAL(DP), DIMENSION(:), ALLOCATABLE              :: ZfluxWeightedConcentration
 
   INTEGER(I4B), DIMENSION(:), ALLOCATABLE          :: iplotFluxWeightedConcentration
   INTEGER(I4B)                                     :: nFluxWeightedConcentrationFile 

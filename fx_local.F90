@@ -120,12 +120,12 @@ DO i = 1,ncomp
     aq_accum = r*por(jx,jy,jz)*ro(jx,jy,jz)*   &
            ( H2Oreacted(jx,jy,jz) * xgram(jx,jy,jz) * satl * s(i,jx,jy,jz) * ( 1.0 + Retardation*distrib(i) ) - &
              xgramOld(jx,jy,jz) * satlold * sn(i,jx,jy,jz) ) - &
-            r * skdold(i,jx,jy,jz) ! smr
+            r * skdold(i,jx,jy,jz)
   ELSE
     aq_accum = r*por(jx,jy,jz)*ro(jx,jy,jz)*   &
            ( xgram(jx,jy,jz) * satl * s(i,jx,jy,jz) * ( 1.0 + Retardation*distrib(i) ) - &
              xgramOld(jx,jy,jz) * satlold * sn(i,jx,jy,jz) ) - &
-           r * skdold(i,jx,jy,jz) ! smr
+           r * skdold(i,jx,jy,jz) 
   END IF
 
   IF (isaturate == 1) THEN

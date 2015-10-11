@@ -969,13 +969,13 @@ DEALLOCATE(work2)
 
 ndim1 = nreactmax
 ndim2 = nrct
-i = size(thresh,1)
-j = size(thresh,2)
+i = size(ssa,1)
+j = size(ssa,2)
 ALLOCATE(work2(i,j))
-work2 = thresh
-DEALLOCATE(thresh)
-ALLOCATE(thresh(ndim1,ndim2))
-IF(ndim1 /= 0 .AND. ndim2 /= 0)thresh(1:ndim1,1:ndim2) = work2(1:ndim1,1:ndim2)
+work2 = ssa
+DEALLOCATE(ssa)
+ALLOCATE(ssa(ndim1,ndim2))
+IF(ndim1 /= 0 .AND. ndim2 /= 0)ssa(1:ndim1,1:ndim2) = work2(1:ndim1,1:ndim2)
 DEALLOCATE(work2)
 
 ndim1 = nreactmax

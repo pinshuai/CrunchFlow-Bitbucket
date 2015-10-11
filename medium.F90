@@ -8,6 +8,8 @@ MODULE medium
   REAL(DP)                                        :: constantpor 
   REAL(DP)                                        :: FixSaturation
   REAL(DP)                                        :: MinimumPorosity
+  REAL(DP)                                        :: PoreThreshold
+  REAL(DP)                                        :: PoreFill
 
   REAL(DP), DIMENSION(:), ALLOCATABLE             :: porcond
   REAL(DP), DIMENSION(:), ALLOCATABLE             :: SaturationCond
