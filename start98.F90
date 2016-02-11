@@ -554,8 +554,11 @@ namelist /Nucleation/                                          NameMineral,     
                                                                SSA_m2g,            &
                                                                Surface
 
-
-
+#if defined(ALQUIMIA)
+include 'mpif.h'
+integer :: rank, ierror
+character(25) :: fn
+#endif
 
 ALLOCATE(realmult(100)) 
 
@@ -652,7 +655,14 @@ str_sec = curr_time(7)
 
 nin = iunit1
 nout = 4
+#if !defined(ALQUIMIA)
 OPEN(UNIT=nout,FILE='CrunchJunk2.out',STATUS='unknown')
+#else
+call MPI_COMM_RANK(MPI_COMM_WORLD, rank, ierror)
+write(fn,"(a10,i0,a4)")'CrunchJunk',rank,'.out'
+write(*,*)fn
+OPEN(UNIT=nout,FILE=fn,STATUS='unknown')
+#endif
 
 section = 'title'
 CALL readblock(nin,nout,section,found,ncount)
