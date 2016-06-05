@@ -1,22 +1,39 @@
-!******************        CRUNCH     ************************
- 
-! Code converted using TO_F90 by Alan Miller
-! Date: 2000-07-27  Time: 10:43:07
- 
-!************** (C) COPYRIGHT 1995,1998,1999 ******************
-!*******************     C.I. Steefel      *******************
-!                    All Rights Reserved
+!! CrunchTope 
+!! Copyright (c) 2016, Carl Steefel
+!! Copyright (c) 2016, The Regents of the University of California, 
+!! through Lawrence Berkeley National Laboratory (subject to 
+!! receipt of any required approvals from the U.S. Dept. of Energy).  
+!! All rights reserved.
 
-!  GIMRT98 IS PROVIDED "AS IS" AND WITHOUT ANY WARRANTY EXPRESS OR IMPLIED.
-!  THE USER ASSUMES ALL RISKS OF USING GIMRT98. THERE IS NO CLAIM OF THE
-!  MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+!! Redistribution and use in source and binary forms, with or without
+!! modification, are permitted provided that the following conditions are
+!! met: 
 
-!  YOU MAY MODIFY THE SOURCE CODE FOR YOUR OWN USE, BUT YOU MAY NOT
-!  DISTRIBUTE EITHER THE ORIGINAL OR THE MODIFIED CODE TO ANY OTHER
-!  WORKSTATIONS
-!**********************************************************************
+!! (1) Redistributions of source code must retain the above copyright
+!! notice, this list of conditions and the following disclaimer.
 
-SUBROUTINE CrunchFlow(NumInputFiles,InputFileCounter,NewInput)
+!! (2) Redistributions in binary form must reproduce the above copyright
+!! notice, this list of conditions and the following disclaimer in the
+!! documentation and/or other materials provided with the distribution.
+
+!! (3) Neither the name of the University of California, Lawrence
+!! Berkeley National Laboratory, U.S. Dept. of Energy nor the names of    
+!! its contributors may be used to endorse or promote products derived
+!! from this software without specific prior written permission.
+
+!! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+!! "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+!! LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+!! A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+!! OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+!! SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+!! LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+!! DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+!! THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+!! (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+!! OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE   
+
+SUBROUTINE CrunchTope(NumInputFiles,InputFileCounter,NewInput)
 USE crunchtype
 USE params
 USE runtime
@@ -55,11 +72,11 @@ INTEGER(I4B), INTENT(IN OUT)                                      :: InputFileCo
 
 !  **********  PETSc include statements *********************************
 
-#include "finclude/petsc.h"
+#include "petsc/finclude/petsc.h"
 
 ! ******************* end PETSc include statements ***********************
 
-EXTERNAL assemble
+EXTERNAL AssembleGlobal
 EXTERNAL SolveDiffuse
 EXTERNAL dgetrf
 EXTERNAL dgetrs
@@ -474,7 +491,7 @@ iprnt = 0
 
 !!call def_time(CPU_unit)
 
-CALL start98(ncomp,nspec,nkin,nrct,ngas,npot,nx,ny,nz,data1,ipath,igamma,  &
+CALL StartTope(ncomp,nspec,nkin,nrct,ngas,npot,nx,ny,nz,data1,ipath,igamma,  &
     ikmast,ikph,iko2,ltitle,tstep,delt,deltmin,ttol,jpor,ikin,nstop,       &
     corrmax,nseries,nexchange,nexch_sec,nsurf,nsurf_sec,ndecay,str_mon,    &
     str_day,str_hr,str_min,str_sec,NumInputFiles,InputFileCounter)
@@ -778,7 +795,7 @@ DO jz = 1,nz
   END DO
 END DO
 
-IF (Duan) THEN
+IF (Duan .OR. Duan2006) THEN
   DO jz = 1,nz
     DO jy = 1,ny
       DO jx = 1,nx
@@ -948,7 +965,7 @@ DO WHILE (nn <= nend)
     ro(:,:,0) = ro(:,:,1)  
     ro(:,:,nz+1) = ro(:,:,nz)
 
-    IF (jpor == 1) THEN
+    IF (jpor == 1 .OR. jpor == 3) THEN
       CALL porperm(nx,ny,nz)
     END IF
 
@@ -1637,7 +1654,7 @@ DO WHILE (nn <= nend)
           CALL keqcalc2(ncomp,nrct,nspec,ngas,nsurf_sec,jx,jy,jz)
           IF (igamma == 3) THEN
 
-            IF (Duan) THEN
+            IF (Duan .OR. Duan2006) THEN
               CALL gamma_co2(ncomp,nspec,ngas,jx,jy,jz)
             ELSE
               CALL gamma(ncomp,nspec,jx,jy,jz)
@@ -1706,7 +1723,7 @@ DO WHILE (nn <= nend)
         DO jz = 1,nz
           DO jy = 1,ny
             DO jx = 1,nx
-            IF (Duan) THEN
+            IF (Duan .OR. Duan2006) THEN
               CALL gamma_co2(ncomp,nspec,ngas,jx,jy,jz)
             ELSE
               CALL gamma(ncomp,nspec,jx,jy,jz)
@@ -1823,7 +1840,7 @@ DO WHILE (nn <= nend)
       jz = 1
       DO jy = 1,ny
         DO jx = 1,nx
-            IF (Duan) THEN
+            IF (Duan .OR. Duan2006) THEN
               CALL gamma_co2(ncomp,nspec,ngas,jx,jy,jz)
             ELSE
               CALL gamma(ncomp,nspec,jx,jy,jz)
@@ -1855,7 +1872,7 @@ newtonloop:  DO WHILE (icvg == 1 .AND. iterat <= newton)
       DO jy = 1,ny
         DO jx = 1,nx
           IF (igamma == 2) THEN
-            IF (Duan) THEN
+            IF (Duan .OR. Duan2006) THEN
               CALL gamma_co2(ncomp,nspec,ngas,jx,jy,jz)
             ELSE
               CALL gamma(ncomp,nspec,jx,jy,jz)
@@ -1908,7 +1925,7 @@ newtonloop:  DO WHILE (icvg == 1 .AND. iterat <= newton)
         call MatZeroEntries(amatpetsc,ierr)
       endif
 
-      CALL assemble(nx,ny,nz,ncomp,nspec,nkin,nrct,ngas,ikin,                   &
+      CALL AssembleGlobal(nx,ny,nz,ncomp,nspec,nkin,nrct,ngas,ikin,                   &
          nexchange,nexch_sec,nsurf,nsurf_sec,npot,ndecay,nn,delt,time, &
          userC,amatpetsc)
 
@@ -2231,7 +2248,7 @@ newtonloop:  DO WHILE (icvg == 1 .AND. iterat <= newton)
         DO jz = 1,nz
           DO jy = 1,ny
             DO jx = 1,nx
-            IF (Duan) THEN
+            IF (Duan .OR. Duan2006) THEN
               CALL gamma_co2(ncomp,nspec,ngas,jx,jy,jz)
             ELSE
               CALL gamma(ncomp,nspec,jx,jy,jz)
@@ -2994,8 +3011,10 @@ END DO
           nsurf_sec,ndecay,ikin,nx,ny,nz,time,nn,nint,ikmast,ikph,ikO2,master,delt)
       END IF
       IF (tecplot) THEN
-        CALL GraphicsTecplot(ncomp,nrct,nkin,nspec,ngas,nexchange,nexch_sec,nsurf,nsurf_sec,  &
+        CALL GraphicsVisit(ncomp,nrct,nkin,nspec,ngas,nexchange,nexch_sec,nsurf,nsurf_sec,  &
           ndecay,ikin,nx,ny,nz,time,nn,nint,ikmast,ikph,delt,jpor,FirstCall)
+!!!        CALL GraphicsTecplot(ncomp,nrct,nkin,nspec,ngas,nexchange,nexch_sec,nsurf,nsurf_sec,  &
+!!!          ndecay,ikin,nx,ny,nz,time,nn,nint,ikmast,ikph,delt,jpor,FirstCall)
       END IF
 
     ELSE 
@@ -3013,9 +3032,14 @@ END DO
       ELSE IF (nview) THEN
         CALL NviewOutput(ncomp,nrct,nkin,nspec,nexchange,nexch_sec,nsurf,  &
           nsurf_sec,ndecay,ikin,nx,ny,nz,time,nn,nint,ikmast,ikph,ikO2,master,delt)
-      ELSE 
-        CALL GraphicsTecplot(ncomp,nrct,nkin,nspec,ngas,nexchange,nexch_sec,nsurf,nsurf_sec,  &
+      ELSE IF (visit) THEN
+        CALL GraphicsVisit(ncomp,nrct,nkin,nspec,ngas,nexchange,nexch_sec,nsurf,nsurf_sec,  &
           ndecay,ikin,nx,ny,nz,time,nn,nint,ikmast,ikph,delt,jpor,FirstCall)
+      ELSE 
+        CALL GraphicsVisit(ncomp,nrct,nkin,nspec,ngas,nexchange,nexch_sec,nsurf,nsurf_sec,  &
+          ndecay,ikin,nx,ny,nz,time,nn,nint,ikmast,ikph,delt,jpor,FirstCall)
+!!!        CALL GraphicsTecplot(ncomp,nrct,nkin,nspec,ngas,nexchange,nexch_sec,nsurf,nsurf_sec,  &
+!!!          ndecay,ikin,nx,ny,nz,time,nn,nint,ikmast,ikph,delt,jpor,FirstCall)
       END IF
 
       TotalMass = 0.0d0
@@ -3372,6 +3396,6 @@ STOP
 !       ****** PETSc closeout finished *********
 READ(*,*)
 STOP
-END SUBROUTINE CrunchFlow
+END SUBROUTINE CrunchTope
 !****************END DRIVER PROGRAM**********************
 
