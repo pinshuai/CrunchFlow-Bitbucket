@@ -424,7 +424,7 @@ DO k = 1,nkin
                                               * dMoleFractionAqueousRare(iPrimaryRare,isotopologue)
 
                     jac_sat(iPrimaryCommon) = si(np,k) *                                                                               &
-                                              (-mumin(1,kMineralCommon,iPrimaryCommon))/MoleFractionAqueousRare(Isotopologue)          &                            &
+                                              (-mumin(1,kMineralCommon,iPrimaryCommon))/MoleFractionAqueousRare(Isotopologue)          &
                                               * dMoleFractionAqueousRare(iPrimaryCommon,isotopologue)
 
 !!!  **********  Numerical derivative **********************

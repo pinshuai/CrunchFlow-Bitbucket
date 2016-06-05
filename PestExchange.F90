@@ -47,6 +47,7 @@ CHARACTER (LEN=mls)                                           :: CharLengthStrin
 CHARACTER (LEN=mls)                                           :: parchar
 CHARACTER (LEN=mls)                                           :: section
 CHARACTER (LEN=mls)                                           :: parfind
+CHARACTER (LEN=mls)                                           :: FMT
 
 LOGICAL(LGT)                                                  :: continuation
 LOGICAL(LGT)                                                  :: ext
@@ -171,15 +172,16 @@ IF(ls /= 0) THEN
       DO nl = 1,NPestExchange
         dumstring3 = IntegerToCharacter(nl)
         CALL squeeze(dumstring3,lchar)
+        WRITE(FMT,'("(a2,a2,a",I0,",a",I0,",a1,a4)")')ls,lchar
  !!       WRITE(UnitPestExchange,502) dumstring2, OpenBracket(1:2), dumstring(1:ls), dumstring3(1:lchar), CloseBracket(1:1), CharLengthString(1:4)
-       WRITE(UnitPestExchange,502) dumstring2, OpenBracket, dumstring, dumstring3, CloseBracket, CharLengthString
+       WRITE(UnitPestExchange,FMT) dumstring2, OpenBracket, dumstring, dumstring3, CloseBracket, CharLengthString
       END DO
     END DO
     CLOSE(UNIT=UnitPestExchange,STATUS='keep')
   END IF
 
 501 FORMAT('pif @')
-502 FORMAT(a2,a2,a<ls>,a<lchar>,a1,a4)
+!! __GNUC__ 502 FORMAT(a2,a2,a<ls>,a<lchar>,a1,a4)
 
   INQUIRE(FILE=PestExchangeOutputFile,OPENED=FileOpen)
   IF (FileOpen) THEN
