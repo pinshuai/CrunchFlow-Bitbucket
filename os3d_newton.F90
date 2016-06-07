@@ -1,8 +1,44 @@
+!! CrunchTope 
+!! Copyright (c) 2016, Carl Steefel
+!! Copyright (c) 2016, The Regents of the University of California, 
+!! through Lawrence Berkeley National Laboratory (subject to 
+!! receipt of any required approvals from the U.S. Dept. of Energy).  
+!! All rights reserved.
+
+!! Redistribution and use in source and binary forms, with or without
+!! modification, are permitted provided that the following conditions are
+!! met: 
+
+!! (1) Redistributions of source code must retain the above copyright
+!! notice, this list of conditions and the following disclaimer.
+
+!! (2) Redistributions in binary form must reproduce the above copyright
+!! notice, this list of conditions and the following disclaimer in the
+!! documentation and/or other materials provided with the distribution.
+
+!! (3) Neither the name of the University of California, Lawrence
+!! Berkeley National Laboratory, U.S. Dept. of Energy nor the names of    
+!! its contributors may be used to endorse or promote products derived
+!! from this software without specific prior written permission.
+
+!! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+!! "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+!! LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+!! A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+!! OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+!! SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+!! LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+!! DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+!! THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+!! (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+!! OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE 
+
+    
 SUBROUTINE os3d_newton(ncomp,nspec,nkin,nrct,ngas,ikin,       &
     nexchange,nexch_sec,nsurf,nsurf_sec,npot,ndecay,neqn,igamma,   & 
     delt,corrmax,jx,jy,jz,iterat,icvg,nx,ny,nz,time,AqueousToBulk)
 USE crunchtype
-USE runtime, ONLY: H2Opresent, Duan
+USE runtime, ONLY: H2Opresent, Duan, Duan2006
 USE params
 USE concentration
 USE mineral
@@ -13,10 +49,6 @@ USE temperature
 
 IMPLICIT NONE
 
-!!EXTERNAL dgetrf
-!!EXTERNAL dgetrs
-
-!fp! auto_par_loops = 0;
 
 !  **********************  INTERFACE BLOCKS  **************************
 INTERFACE
@@ -81,7 +113,7 @@ INTEGER(I4B)                                  :: npt
 INTEGER(I4B)                                  :: info
 INTEGER(I4B)                                  :: round
 
-REAL(DP), PARAMETER                           :: atol=1.e-08
+REAL(DP), PARAMETER                           :: atol=1.e-09
 REAL(DP), PARAMETER                           :: rtol=1.e-06
 REAL(DP)                                      :: errmax
 REAL(DP)                                      :: tolmax
@@ -106,7 +138,7 @@ DO ne = 1,newton
   END IF
 
   IF (igamma == 2) THEN
-    IF (Duan) THEN
+    IF (Duan .OR. Duan2006) THEN
       CALL gamma_co2(ncomp,nspec,ngas,jx,jy,jz)
     ELSE
       CALL gamma(ncomp,nspec,jx,jy,jz)
@@ -143,52 +175,45 @@ DO ne = 1,newton
   CALL reactkin(ncomp,nspec,nrct,ikin,jx,jy,jz,AqueousToBulk,time)
   CALL jacrkin(ncomp,nspec,nrct,ikin,jx,jy,jz,AqueousToBulk)
 
-  CALL fx_local(ncomp,nexchange,nexch_sec,nsurf,nsurf_sec,nrct,  &
+  CALL FxTopeLocal(ncomp,nexchange,nexch_sec,nsurf,nsurf_sec,nrct,  &
     nspec,ngas,neqn,delt,jx,jy,jz,nx,ny,nz,ne,time)
 
-  CALL assemble_local(ncomp,nspec,nkin,nrct,ngas,ikin,  &
+  CALL AssembleLocal(ncomp,nspec,nkin,nrct,ngas,ikin,  &
     nexchange,nexch_sec,nsurf,nsurf_sec,npot,ndecay,delt,jx,jy,jz,nx,ny,nz,ne,time)
 
 !  Solve the sucker
 
   DO i = 1,neqn
-!!    aascale = aaa(i,i)
-    aascale = 1.0
-    DO i2 = 1,neqn
-      aaa(i,i2) = aaa(i,i2)/aascale
-    END DO
-    bb(i) = -fxx(i)/aascale
+    bb(i) = -fxx(i)
   END DO
 
 !!  CALL ludcmp90(aaa,indd,det,neqn)
 !!  CALL lubksb90(aaa,indd,bb,neqn)
 
-  check = -fxx(1)/aaa(1,1)
 
   CALL dgetrf(neqn,neqn,aaa,neqn,indd,info)
   CALL dgetrs(trans,neqn,ione,aaa,neqn,indd,bb,neqn,info)
 
   errmax = 0.0D0
   DO i = 1,ncomp
-    IF (ABS(bb(i)) > errmax) THEN
-      errmax = ABS(bb(i))
+    IF (DABS(bb(i)) > errmax) THEN
+      errmax = DABS(bb(i))
     END IF
-    IF (ABS(bb(i)) > corrmax) THEN
+    IF (DABS(bb(i)) > corrmax) THEN
       bb(i) = SIGN(corrmax,bb(i))
     ELSE
       CONTINUE
     END IF
     sp(i,jx,jy,jz) = sp(i,jx,jy,jz) + bb(i)
-    sp10(i,jx,jy,jz) = EXP(sp(i,jx,jy,jz))
+    sp10(i,jx,jy,jz) = DEXP(sp(i,jx,jy,jz))
   END DO
-!!fp! compare_elem("sp end+ newton",{#expr# sp(1:ncomp,jx(1:nx),+jy(1:ny),jz(1:nz))#},0,{#expr#ne==1#},0,real8,20);
 
   DO ix = 1,nexchange
     ind = ix + ncomp
-    IF (ABS(bb(ind)) > errmax) THEN
+    IF (DABS(bb(ind)) > errmax) THEN
       errmax = ABS(bb(ind))
     END IF
-    IF (ABS(bb(ind)) > 1.0d0) THEN
+    IF (DABS(bb(ind)) > 1.0d0) THEN
       bb(ind) = SIGN(1.0d0,bb(ind))
     ELSE
       CONTINUE
@@ -198,23 +223,23 @@ DO ne = 1,newton
   END DO
   DO is = 1,nsurf
     ind =is+ncomp+nexchange
-    IF (ABS(bb(ind)) > errmax) THEN
-      errmax = ABS(bb(ind))
+    IF (DABS(bb(ind)) > errmax) THEN
+      errmax = DABS(bb(ind))
     END IF
-    IF (ABS(bb(ind)) > corrmax) THEN
+    IF (DABS(bb(ind)) > corrmax) THEN
       bb(ind) = SIGN(corrmax,bb(ind))
     ELSE
       CONTINUE
     END IF
     spsurf(is,jx,jy,jz) = spsurf(is,jx,jy,jz) + bb(ind)
-    spsurf10(is,jx,jy,jz) = EXP(spsurf(is,jx,jy,jz))
+    spsurf10(is,jx,jy,jz) = DEXP(spsurf(is,jx,jy,jz))
   END DO
   DO npt = 1,npot
     ind = npt+ncomp+nexchange+nsurf
-    IF (ABS(bb(ind)) > errmax) THEN
-      errmax = ABS(bb(ind))
+    IF (DABS(bb(ind)) > errmax) THEN
+      errmax = DABS(bb(ind))
     END IF
-    IF (ABS(bb(ind)) > 0.1) THEN
+    IF (DABS(bb(ind)) > 0.1d0) THEN
       bb(ind) = SIGN(0.1d0,bb(ind))
     ELSE
       CONTINUE
@@ -222,7 +247,7 @@ DO ne = 1,newton
     LogPotential(npt,jx,jy,jz) = LogPotential(npt,jx,jy,jz) + bb(ind)
   END DO
 
-  IF (ABS(errmax) < 1.e-15) THEN
+  IF (DABS(errmax) < 1.e-15) THEN
     icvg = 0
     EXIT
   END IF
@@ -233,16 +258,16 @@ DO ne = 1,newton
     ind = i
 !!    tolmax = atol + rtol*sp10(i,jx,jy,jz)
     tolmax = atol
-    IF (ABS(delt*fxx(ind)) > tolmax) THEN
+    IF (DABS(delt*fxx(ind)) > tolmax) THEN
       icvg = 1
       EXIT
     END IF 
   END DO
 
   DO ix = 1,nexchange
-    tolmax = 1.e-06
+    tolmax = 1.D-06
     ind = ix+ncomp
-    IF (ABS(fxx(ind)) > tolmax) THEN
+    IF (DABS(fxx(ind)) > tolmax) THEN
       icvg = 1
       EXIT
     END IF
@@ -251,7 +276,7 @@ DO ne = 1,newton
   DO is = 1,nsurf
     tolmax = atol
     ind = is+ncomp+nexchange
-    IF (ABS(delt*fxx(ind)) > tolmax) THEN
+    IF (DABS(delt*fxx(ind)) > tolmax) THEN
       icvg = 1
       EXIT
     END IF
@@ -260,7 +285,7 @@ DO ne = 1,newton
   DO npt = 1,npot
     tolmax = 1.e-07
      ind = npt+ncomp+nexchange+nsurf
-     IF (ABS(fxx(ind)) > tolmax) THEN
+     IF (DABS(fxx(ind)) > tolmax) THEN
        icvg = 1
        EXIT
      END IF

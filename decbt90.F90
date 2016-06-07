@@ -1,6 +1,4 @@
 
-! Code converted using TO_F90 by Alan Miller
-! Date: 2000-07-27  Time: 09:55:53
  
 SUBROUTINE decbt90 (m,n,ier)
 USE crunchtype

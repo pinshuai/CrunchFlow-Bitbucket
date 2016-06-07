@@ -1,7 +1,4 @@
-!
- 
-! Code converted using TO_F90 by Alan Miller
-! Date: 2000-07-27  Time: 10:07:53
+
 
 SUBROUTINE solbt90(m,n)
 USE crunchtype
