@@ -1,18 +1,9 @@
 ALL: CrunchMain
 
-## intel, margaux
-## FFLAGS  = -mmacosx-version-min=10.5
+## for Alquimia, add the -DALQUIMIA flag
+##FFLAGS  = -w -DALQUIMIA
 
-## intel, Latache (linux)
-## FFLAGS = -fp-model strict
-
-## gnu compiler; Macbook Air, Yosemite
-## FFLAGS  = -O3 -mtune=native
-## for Alquimia
-FFLAGS  = -O3 -mtune=native -DALQUIMIA
-
-## no options
-## FFLAGS  = 
+FFLAGS  = -w
 
 %.o: %.mod
 
@@ -626,11 +617,11 @@ LOCDIR   = ${CrunchTope_Dir}
 ## For PETSc 3.0X
 ##include ${PETSC_DIR}/conf/base
 ## For PETSc 3.2X
-include ${PETSC_DIR}/conf/variables
-include ${PETSC_DIR}/conf/rules
+##include ${PETSC_DIR}/conf/variables
+##include ${PETSC_DIR}/conf/rules
 ## For PETSc >3.6.0
-##include ${PETSC_DIR}/lib/petsc/conf/variables
-##include ${PETSC_DIR}/lib/petsc/conf/rules
+include ${PETSC_DIR}/lib/petsc/conf/variables
+include ${PETSC_DIR}/lib/petsc/conf/rules
 
 CrunchMain : ${OBJSF} chkopts 
 	-${FLINKER} -o CrunchTope ${OBJSF} ${PETSC_FORTRAN_LIB} ${PETSC_LIB} ${FFLAGS}
