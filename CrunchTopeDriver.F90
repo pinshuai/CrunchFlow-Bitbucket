@@ -33,35 +33,31 @@
 !! (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 !! OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE   
     
-SUBROUTINE GetPrimarySpeciesNumber (ncomp,dumstring,ilabel)
-USE CrunchType
-USE params, ONLY: mls
-USE concentration,ONLY: ulab
+PROGRAM CrunchTopeDriver
+
 
 IMPLICIT NONE
 
-INTEGER(I4B), INTENT(IN)               :: ncomp
-CHARACTER (LEN=mls), INTENT(IN)        :: dumstring
-INTEGER(I4B), INTENT(OUT)              :: ilabel
-INTEGER(I4B)                           :: i
-INTEGER(I4B)                           :: ls
-LOGICAL (LGT)                          :: SpeciesFound
+interface
+  subroutine CrunchFlow(NumInputfiles,InputFileCounter,NewInput)
+    LOGICAL(KIND(.TRUE.))                                          :: NewInput
+    INTEGER(SELECTED_INT_KIND(9))                                  :: NumInputFiles
+    INTEGER(SELECTED_INT_KIND(9))                                  :: InputFileCounter
+  end subroutine CrunchFlow
+end interface
 
-SpeciesFound = .FALSE.
-DO i = 1,ncomp
-  IF (dumstring == ulab(i)) THEN
-    SpeciesFound = .TRUE.
-    ilabel = i
-  END IF
+LOGICAL(KIND(.TRUE.))                                               :: NewInput
+INTEGER(SELECTED_INT_KIND(9))                                       :: NumInputFiles
+INTEGER(SELECTED_INT_KIND(9))                                       :: InputFileCounter
+
+NumInputFiles = 1   
+InputFileCounter = 1  
+NewInput = .TRUE.
+
+
+DO WHILE (NewInput)
+  CALL CrunchTope(NumInputFiles,InputFileCounter,NewInput)
 END DO
-IF (.NOT. SpeciesFound) THEN
-  CALL stringlen(dumstring,ls)
-  WRITE(*,*) 
-  WRITE(*,*) ' Primary species not found in list'
-  WRITE(*,*) ' Looking for: ', dumstring(1:ls)
-  WRITE(*,*)
-  READ(*,*)
-  STOP
-END IF
 
-END SUBROUTINE GetPrimarySpeciesNumber
+STOP
+END 

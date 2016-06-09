@@ -1,25 +1,42 @@
-!******************        GIMRT98     ************************
- 
-! Code converted using TO_F90 by Alan Miller
-! Date: 2000-07-27  Time: 09:52:46
- 
-!************** (C) COPYRIGHT 1995,1998,1999 ******************
-!*******************     C.I. Steefel      *******************
-!                    All Rights Reserved
+!! CrunchTope 
+!! Copyright (c) 2016, Carl Steefel
+!! Copyright (c) 2016, The Regents of the University of California, 
+!! through Lawrence Berkeley National Laboratory (subject to 
+!! receipt of any required approvals from the U.S. Dept. of Energy).  
+!! All rights reserved.
 
-!  GIMRT98 IS PROVIDED "AS IS" AND WITHOUT ANY WARRANTY EXPRESS OR IMPLIED.
-!  THE USER ASSUMES ALL RISKS OF USING GIMRT98. THERE IS NO CLAIM OF THE
-!  MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+!! Redistribution and use in source and binary forms, with or without
+!! modification, are permitted provided that the following conditions are
+!! met: 
 
-!  YOU MAY MODIFY THE SOURCE CODE FOR YOUR OWN USE, BUT YOU MAY NOT
-!  DISTRIBUTE EITHER THE ORIGINAL OR THE MODIFIED CODE TO ANY OTHER
-!  WORKSTATIONS
-!**********************************************************************
+!! (1) Redistributions of source code must retain the above copyright
+!! notice, this list of conditions and the following disclaimer.
+
+!! (2) Redistributions in binary form must reproduce the above copyright
+!! notice, this list of conditions and the following disclaimer in the
+!! documentation and/or other materials provided with the distribution.
+
+!! (3) Neither the name of the University of California, Lawrence
+!! Berkeley National Laboratory, U.S. Dept. of Energy nor the names of    
+!! its contributors may be used to endorse or promote products derived
+!! from this software without specific prior written permission.
+
+!! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+!! "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+!! LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+!! A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+!! OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+!! SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+!! LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+!! DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+!! THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+!! (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+!! OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE 
 
 SUBROUTINE mineral_update(nx,ny,nz,nrct,dt,dtnew,ineg,jpor,deltmin)
 USE crunchtype
 USE params
-USE runtime, ONLY: voltol,inagaki,inagaki2,ncounter,ReadGautier
+USE runtime, ONLY: voltol,inagaki,inagaki2,ncounter,ReadGautier,ForsteriteCapillary
 USE concentration
 USE mineral
 USE medium
@@ -41,7 +58,7 @@ REAL(DP), INTENT(IN)                                        :: deltmin
 
 !  Internal variables and arrays
 
-REAL(DP)                                                    :: volcheck
+REAL(DP)                                                    :: VolumeUpdate
 REAL(DP)                                                    :: voldiff
 REAL(DP)                                                    :: volneg
 REAL(DP)                                                    :: vinit
@@ -76,6 +93,13 @@ REAL(DP)                                                    :: catalysis
 REAL(DP)                                                    :: rdensify
 REAL(DP)                                                    :: DensificationFactor
 
+REAL(DP)                                                    :: RipeningRate
+REAL(DP)                                                    :: DeltaKeq
+REAL(DP)                                                    :: RipenRate2
+REAL(DP)                                                    :: RipenRate3
+REAL(DP)                                                    :: RipenRate4
+REAL(DP)                                                    :: RipenRate5
+
 CHARACTER (LEN=mls)                                         :: dumstring
 
 INTEGER(I4B)                                                :: nn 
@@ -101,14 +125,14 @@ volneg = 0.0
 DO jz = 1,nz
   DO jy = 1,ny
     DO jx = 1,nx
+        
       DO k = 1,nrct
-!!       IF (volsave(k,jx,jy,jz) == 0.0d0) then
-!!          volsave(k,jx,jy,jz) = volfx(k,jx,jy,jz)
-!!        END IF
+
         IF (MineralAssociate(k)) THEN
+            
           kk = MineralID(k)
-          volcheck = volmol(kk)*dppt(k,jx,jy,jz)*dt   !  Point to volume fraction of associated mineral
-          voldiff = volcheck + volfx(kk,jx,jy,jz)
+          VolumeUpdate = volmol(kk)*dppt(k,jx,jy,jz)*dt   !  Point to volume fraction of associated mineral
+          voldiff = VolumeUpdate + volfx(kk,jx,jy,jz)
           IF (voldiff < volneg) THEN
             volneg = voldiff
             kneg = kk
@@ -116,20 +140,25 @@ DO jz = 1,nz
             jyneg = jy
             jzneg = jz
           END IF
+          
         ELSE
-          volcheck = volmol(k)*dppt(k,jx,jy,jz)*dt
-          voldiff = volcheck + volfx(k,jx,jy,jz)
+            
+          VolumeUpdate = volmol(k)*dppt(k,jx,jy,jz)*dt
+          voldiff = VolumeUpdate + volfx(k,jx,jy,jz)
           IF (voldiff < volneg) THEN
             volneg = voldiff
             kneg = k
             jxneg = jx
             jyneg = jy
             jzneg = jz
+            
           END IF
+          
         END IF
-
+        
 
       END DO
+
     END DO
   END DO
 END DO
@@ -185,20 +214,17 @@ DO jz = 1,nz
         IF (MineralAssociate(k)) THEN
             
           kk = MineralID(k)
-          volcheck = volmol(kk)*dppt(k,jx,jy,jz)*dt   !  Point to volume fraction of associated mineral
-          volfx(kk,jx,jy,jz) = volfx(kk,jx,jy,jz) + volcheck
+          VolumeUpdate = volmol(kk)*dppt(k,jx,jy,jz)*dt   !  Point to volume fraction of associated mineral
+          volfx(kk,jx,jy,jz) = volfx(kk,jx,jy,jz) + VolumeUpdate
           IF (volfx(kk,jx,jy,jz) < 0.0) THEN
             volfx(kk,jx,jy,jz) = 0.0
           END IF
           
         ELSE
             
-          volcheck = volmol(k)*dppt(k,jx,jy,jz)*dt
-          if (k==1 .and. dppt(k,jx,jy,jz)> 0.0) then
-              continue
-          end if
-          volfx(k,jx,jy,jz) = volfx(k,jx,jy,jz) + volcheck
-          volSaveByTimeStep(ncounter,k,jx,jy,jz) = volcheck
+          VolumeUpdate = volmol(k)*dppt(k,jx,jy,jz)*dt
+          volfx(k,jx,jy,jz) = volfx(k,jx,jy,jz) + VolumeUpdate
+          volSaveByTimeStep(ncounter,k,jx,jy,jz) = VolumeUpdate
           volSave(k,jx,jy,jz) = volSave(k,jx,jy,jz) + volSaveByTimeStep(ncounter,k,jx,jy,jz)
 
           IF (ncounter > 100) then
@@ -216,6 +242,7 @@ DO jz = 1,nz
         END IF
 
       END DO
+
     END DO
   END DO
 END DO
@@ -272,12 +299,14 @@ DO jz = 1,nz
         vinit = volin(k,jinit(jx,jy,jz))
         
         IF (LocalEquilibrium(k)) THEN                      !! Local equilibrium fantasy, so don't change the surface area
+            
           IF (volfx(k,jx,jy,jz) > 0.0d0) THEN
             area(k,jx,jy,jz) = areain(k,jinit(jx,jy,jz))
           ELSE
             area(k,jx,jy,jz) = 0.0d0
           END IF
           if (mintype(k) == 0) sum = sum + volfx(k,jx,jy,jz)
+          
         ELSE                                               !! Update reactive surface area
 
           IF (iarea(k,jinit(jx,jy,jz)) == 0) THEN                     !!  Bulk surface area
@@ -312,20 +341,47 @@ DO jz = 1,nz
             END IF
           END DO
 
+
         END IF
 
       END DO
+
+!!  Ripening
+        IF (ForsteriteCapillary) THEN
+
+          RipeningRate = 1.0E-12
+          DeltaKeq = 0.05
+           
+              RipenRate2 = volmol(2) * area(1,jx,jy,jz) * RipeningRate * (3600.0*24.0*365.0)  * ( (Keqmin(1,2,jx,jy,jz)+DeltaKeq)/Keqmin(1,2,jx,jy,jz) - 1.0 )
+              RipenRate3 = volmol(3) * area(2,jx,jy,jz) * RipeningRate * (3600.0*24.0*365.0)  * ( (Keqmin(1,3,jx,jy,jz)+DeltaKeq)/Keqmin(1,3,jx,jy,jz) - 1.0 )
+              RipenRate4 = volmol(4) * area(3,jx,jy,jz) * RipeningRate * (3600.0*24.0*365.0)  * ( (Keqmin(1,4,jx,jy,jz)+DeltaKeq)/Keqmin(1,4,jx,jy,jz) - 1.0 )
+              RipenRate5 = volmol(5) * area(4,jx,jy,jz) * RipeningRate * (3600.0*24.0*365.0)  * ( (Keqmin(1,5,jx,jy,jz)+DeltaKeq)/Keqmin(1,5,jx,jy,jz) - 1.0 )     
+
+              volfx(1,jx,jy,jz) = volfx(1,jx,jy,jz) - RipenRate2
+               volfx(2,jx,jy,jz) = volfx(2,jx,jy,jz) + RipenRate2
+             if (volfx(1,jx,jy,jz) < 0.0d0) THEN
+               volfx(1,jx,jy,jz) = 0.0d0
+             end if    
+             if (volfx(2,jx,jy,jz) < 0.0d0) THEN
+               volfx(2,jx,jy,jz) = 0.0d0
+             end if    
+!!!               volfx(2,jx,jy,jz) = volfx(2,jx,jy,jz) + RipenRate2 - RipenRate3   
+!!!               volfx(3,jx,jy,jz) = volfx(3,jx,jy,jz) + RipenRate3 - RipenRate4      
+!!!               volfx(4,jx,jy,jz) = volfx(4,jx,jy,jz) + RipenRate4 - RipenRate5     
+!!!               volfx(5,jx,jy,jz) = volfx(5,jx,jy,jz) + RipenRate5    
+              
+        END IF
       
 !!  Update porosity, with a save of the porosity to porOld
 
       porold(jx,jy,jz) = por(jx,jy,jz)
-      IF (jpor /= 1 .AND. .NOT. ReadGautier) THEN
-        por(jx,jy,jz) = porin(jx,jy,jz)
-      ELSE
+      If (jpor == 1 .OR. jpor == 3) THEN
         por(jx,jy,jz) = 1.0 - sum
         IF (por(jx,jy,jz) < MinimumPorosity) THEN
           por(jx,jy,jz) = MinimumPorosity
         END IF
+      ELSE
+        por(jx,jy,jz) = porin(jx,jy,jz)
       END IF
       
       

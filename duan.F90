@@ -1,3 +1,48 @@
+!! CrunchTope 
+!! Copyright (c) 2016, Carl Steefel
+!! Copyright (c) 2016, The Regents of the University of California, 
+!! through Lawrence Berkeley National Laboratory (subject to 
+!! receipt of any required approvals from the U.S. Dept. of Energy).  
+!! All rights reserved.
+
+!! Redistribution and use in source and binary forms, with or without
+!! modification, are permitted provided that the following conditions are
+!! met: 
+
+!! (1) Redistributions of source code must retain the above copyright
+!! notice, this list of conditions and the following disclaimer.
+
+!! (2) Redistributions in binary form must reproduce the above copyright
+!! notice, this list of conditions and the following disclaimer in the
+!! documentation and/or other materials provided with the distribution.
+
+!! (3) Neither the name of the University of California, Lawrence
+!! Berkeley National Laboratory, U.S. Dept. of Energy nor the names of    
+!! its contributors may be used to endorse or promote products derived
+!! from this software without specific prior written permission.
+
+!! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+!! "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+!! LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+!! A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+!! OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+!! SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+!! LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+!! DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+!! THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+!! (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+!! OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE   
+    
+!-----------------------------------------------------------------------------------
+!
+! Lambda coefficients - Pitzer interaction parameters for CO2 with ions (Na)
+! Written by Sergi Molins
+!
+!-----------------------------------------------------------------------------------
+
+!
+! Compare to Duan's model online: http://models.kl-edi.ac.cn/models/h2o_co2/index.htm
+!
 !-----------------------------------------------------------------------------------
 !
 ! Lambda coefficients - Pitzer interaction parameters for CO2 with ions (Na)
@@ -391,6 +436,285 @@ END IF
   return
 
 end subroutine fugacity_co2
+
+!-----------------------------------------------------------------------------------
+!
+! CO2 Fugacity - Duan and Sun 2006 Chem. Geol. 
+!
+!-----------------------------------------------------------------------------------
+subroutine fugacity_co24(pg,tk,ln_fco2,vrInOut)
+
+  use crunchtype
+  use params
+
+  implicit none
+
+! arguments
+  real(dp), intent(in)    :: pg
+  real(dp), intent(in)    :: tk
+  real(dp), intent(out)   :: ln_fco2
+  real(dp), intent(inout)  :: vrInOut
+
+! internal
+  logical(lgt) :: RunVerbose
+
+  real(dp)     :: fco2
+  real(dp)     :: p1
+  real(dp)     :: calc_pv
+  real(dp)     :: phi
+ 
+! parameters: critical pressure and temperature for CO2 (from Duan et al 1992b GCA)
+  real(dp), parameter     :: pc = 73.825d0, &  !bar
+                             tc = 304.20d0     !Kelvin  31.05d0 !!
+
+! parameters: coefficients for equation 2 Duan et al (2006) Marine Chem.
+  real(dp), dimension(15), parameter :: c1 = &
+
+                                        (/ 1.0d0        ,  &  ! c(1)  
+                                           4.75868350d-3,  &  ! c(2)
+                                          -3.35699630d-6,  &  ! c(3)
+                                           0.0d0        ,  &  ! c(4)
+                                          -1.31793960d+0   ,  &  ! c(5)
+                                          -3.83891010d-6,  &  ! c(6)
+                                           0.0d0        ,  &  ! c(7)
+                                           2.28151040d-3,  &  ! c(8) 
+                                           0.0d0        ,  &  ! c(9) 
+                                           0.0d0        ,  &  ! c(10)
+                                           0.0d0        ,  &  ! c(11)
+                                           0.0d0        ,  &  ! c(12)
+                                           0.0d0        ,  &  ! c(13)
+                                           0.0d0        ,  &  ! c(14)
+                                           0.0d0           /) ! c(15)
+
+  real(dp), dimension(15), parameter :: c2 = &
+
+                                        (/-7.17348820d-1,  &  ! c(1)  
+                                           1.59853790d-4,  &  ! c(2)
+                                          -4.92864710d-7,  &  ! c(3)
+                                           0.0d0        ,  &  ! c(4)
+                                           0.0d0        ,  &  ! c(5)
+                                          -2.78552850d-7,  &  ! c(6)
+                                           1.18770150d-9,  &  ! c(7)
+                                           0.0d0        ,  &  ! c(8) 
+                                           0.0d0        ,  &  ! c(9) 
+                                           0.0d0        ,  &  ! c(10)
+                                           0.0d0        ,  &  ! c(11)
+                                         -96.53951200d+0,  &  ! c(12)
+                                           4.47749380d-1,  &  ! c(13)
+                                         101.81078d+0   ,  &  ! c(14)
+                                           5.37838790d-6   /) ! c(15)
+
+  real(dp), dimension(15), parameter :: c3 = &
+
+                                        (/-6.51290190d-2,  &  ! c(1)  
+                                          -2.14299770d-4,  &  ! c(2)
+                                          -1.14449300d-6,  &  ! c(3)
+                                           0.0d0        ,  &  ! c(4)
+                                           0.0d0        ,  &  ! c(5)
+                                          -1.15580810d-7,  &  ! c(6)
+                                           1.19523700d-9,  &  ! c(7)
+                                           0.0d0        ,  &  ! c(8) 
+                                           0.0d0        ,  &  ! c(9) 
+                                           0.0d0        ,  &  ! c(10)
+                                           0.0d0        ,  &  ! c(11)
+                                        -221.34306d0    ,  &  ! c(12)
+                                           0.0d0        ,  &  ! c(13)
+                                          71.820393d0   ,  &  ! c(14)
+                                           6.60892460d-6   /) ! c(15)
+
+  real(dp), dimension(15), parameter :: c4 = &
+
+                                        (/ 5.0383896d0  ,  &  ! c(1)  
+                                          -4.42577440d-3,  &  ! c(2)
+                                           0.0d0        ,  &  ! c(3)
+                                           1.9572733d0  ,  &  ! c(4)
+                                           0.0d0        ,  &  ! c(5)
+                                           2.42234360d-6,  &  ! c(6)
+                                           0.0d0        ,  &  ! c(7)
+                                          -9.37961350d-4,  &  ! c(8) 
+                                          -1.50260300d+0,  &  ! c(9) 
+                                           3.02722400d-3,  &  ! c(10)
+                                         -31.377342d0   ,  &  ! c(11)
+                                         -12.847063d0   ,  &  ! c(12)
+                                           0.0d0        ,  &  ! c(13)
+                                           0.0d0        ,  &  ! c(14)
+                                          -1.50566480d-5   /) ! c(15)
+
+  real(dp), dimension(15), parameter :: c5 = &
+
+                                        (/-1.60631520d+1,  &  ! c(1)  
+                                          -2.70579900d-3,  &  ! c(2)
+                                           0.0d0        ,  &  ! c(3)
+                                           1.41192390d-1,  &  ! c(4)
+                                           0.0d0        ,  &  ! c(5)
+                                           8.11329650d-7,  &  ! c(6)
+                                           0.0d0        ,  &  ! c(7)
+                                          -1.14530820d-4,  &  ! c(8) 
+                                           2.38956710d+0,  &  ! c(9) 
+                                           5.05274570d-4,  &  ! c(10)
+                                         -17.76346000d+0,  &  ! c(11)
+                                         985.92232d0    ,  &  ! c(12)
+                                           0.0d0        ,  &  ! c(13)
+                                           0.0d0        ,  &  ! c(14)
+                                          -5.49652560d-7   /) ! c(15)
+
+  real(dp), dimension(15), parameter :: c6 = &
+
+                                        (/-1.56934900d-1,  &  ! c(1)  
+                                           4.46214070d-4,  &  ! c(2)
+                                          -9.10805910d-7,  &  ! c(3)
+                                           0.0d0        ,  &  ! c(4)
+                                           0.0d0        ,  &  ! c(5)
+                                           1.06473990d-7,  &  ! c(6)
+                                           2.4273357d-10,  &  ! c(7)
+                                           0.0d0        ,  &  ! c(8) 
+                                           3.58742550d-1,  &  ! c(9) 
+                                           6.33197100d-5,  &  ! c(10)
+                                        -249.89661d0    ,  &  ! c(11)
+                                           0.0d0        ,  &  ! c(12)
+                                           0.0d0        ,  &  ! c(13)
+                                         888.768d0      ,  &  ! c(14)
+                                          -6.63480030d-7   /) ! c(15)
+  
+  RunVerbose= .FALSE.
+
+  ! calculate p1
+  if (tk < 305.d0) then
+    
+    p1 = calc_pv(tk) ! saturation pressure
+
+  else if (tk < 405.d0) then
+
+    p1 = 75.d0 + (tk -305.d0) * 1.25d0
+
+  else 
+
+    p1 = 200.d0 ! bar
+  
+  end if
+  
+
+  if (pg < p1 .and. tk > 273.d0 .and. tk < 573.d0 ) then
+    fco2 = phi(pg,tk,c1)
+
+! pg > p1 
+  else if (pg < 1000.d0 .and. tk > 273.d0 .and. tk < 340.d0 ) then
+
+    fco2 = phi(pg,tk,c2)
+
+  else if (pg < 1000.d0 .and. tk > 340.d0 .and. tk < 435.d0 ) then
+
+    fco2 = phi(pg,tk,c4)
+
+! pg > 1000 bar
+  else if (pg > 1000.d0 .and. tk > 273.d0 .and. tk < 340.d0 ) then
+
+    fco2 = phi(pg,tk,c3)
+
+  else if (pg > 1000.d0 .and. tk > 340.d0 .and. tk < 435.d0 ) then
+
+    fco2 = phi(pg,tk,c5)
+  
+  else if (pg > 1000.d0 .and. tk < 573.d0 ) then
+
+    fco2 = phi(pg,tk,c6)
+
+  else 
+
+    write(*,*)'fugacity model error: pg or tk exceeds range: ', pg, tk
+    stop
+
+  end if  
+
+   ln_fco2 = log(fco2)
+
+end subroutine fugacity_co24
+
+
+!-----------------------------------------------------------------------------------
+!
+! saturated pv(CO2)  -option 1  http://en.wikipedia.org/wiki/Carbon_dioxide_data & CHERIC
+!                    -option 2  http://ddbonline.ddbst.com/AntoineCalculation/AntoineCalculationCGI.exe
+!
+!-----------------------------------------------------------------------------------
+function calc_pv(tt) 
+
+  use crunchtype
+  
+  implicit none
+  
+  real(dp) :: calc_pv
+  real(dp) :: tt ! kelvin
+  real(dp) :: ln_pv
+
+  real(dp) :: term1,   term2,   &
+              term3,   term4,   &
+              term5,   term6,   &
+              term7
+  
+  real(dp), parameter :: mmhg_to_bar = 0.00133322368
+    
+  !term1 = log( 760.0d0 / 101.325d0 ) 
+  !term2 = 24.03761d0 * log(tt)
+  !term3 = - 7062.404d0 / tt
+  !term4 = 166.3861d0
+  !term5 = 3.368548d-5 * tt * tt
+  
+  !ln_pv = term1 + &
+  !        term2 + &
+  !        term3 + &
+  !        term4 + &
+  !        term5
+  
+  !calc_pv = mmhg_to_bar * exp(ln_pv) 
+
+  calc_pv = mmhg_to_bar * 10**( 7.5322 - 835.06 / ( 268.223 + tt - 273.15) ) 
+
+
+  return
+       
+end function calc_pv
+
+!-----------------------------------------------------------------------------------
+!
+! EOS for fugacity - Duan and Sun 2006 Marine Chemistry
+!
+!-----------------------------------------------------------------------------------
+function phi(pp,tt,cc) 
+
+  use crunchtype
+  
+  implicit none
+  
+  real(dp) :: phi
+  real(dp) :: tt, pp ! kelvin, bar
+  real(dp), dimension(15) :: cc
+
+  real(dp) :: term1,   term2,   &
+              term3,   term4,   &
+              term5,   term6,   &
+              term7
+  
+  term1 = cc(1)
+  term2 = ( cc(2) + cc(3) * tt + cc(4) / tt + cc(5) / (tt - 150.0d0) ) * pp
+  term3 = ( cc(6) + cc(7) * tt + cc(8) / tt ) * pp * pp 
+  term4 = ( cc(9) + cc(10) * tt + cc(11) / tt ) * log(pp) 
+  term5 = ( cc(12) + cc(13) * tt ) / pp
+  term6 = cc(14) / tt 
+  term7 = cc(15) * tt * tt
+  
+  phi = term1 + &
+        term2 + &
+        term3 + &
+        term4 + &
+        term5 + &
+        term6 + &
+        term7
+
+  return
+       
+end function phi
+
 !-----------------------------------------------------------------------------------
 !
 ! EOS for supercritical CO2 - Duan and Sun 2003 Chem. Geol. - from Duan et al 1992 GCA

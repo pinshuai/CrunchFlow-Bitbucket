@@ -1,3 +1,39 @@
+!! CrunchTope 
+!! Copyright (c) 2016, Carl Steefel
+!! Copyright (c) 2016, The Regents of the University of California, 
+!! through Lawrence Berkeley National Laboratory (subject to 
+!! receipt of any required approvals from the U.S. Dept. of Energy).  
+!! All rights reserved.
+
+!! Redistribution and use in source and binary forms, with or without
+!! modification, are permitted provided that the following conditions are
+!! met: 
+
+!! (1) Redistributions of source code must retain the above copyright
+!! notice, this list of conditions and the following disclaimer.
+
+!! (2) Redistributions in binary form must reproduce the above copyright
+!! notice, this list of conditions and the following disclaimer in the
+!! documentation and/or other materials provided with the distribution.
+
+!! (3) Neither the name of the University of California, Lawrence
+!! Berkeley National Laboratory, U.S. Dept. of Energy nor the names of    
+!! its contributors may be used to endorse or promote products derived
+!! from this software without specific prior written permission.
+
+!! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+!! "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+!! LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+!! A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+!! OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+!! SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+!! LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+!! DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+!! THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+!! (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+!! OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE 
+
+    
 SUBROUTINE reaction(ncomp,nkin,nrct,nspec,nexchange,nsurf,ndecay,jx,jy,jz,delt,time)
 USE crunchtype
 USE params
@@ -65,6 +101,9 @@ REAL(DP)                                                        :: Astar
 REAL(DP)                                                        :: Bstar
 REAL(DP)                                                        :: Sstar
 REAL(DP)                                                        :: denominator
+
+REAL(DP)                                                        :: TimeHours
+REAL(DP)                                                        :: InhibitTerm
 
 !!!REAL(DP)                                                        :: MoleFraction40
 !!!REAL(DP)                                                        :: MoleFraction44
@@ -245,6 +284,7 @@ snorm = 0.0d0
 ivolume = 0
 checkSaturation = .FALSE.
 UseDissolutionOnly = .FALSE.
+
 
 DO k = 1,nkin
 
@@ -537,6 +577,14 @@ DO k = 1,nkin
           surf(np,k) = area(k,jx,jy,jz)*porfactor
         ELSE
           surf(np,k) = area(k,jx,jy,jz)
+        END IF
+        
+        IF (k==1 .and. umin(k) == 'GlassNagaokaCore' .AND. umin(2) == 'SmectiteGlass') THEN
+            
+            InhibitTerm = 1.0d0 * (1.0d0 - ( volfx(2,jx,jy,jz)/volin(2,jinit(jx,jy,jz)) )**0.25)
+            surf(np,k) = area(k,jx,jy,jz) * InhibitTerm
+            TimeHours = time*365.0*24.0         
+         
         END IF
 
 !!!        IF (SetSurfaceAreaConstant) THEN
@@ -872,7 +920,6 @@ DO k = 1,nkin
 !!!        SigmaNucleation = 97.0
 !!!!        Bnucleation = 0.0009045710    !! 25C
 !!!        Bnucleation = 0.000480339     !! 95C
-
 !!!        Anucleation = 0.001
         
         IF (si(np,k) > 1.0) THEN
@@ -906,9 +953,16 @@ DO k = 1,nkin
         END IF
         
 !!!  ******** End of nucleation option  *********************
+        
+!!!  ******** Ripening option  *********************
+        
+!!!      ELSE IF (imintype(np,k) == 11) THEN    !! Ripening, assumed to be isochemical??
+
+!!!     Calcite1 --> Calcite2
+!!!     Hydromagnesite --> Magnesite
 
       ELSE
-
+                  
         IF (AffinityDepend2(np,k) == 1.0D0 .AND. AffinityDepend3(np,k) == 1.0d0) THEN
           snorm(np,k) = si(np,k)
         ELSE IF (AffinityDepend2(np,k) /= 1.0d0 .AND. AffinityDepend3(np,k) == 1.0d0) THEN
@@ -1016,14 +1070,16 @@ DO k = 1,nkin
         
         IF (Qingyun) THEN
             
-          PoreThreshold = 0.25d0
-          PoreFill = 3.0d0
           PorosityFromSum = 1.0d0 - MineralVolumeSum
           PoreFillFactor = (PorosityFromSum/PoreThreshold)**PoreFill
           IF (PoreFillFactor > 1.0d0) THEN
             PoreFillFactor = 1.0d0
           END IF
-          surf(np,k) = surf(np,k)*PoreFillFactor
+          IF (si(np,k) > 1.0d0) THEN   !!  This is the supersaturation, with SI > 1 supersaturated, SI < 1 undersaturated (Q/Keq)
+            surf(np,k) = surf(np,k)*PoreFillFactor
+          ELSE
+            CONTINUE
+          END IF
 
         END IF
         
@@ -1037,9 +1093,7 @@ DO k = 1,nkin
     END IF
 
     dppt(k,jx,jy,jz) = dppt(k,jx,jy,jz) + rmin(np,k)
-    if (jx==12 .and. k==1 .and. si(1,k)> 1.0) then
-        continue
-    end if
+
   
   END DO   !  End of npth parallel reaction
   

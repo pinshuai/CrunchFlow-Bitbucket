@@ -1,3 +1,38 @@
+!! CrunchTope 
+!! Copyright (c) 2016, Carl Steefel
+!! Copyright (c) 2016, The Regents of the University of California, 
+!! through Lawrence Berkeley National Laboratory (subject to 
+!! receipt of any required approvals from the U.S. Dept. of Energy).  
+!! All rights reserved.
+
+!! Redistribution and use in source and binary forms, with or without
+!! modification, are permitted provided that the following conditions are
+!! met: 
+
+!! (1) Redistributions of source code must retain the above copyright
+!! notice, this list of conditions and the following disclaimer.
+
+!! (2) Redistributions in binary form must reproduce the above copyright
+!! notice, this list of conditions and the following disclaimer in the
+!! documentation and/or other materials provided with the distribution.
+
+!! (3) Neither the name of the University of California, Lawrence
+!! Berkeley National Laboratory, U.S. Dept. of Energy nor the names of    
+!! its contributors may be used to endorse or promote products derived
+!! from this software without specific prior written permission.
+
+!! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+!! "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+!! LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+!! A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+!! OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+!! SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+!! LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+!! DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+!! THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+!! (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+!! OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE   
+    
 subroutine BreakthroughWrite(ncomp,nspec,nkin,nrct,ngas,npot, &
     nx,ny,nz,nseries,nexchange,nexch_sec,nsurf,nsurf_sec,nn,ikpH,time )
 
@@ -52,7 +87,6 @@ INTEGER(I4B)                                                  :: ls
 INTEGER(I4B)                                                  :: ns
 INTEGER(I4B)                                                  :: is
 INTEGER(I4B)                                                  :: nex
-INTEGER(I4B)                                                  :: nmin
 INTEGER(I4B)                                                  :: j
 INTEGER(I4B)                                                  :: nxyz
 INTEGER(I4B)                                                  :: jx
@@ -78,18 +112,6 @@ REAL(DP)                                                      :: qxsum
 
 REAL(DP), PARAMETER                                           :: eps=1.D-12
 
-
-IF (nexchange > 0) THEN
-  nplotexchange = ncomp  
-ELSE
-  nplotexchange = 0
-END IF
-
-IF (nsurf > 0) THEN
-  nplotsurface = ncomp
-ELSE
-  nplotsurface = 0
-END IF
 
 !!  Write to file at fixed intervals
   
@@ -127,15 +149,13 @@ END IF
                   (SurfaceCon(i),i=1,nplotsurface),(ExchangeCon(i),i=1,nplotexchange),   &
                   (sp(ik,jx,jy,jz)/clg,ik=1,ncomp+nspec),                                &
                   (spsurf10(is,jx,jy,jz)/AqueousToBulk,is=1,nsurf+nsurf_sec),            &
-                  (spex10(nex+nexchange,jx,jy,jz)/AqueousToBulk,nex=1,nexch_sec),        &
-                  (volfx(nmin,jx,jy,jz),nmin=1,nrct)    
+                  (spex10(nex+nexchange,jx,jy,jz)/AqueousToBulk,nex=1,nexch_sec)  
               ELSE
                 WRITE(intfile,705) PrintTime,(s(iplot(i),jx,jy,jz),i=1,nplot),         &
                   (SurfaceCon(i),i=1,nplotsurface),(ExchangeCon(i),i=1,nplotexchange),   &
                   (sp(ik,jx,jy,jz)/clg,ik=1,ncomp+nspec),                                &
                   (spsurf10(is,jx,jy,jz)/AqueousToBulk,is=1,nsurf+nsurf_sec),            &
-                  (spex10(nex+nexchange,jx,jy,jz)/AqueousToBulk,nex=1,nexch_sec),        &
-                  (volfx(nmin,jx,jy,jz),nmin=1,nrct)  
+                  (spex10(nex+nexchange,jx,jy,jz)/AqueousToBulk,nex=1,nexch_sec)  
               END IF
             ELSE
               IF (iplotph /= 0) THEN
@@ -151,8 +171,8 @@ END IF
                     phwrite,(s(iplot(i),jx,jy,jz),i=iplotph+1,nplot)
                 END IF
               ELSE
-                WRITE(intfile,185) PrintTime,(s(iplot(i),jx,jy,jz),i=1,nplot)  !& !added next line, hardwired sergi - 2011-08-25
-                                            !,(volfx(k,jx,jy,jz),k=1,nkin)
+                WRITE(intfile,185) PrintTime,(s(iplot(i),jx,jy,jz),i=1,nplot)  & !added next line, hardwired sergi - 2011-08-25
+                                            ,(volfx(k,jx,jy,jz),k=1,nkin)
               END IF
             END IF
           ELSE
@@ -163,15 +183,13 @@ END IF
                   (SurfaceCon(i),i=1,nplotsurface),(ExchangeCon(i),i=1,nplotexchange),   &
                   (sp(ik,jx,jy,jz)/clg,ik=1,ncomp+nspec),                                &
                   (spsurf10(is,jx,jy,jz)/AqueousToBulk,is=1,nsurf+nsurf_sec),            &
-                  (spex10(nex+nexchange,jx,jy,jz)/AqueousToBulk,nex=1,nexch_sec),        &
-                  (volfx(nmin,jx,jy,jz),nmin=1,nrct)
+                  (spex10(nex+nexchange,jx,jy,jz)/AqueousToBulk,nex=1,nexch_sec)  
               ELSE
                 WRITE(intfile,705) PrintTime,(s(iplot(i),jx,jy,jz),i=1,nplot),   &
                   (SurfaceCon(i),i=1,nplotsurface),(ExchangeCon(i),i=1,nplotexchange),   &
                   (sp(ik,jx,jy,jz)/clg,ik=1,ncomp+nspec),                                &
                   (spsurf10(is,jx,jy,jz)/AqueousToBulk,is=1,nsurf+nsurf_sec),            &
-                  (spex10(nex+nexchange,jx,jy,jz)/AqueousToBulk,nex=1,nexch_sec),        &
-                  (volfx(nmin,jx,jy,jz),nmin=1,nrct)
+                  (spex10(nex+nexchange,jx,jy,jz)/AqueousToBulk,nex=1,nexch_sec)  
               END IF
             ELSE
               IF (iplotph /= 0) THEN
@@ -228,15 +246,13 @@ END IF
                   (SurfaceCon(i),i=1,nplotsurface),(ExchangeCon(i),i=1,nplotexchange),   &
                   (sp(ik,jx,jy,jz)/clg,ik=1,ncomp+nspec),                                &
                   (spsurf10(is,jx,jy,jz)/AqueousToBulk,is=1,nsurf+nsurf_sec),            &
-                  (spex10(nex+nexchange,jx,jy,jz)/AqueousToBulk,nex=1,nexch_sec),        &
-                  (volfx(nmin,jx,jy,jz),nmin=1,nrct)  
+                  (spex10(nex+nexchange,jx,jy,jz)/AqueousToBulk,nex=1,nexch_sec)  
               ELSE
                 WRITE(intfile,705) PrintTime,(s(iplot(i),jx,jy,jz),i=1,nplot),  &
                   (SurfaceCon(i),i=1,nplotsurface),(ExchangeCon(i),i=1,nplotexchange),   &
                   (sp(ik,jx,jy,jz)/clg,ik=1,ncomp+nspec),                                &
                   (spsurf10(is,jx,jy,jz)/AqueousToBulk,is=1,nsurf+nsurf_sec),            &
-                  (spex10(nex+nexchange,jx,jy,jz)/AqueousToBulk,nex=1,nexch_sec),        &
-                  (volfx(nmin,jx,jy,jz),nmin=1,nrct)
+                  (spex10(nex+nexchange,jx,jy,jz)/AqueousToBulk,nex=1,nexch_sec)  
               END IF
             ELSE
               IF (iplotph /= 0) THEN
@@ -275,15 +291,13 @@ END IF
                   (SurfaceCon(i),i=1,nplotsurface),(ExchangeCon(i),i=1,nplotexchange),   &
                   (sp(ik,jx,jy,jz)/clg,ik=1,ncomp+nspec),                                &
                   (spsurf10(is,jx,jy,jz)/AqueousToBulk,is=1,nsurf+nsurf_sec),            &
-                  (spex10(nex+nexchange,jx,jy,jz)/AqueousToBulk,nex=1,nexch_sec),        &
-                  (volfx(nmin,jx,jy,jz),nmin=1,nrct)
+                  (spex10(nex+nexchange,jx,jy,jz)/AqueousToBulk,nex=1,nexch_sec)  
               ELSE
                 WRITE(intfile,705) PrintTime,(s(iplot(i),jx,jy,jz),i=1,nplot),  &
                   (SurfaceCon(i),i=1,nplotsurface),(ExchangeCon(i),i=1,nplotexchange),   &
                   (sp(ik,jx,jy,jz)/clg,ik=1,ncomp+nspec),                                &
                   (spsurf10(is,jx,jy,jz)/AqueousToBulk,is=1,nsurf+nsurf_sec),            &
-                  (spex10(nex+nexchange,jx,jy,jz)/AqueousToBulk,nex=1,nexch_sec),        &
-                  (volfx(nmin,jx,jy,jz),nmin=1,nrct)
+                  (spex10(nex+nexchange,jx,jy,jz)/AqueousToBulk,nex=1,nexch_sec)  
               END IF
             ELSE
               IF (iplotph /= 0) THEN

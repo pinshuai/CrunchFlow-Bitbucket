@@ -1,20 +1,37 @@
-!******************        GIMRT98     ************************
- 
-! Code converted using TO_F90 by Alan Miller
-! Date: 2000-07-27  Time: 09:56:00
- 
-!************** (C) COPYRIGHT 1995,1998,1999 ******************
-!*******************     C.I. Steefel      *******************
-!                    All Rights Reserved
+!! CrunchTope 
+!! Copyright (c) 2016, Carl Steefel
+!! Copyright (c) 2016, The Regents of the University of California, 
+!! through Lawrence Berkeley National Laboratory (subject to 
+!! receipt of any required approvals from the U.S. Dept. of Energy).  
+!! All rights reserved.
 
-!  GIMRT98 IS PROVIDED "AS IS" AND WITHOUT ANY WARRANTY EXPRESS OR IMPLIED.
-!  THE USER ASSUMES ALL RISKS OF USING GIMRT98. THERE IS NO CLAIM OF THE
-!  MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+!! Redistribution and use in source and binary forms, with or without
+!! modification, are permitted provided that the following conditions are
+!! met: 
 
-!  YOU MAY MODIFY THE SOURCE CODE FOR YOUR OWN USE, BUT YOU MAY NOT
-!  DISTRIBUTE EITHER THE ORIGINAL OR THE MODIFIED CODE TO ANY OTHER
-!  WORKSTATIONS
-!**********************************************************************
+!! (1) Redistributions of source code must retain the above copyright
+!! notice, this list of conditions and the following disclaimer.
+
+!! (2) Redistributions in binary form must reproduce the above copyright
+!! notice, this list of conditions and the following disclaimer in the
+!! documentation and/or other materials provided with the distribution.
+
+!! (3) Neither the name of the University of California, Lawrence
+!! Berkeley National Laboratory, U.S. Dept. of Energy nor the names of    
+!! its contributors may be used to endorse or promote products derived
+!! from this software without specific prior written permission.
+
+!! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+!! "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+!! LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+!! A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+!! OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+!! SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+!! LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+!! DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+!! THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+!! (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+!! OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE   
 
 SUBROUTINE equilib_co2(ncomp,nspec,nrct,ngas,nsurf,igamma,ikph,     &
     nco,nexchange,nexch_sec,nsurf_sec,npot,neqn,tempc,portemp,      &
@@ -27,7 +44,7 @@ USE solver
 USE io
 USE temperature
 USE medium
-USE runtime, ONLY: HanfordStrontium, Duan, SkipAdjust
+USE runtime, ONLY: HanfordStrontium, Duan, Duan2006,SkipAdjust
 
 IMPLICIT NONE
 
@@ -116,7 +133,7 @@ INTEGER(I4B), DIMENSION(:), ALLOCATABLE                    :: iTotNegative
 CHARACTER (LEN=mls)                                        :: namtemp
 CHARACTER (LEN=mls)                                        :: dumstring
 
-REAL(DP), PARAMETER                                        :: tolf=1.e-12
+REAL(DP), PARAMETER                                        :: tolf=1.e-14
 REAL(DP)                                                   :: tk
 REAL(DP)                                                   :: sumchg
 REAL(DP)                                                   :: sum
@@ -221,7 +238,7 @@ REAL(DP)                                                   :: ChargeSum
 
 CHARACTER (LEN=1)                                          :: trans
 
-REAL(DP)                                                   :: ph2o, ln_fco2
+REAL(DP)                                                   :: ph2o, ln_fco2, fco2, ln_fco2_check
 
 !!real(dp), dimension(26) :: press
 !!real(dp), dimension(10) :: tempe, fugac
@@ -329,7 +346,7 @@ DO i = 1,ncomp
   END IF
 END DO
 
-IF (Duan) THEN            !! Duan CO2 routine
+IF (Duan .OR. Duan2006) THEN            !! Duan CO2 routine
  
   ph2o = 0.0d0
   call calc_ph2o(tk,ph2o)
@@ -448,7 +465,7 @@ ihalf = 0
  
 DO  ktrial = 1,ntrial
 
-  IF (DUAN) THEN    !!  Duan CO2 routine
+  IF (Duan .OR. Duan2006) THEN    !!  Duan CO2 routine
  
     IF (pg == 0.0d0) pg = 1.0
     CALL gases_init_co2(ncomp,ngas,tempc,pg,vrInOut)
@@ -477,8 +494,9 @@ DO  ktrial = 1,ntrial
 !!    STOP
   END IF
 
-  IF (igamma /= 0 .AND. ktrial > 5) THEN
-    if (Duan) then
+!!!  IF (igamma /= 0 .AND. ktrial > 5) THEN
+  IF (igamma /= 0) THEN
+    if (Duan .OR. Duan2006) then
       call gamma_init_co2(ncomp,nspec,tempc,sqrt_sion,pg)
     else
       CALL gamma_init(ncomp,nspec,tempc,sqrt_sion)
@@ -504,7 +522,7 @@ DO  ktrial = 1,ntrial
 
   CALL species_init(ncomp,nspec)
   
-  if (Duan) then
+  if (Duan .OR. Duan2006) then
     CALL gases_init_co2(ncomp,ngas,tempc,pg,vrInOut)
   else
     CALL gases_init(ncomp,ngas,tempc)
@@ -654,6 +672,14 @@ DO  ktrial = 1,ntrial
         IF (i == ico2) THEN
           ln_fco2 = 0.0d0   ! fugacity coefficient for CO2(g)
           CALL fugacity_co2(pg,tk,ln_fco2,vrInOut)  
+        END IF
+      
+        check = sumiap + keqgas_tmp(kg) - ln_fco2 - LOG(ctot(i,nco))
+      ELSE IF (Duan2006) THEN
+        ln_fco2 = 0.0d0
+        IF (i == ico2) THEN
+          ln_fco2 = 0.0d0   ! fugacity coefficient for CO2(g)
+          CALL fugacity_co24(pg,tk,ln_fco2,vrInOut)  
         END IF
       
         check = sumiap + keqgas_tmp(kg) - ln_fco2 - LOG(ctot(i,nco))
@@ -1135,16 +1161,11 @@ DO  ktrial = 1,ntrial
 
 !  Solve the set of equations using LU decomposition. 
 
-  call ludcmp90(fj,indx,det,neqn)
-  call lubksb90(fj,indx,beta,neqn)
-  
-  if (ihalf == 540) then
-    continue
-  end if
+!!!  call ludcmp90(fj,indx,det,neqn)
+!!!  call lubksb90(fj,indx,beta,neqn)
 
-!!!  CALL dgetrf(neqn,neqn,fj,neqn,indx,info)
-!!!  write(*,*) ktrial, ihalf
-!!!  CALL dgetrs(trans,neqn,ione,fj,neqn,indx,beta,neqn,info)
+  CALL dgetrf(neqn,neqn,fj,neqn,indx,info)
+  CALL dgetrs(trans,neqn,ione,fj,neqn,indx,beta,neqn,info)
 
 !  Check the error in the concentration corrections.
   
@@ -1215,9 +1236,14 @@ DO  ktrial = 1,ntrial
   
   IF (fxmaxx < atol .AND. DABS(fxmaxPotential) < 1.0E-07 .AND. ktrial > 10 .AND. ChargeOK) THEN
     
+    if (Duan .OR. Duan2006) then
+      call gamma_init_co2(ncomp,nspec,tempc,sqrt_sion,pg)
+    else
+      CALL gamma_init(ncomp,nspec,tempc,sqrt_sion)
+    end if
     CALL species_init(ncomp,nspec)
     
-    if (Duan) then
+    if (Duan .OR. Duan2006) then
       CALL gases_init_co2(ncomp,ngas,tempc,pg,vrInOut)
     else
       CALL gases_init(ncomp,ngas,tempc)
@@ -1229,11 +1255,7 @@ DO  ktrial = 1,ntrial
     CALL totgas_init(ncomp,nspec,ngas)
     CALL totsurf_init(ncomp,nsurf,nsurf_sec)
     
-!  Write out info to the output file "gimrt98.out" once convergence is
-!  achieved.
-!*******************
-
-    IF (Duan) THEN
+    IF (Duan .OR. Duan2006) THEN
       vrInitial(nco) = vrInOut
     END IF
      
@@ -1634,16 +1656,28 @@ DO  ktrial = 1,ntrial
 211 FORMAT(2X,a18,2X,f8.3,3X,f8.3,2X,1PE12.3,2X,1PE12.3,2X,'            ',2x,a8)
 
     WRITE(iunit2,*)
+
+    if (Duan .OR. Duan2006) then
+      CALL gases_init_co2(ncomp,ngas,tempc,pg,vrInOut)
+      GasPressureTotalInit(nco) = pg
+      write(iunit2,514)'Total gas pressure:             ',pg
+      ln_fco2 = 0.0d0
+      IF (Duan) THEN
+          CALL fugacity_co2(pg,tk,ln_fco2,vrInOut)  
+      ELSE IF (Duan2006) THEN
+          CALL fugacity_co24(pg,tk,ln_fco2,vrInOut)  
+          CALL fugacity_co2(pg,tk,ln_fco2_check,vrInOut)  
+      END IF
+      fco2 = DEXP(ln_fco2)
+      write(iunit2,514)'Ln CO2 fugacity coefficient: ',ln_fco2
+      write(iunit2,514)'CO2 fugacity coefficient:    ',fco2
+    END IF
+
+    WRITE(iunit2,*)
     WRITE(iunit2,*) ' ****** Partial pressure of gases (bars) *****'
     WRITE(iunit2,*)
     
-    if (Duan) then
-      CALL gases_init_co2(ncomp,ngas,tempc,pg,vrInOut)
-      GasPressureTotalInit(nco) = pg
-      write(iunit2,513)'total pressure    ',pg
-    else
-      CALL GasPartialPressure_Init(ncomp,ngas,tempc,pg)
-    end if
+    CALL GasPartialPressure_Init(ncomp,ngas,tempc,pg)
 
     DO i = 1,ngas
       WRITE(iunit2,513)  namg(i),1.0d0*spgastmp10(i)
@@ -1747,6 +1781,7 @@ STOP
 
 509 FORMAT(2X,a18,2X,f12.4)
 513 FORMAT(1X,a18,1X,1PE16.8) !FORMAT(1X,a18,1X,1PE12.4)
+514 FORMAT(1X,a28,1X,1PE16.8) 
 510 FORMAT(2X,'GEOCHEMICAL CONDITION NUMBER',i3)
 
 

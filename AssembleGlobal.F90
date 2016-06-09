@@ -1,4 +1,39 @@
-SUBROUTINE assemble(nx,ny,nz,ncomp,nspec,nkin,nrct,ngas,ikin,  &
+!! CrunchTope 
+!! Copyright (c) 2016, Carl Steefel
+!! Copyright (c) 2016, The Regents of the University of California, 
+!! through Lawrence Berkeley National Laboratory (subject to 
+!! receipt of any required approvals from the U.S. Dept. of Energy).  
+!! All rights reserved.
+
+!! Redistribution and use in source and binary forms, with or without
+!! modification, are permitted provided that the following conditions are
+!! met: 
+
+!! (1) Redistributions of source code must retain the above copyright
+!! notice, this list of conditions and the following disclaimer.
+
+!! (2) Redistributions in binary form must reproduce the above copyright
+!! notice, this list of conditions and the following disclaimer in the
+!! documentation and/or other materials provided with the distribution.
+
+!! (3) Neither the name of the University of California, Lawrence
+!! Berkeley National Laboratory, U.S. Dept. of Energy nor the names of    
+!! its contributors may be used to endorse or promote products derived
+!! from this software without specific prior written permission.
+
+!! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+!! "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+!! LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+!! A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+!! OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+!! SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+!! LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+!! DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+!! THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+!! (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+!! OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE   
+    
+SUBROUTINE AssembleGlobal(nx,ny,nz,ncomp,nspec,nkin,nrct,ngas,ikin,  &
     nexchange,nexch_sec,nsurf,nsurf_sec,npot,ndecay,nn,delt,time,&
     user,amatpetsc)
 USE crunchtype
@@ -16,7 +51,7 @@ IMPLICIT NONE
 
 !*****************************PETSc include statements ********************
 
-#include "finclude/petsc.h"
+#include "petsc/finclude/petsc.h"
 
 !**************************** End PETSc include statements **************
 
@@ -233,7 +268,7 @@ DO jy = 1,ny
       END IF
     END IF
     
-    CALL fx(nx,ny,ncomp,nexchange,nexch_sec,nsurf,nsurf_sec,nrct,nspec,  &
+    CALL FxTopeGlobal(nx,ny,ncomp,nexchange,nexch_sec,nsurf,nsurf_sec,nrct,nspec,  &
         ngas,neqn,delt,jx,jy,jz)
     
     IF (ierode == 1) THEN
@@ -934,9 +969,6 @@ DO jy = 1,ny
         DO k = 1,nkin
           DO np = 1,nreactmin(k)
             sumrct = sumrct + decay_correct(i,k)*mumin(np,k,i)*rmin(np,k)
-            if (imintype(np,k) == 10 .and. si(np,k) > 1.0 .and. jx==12) then
-                 continue
-            end if
           END DO
         END DO
       ENDIF
@@ -1569,4 +1601,4 @@ END DO    ! End of JY loop
 
 
 RETURN
-END SUBROUTINE assemble
+END SUBROUTINE AssembleGlobal
