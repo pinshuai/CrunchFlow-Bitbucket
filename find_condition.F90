@@ -613,7 +613,7 @@ IF (found) THEN
     ELSE
       TotalVolumeMinerals = 0.0d0      
       DO k = 1,nkin
-        if (mintype(k) == 0)
+        if (mintype(k) == 0) then
           TotalVolumeMinerals = TotalVolumeMinerals + volin(k,nchem)
           IF (volmol(k) /= 0.0d0) THEN
             SolidDensity(nchem) = SolidDensity(nchem) + (volin(k,nchem)/sum)*0.001d0*wtmin(k)/volmol(k) 
