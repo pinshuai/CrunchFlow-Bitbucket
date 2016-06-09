@@ -1,3 +1,0 @@
-# parameters for regression tests, 'space' because no interpolation required
-
-testcf = calcite-vf-cc.out = Time (days), H+, HCO3-, Ca++, Calcite = 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6 = calcite-vf-cc.benchmark = absolute, space

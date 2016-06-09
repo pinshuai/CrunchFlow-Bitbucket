@@ -1,5 +1,0 @@
-# parameters for regression tests
-
-testcf = effluent.out = Time (days), NO3-, Acetate = 1.0e-6, 1.0e-6, 1.0e-6 = effluent.benchmark = absolute, time
-testcf = pH5.out = pH = 1.0e-6 = pH5.benchmark = absolute, space
-testcf = totcon5.out = NO3-, Acetate = 1.0e-6, 1.0e-6 = totcon5.benchmark = absolute, space
