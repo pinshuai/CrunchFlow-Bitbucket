@@ -209,6 +209,12 @@ REAL(DP)                                                           :: temp
 
 LOGICAL(LGT)                                                       :: NameListFormat
 
+#if defined(ALQUIMIA)
+include 'mpif.h'
+integer :: rank, ierror
+character(25) :: fn
+#endif
+
 ALLOCATE(namc(nc))
 ALLOCATE(namcx(mcmplx))
 ALLOCATE(namrl(nm*mreact))
@@ -460,7 +466,6 @@ IF (icomplete /= 1) THEN
 !!      END IF
 
     END IF
-
   ELSE
     ngas = 0
     DO ik = 1,ncomp+ncmplx
@@ -478,7 +483,7 @@ IF (icomplete /= 1) THEN
 !!      npointH2gas = 2
     END IF
   END IF
-  
+
 END IF
 
 !  *****End of gas read****
@@ -724,7 +729,14 @@ IF (nsurf > 0) THEN
   ALLOCATE(zsurf(nsurf+nsurf_sec))
   CLOSE(nout,STATUS='delete')
   OPEN(UNIT=iunit5,FILE=data1,STATUS='old',ERR=334)
-  OPEN(UNIT=nout,FILE='CrunchJunk2.out',STATUS='new') 
+#if !defined(ALQUIMIA)
+  OPEN(UNIT=nout,FILE='CrunchJunk2.out',STATUS='unknown')
+#else
+  call MPI_COMM_RANK(MPI_COMM_WORLD, rank, ierror)
+  write(fn,"(a10,i0,a4)")'CrunchJunk',rank,'.out'
+  write(*,*)fn
+  OPEN(UNIT=nout,FILE=fn,STATUS='unknown')
+#endif 
   REWIND nout
   string1 = 'Begin surface complexation parameters'
   CALL find_string(iunit5,string1,ifind)

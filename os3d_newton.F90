@@ -101,7 +101,7 @@ REAL(DP), INTENT(IN)                          :: AqueousToBulk
 
 !  Internal arrays
 
-INTEGER(I4B), PARAMETER                       :: newton=50
+INTEGER(I4B), PARAMETER                       :: newton=100
 INTEGER(I4B), PARAMETER                       :: ione=1
 INTEGER(I4B)                                  :: ind
 INTEGER(I4B)                                  :: ne
@@ -153,7 +153,6 @@ DO ne = 1,newton
   END IF
 
   CALL totconc(ncomp,nspec,jx,jy,jz)
-
   CALL totexchange_local(ncomp,nexchange,nexch_sec,nsurf,nsurf_sec,jx,jy,jz)
   CALL totsurf_local(ncomp,nsurf,nsurf_sec,jx,jy,jz)
   CALL tot_ex(ncomp,nexchange,nexch_sec,jx,jy,jz)

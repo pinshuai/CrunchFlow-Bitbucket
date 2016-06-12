@@ -305,7 +305,7 @@ DO jz = 1,nz
           ELSE
             area(k,jx,jy,jz) = 0.0d0
           END IF
-          sum = sum + volfx(k,jx,jy,jz)
+          if (mintype(k) == 0) sum = sum + volfx(k,jx,jy,jz)
           
         ELSE                                               !! Update reactive surface area
 
@@ -313,10 +313,12 @@ DO jz = 1,nz
               
             IF (vinit == 0.0d0) THEN
               area(k,jx,jy,jz) = areain(k,jinit(jx,jy,jz))* (volfx(k,jx,jy,jz)/0.01)**0.6666
-              sum = sum + volfx(k,jx,jy,jz)
+              if (mintype(k) == 0) sum = sum + volfx(k,jx,jy,jz)
             ELSE
-              area(k,jx,jy,jz) = areain(k,jinit(jx,jy,jz))* (volfx(k,jx,jy,jz)/vinit)**0.6666
-              sum = sum + volfx(k,jx,jy,jz)
+              if (mintype(k) == 0) then 
+                area(k,jx,jy,jz) = areain(k,jinit(jx,jy,jz))* (volfx(k,jx,jy,jz)/vinit)**0.6666
+                sum = sum + volfx(k,jx,jy,jz)
+              end if
             END IF
             
           ELSE                                                        !!  Specific surface area
@@ -326,7 +328,7 @@ DO jz = 1,nz
             ELSE
               area(k,jx,jy,jz) = volfx(k,jx,jy,jz)*specific(k,jinit(jx,jy,jz))*wtmin(k)/volmol(k)
             END IF
-            sum = sum + volfx(k,jx,jy,jz)
+            if (mintype(k) == 0) sum = sum + volfx(k,jx,jy,jz)
             
           END IF
           

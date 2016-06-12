@@ -278,6 +278,7 @@ ELSE      !  No trailing string found
 !!  WRITE(*,*)
 !!  READ(*,*)
 !!  STOP
+   iarea(k,isolution) = 0  ! sergi: will this break anything?
    areain(k,isolution) = 1.0
 END IF
 
