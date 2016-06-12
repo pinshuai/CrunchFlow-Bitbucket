@@ -663,10 +663,14 @@ IF (nrct > 0) THEN
   DO jx = 1,nx
     sum = 0.0
     DO k = 1,nrct
-      dvolpr(k) = 100*volfx(k,jx,jy,jz)
-      sum = sum + volfx(k,jx,jy,jz)
-      if (dvolpr(k) < 1.0E-30 ) THEN
-        dvolpr(k) = 0.0
+      if (mintype(k) == 0) then
+        dvolpr(k) = 100*volfx(k,jx,jy,jz)
+        sum = sum + volfx(k,jx,jy,jz)
+        if (dvolpr(k) < 1.0E-30 ) THEN
+          dvolpr(k) = 0.0
+        end if
+      else if (mintype(k) == 1) then
+        dvolpr(k) = volfx(k,jx,jy,jz)
       end if
     END DO
     porprt = (1.0-sum)*100.0

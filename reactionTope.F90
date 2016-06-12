@@ -579,13 +579,13 @@ DO k = 1,nkin
           surf(np,k) = area(k,jx,jy,jz)
         END IF
         
-        IF (k==1 .and. umin(k) == 'GlassNagaokaCore' .AND. umin(2) == 'SmectiteGlass') THEN
-            
-            InhibitTerm = 1.0d0 * (1.0d0 - ( volfx(2,jx,jy,jz)/volin(2,jinit(jx,jy,jz)) )**0.25)
-            surf(np,k) = area(k,jx,jy,jz) * InhibitTerm
-            TimeHours = time*365.0*24.0         
-         
-        END IF
+!!        IF (k==1 .and. umin(k) == 'GlassNagaokaCore' .AND. umin(2) == 'SmectiteGlass') THEN
+!!            
+!!            InhibitTerm = 1.0d0 * (1.0d0 - ( volfx(2,jx,jy,jz)/volin(2,jinit(jx,jy,jz)) )**0.25)
+!!            surf(np,k) = area(k,jx,jy,jz) * InhibitTerm
+!!            TimeHours = time*365.0*24.0         
+!!         
+!!        END IF
 
 !!!        IF (SetSurfaceAreaConstant) THEN
 !!!          surf(np,k) = areain(k,jinit(jx,jy,jz))*porfactor
@@ -795,11 +795,17 @@ DO k = 1,nkin
       
       ELSE IF (imintype(np,k) == 9) THEN
 
-        term2 = volfx(biomass_decay(np,nkin),jx,jy,jz)
-        !!write(*,*)'sergi: volume of biomass: ',volfx(biomass_decay(np,nkin),jx,jy,jz)
+        term2 = volfx(biomass_decay(np,k),jx,jy,jz)
+!!        term2 = term2/volmol(biomass_decay(np,k)) not applicable after volmol=1 for biomass
         pre_rmin(np,k) = term2
-        continue
-        
+
+!       note on units:
+!
+!       * concentration of biomass is in mol-biomass/m3
+!       * reaction rate constant is in 1/yr at this point
+!       * the bulk rate calculated below is in mol-reaction/m3-bulk/yr
+!       * this is a dissolution reaction where 1 mol-reaction = 1 mol-biomass
+
 ! end sergi: first order biomass decay - may 2011
 
         
