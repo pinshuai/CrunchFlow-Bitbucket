@@ -1,40 +1,49 @@
-!! CrunchTope 
-!! Copyright (c) 2016, Carl Steefel
-!! Copyright (c) 2016, The Regents of the University of California, 
-!! through Lawrence Berkeley National Laboratory (subject to 
-!! receipt of any required approvals from the U.S. Dept. of Energy).  
-!! All rights reserved.
+!!! *** Copyright Notice ***
+!!! “CrunchFlow”, Copyright (c) 2016, The Regents of the University of California, through Lawrence Berkeley National Laboratory 
+!!! (subject to receipt of any required approvals from the U.S. Dept. of Energy).  All rights reserved.
+!!! 
+!!! If you have questions about your rights to use or distribute this software, please contact 
+!!! Berkeley Lab's Innovation & Partnerships Office at  IPO@lbl.gov.
+!!! 
+!!! NOTICE.  This Software was developed under funding from the U.S. Department of Energy and the U.S. Government 
+!!! consequently retains certain rights. As such, the U.S. Government has been granted for itself and others acting 
+!!! on its behalf a paid-up, nonexclusive, irrevocable, worldwide license in the Software to reproduce, distribute copies to the public, 
+!!! prepare derivative works, and perform publicly and display publicly, and to permit other to do so.
+!!!
+!!! *** License Agreement ***
+!!! “CrunchFlow”, Copyright (c) 2016, The Regents of the University of California, through Lawrence Berkeley National Laboratory)
+!!! subject to receipt of any required approvals from the U.S. Dept. of Energy).  All rights reserved."
+!!! 
+!!! Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+!!! 
+!!! (1) Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+!!!
+!!! (2) Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer 
+!!! in the documentation and/or other materials provided with the distribution.
+!!!
+!!! (3) Neither the name of the University of California, Lawrence Berkeley National Laboratory, U.S. Dept. of Energy nor the names of 
+!!! its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+!!!
+!!! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, 
+!!! BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
+!!! SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+!!! DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
+!!! OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+!!! LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF 
+!!! THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+!!!
+!!! You are under no obligation whatsoever to provide any bug fixes, patches, or upgrades to the features, functionality or 
+!!! performance of the source code ("Enhancements") to anyone; however, if you choose to make your
+!!! Enhancements available either publicly, or directly to Lawrence Berkeley National Laboratory, without 
+!!! imposing a separate written license agreement for such 
+!!! Enhancements, then you hereby grant the following license: a  non-exclusive, royalty-free perpetual license to install, use, 
+!!! modify, prepare derivative works, incorporate into other computer software, distribute, and sublicense such enhancements or 
+!!! derivative works thereof, in binary and source code form.
 
-!! Redistribution and use in source and binary forms, with or without
-!! modification, are permitted provided that the following conditions are
-!! met: 
-
-!! (1) Redistributions of source code must retain the above copyright
-!! notice, this list of conditions and the following disclaimer.
-
-!! (2) Redistributions in binary form must reproduce the above copyright
-!! notice, this list of conditions and the following disclaimer in the
-!! documentation and/or other materials provided with the distribution.
-
-!! (3) Neither the name of the University of California, Lawrence
-!! Berkeley National Laboratory, U.S. Dept. of Energy nor the names of    
-!! its contributors may be used to endorse or promote products derived
-!! from this software without specific prior written permission.
-
-!! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-!! "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-!! LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-!! A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-!! OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-!! SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-!! LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-!! DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-!! THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-!! (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-!! OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE   
+!!!      ****************************************
 
 SUBROUTINE FxTopeGlobal(nx,ny,ncomp,nexchange,nexch_sec,nsurf,nsurf_sec,nrct,  &
-    nspec,ngas,neqn,dt,jx,jy,jz)
+    nspec,ngas,neqn,dt,jx,jy,jz,nBoundaryConditionZone)
 USE crunchtype
 USE params
 USE runtime
@@ -129,6 +138,7 @@ INTEGER(I4B), INTENT(IN)                                  :: ngas
 INTEGER(I4B), INTENT(IN)                                  :: neqn
 INTEGER(I4B), INTENT(IN)                                  :: jx
 INTEGER(I4B), INTENT(IN)                                  :: jy
+INTEGER(I4B), INTENT(IN)                                  :: nBoundaryConditionZone
 
 REAL(DP), INTENT(IN)                                      :: dt
 !  Internal variables and arrays
@@ -174,6 +184,7 @@ REAL(DP)                                                  :: MultiplyCell
 
 INTEGER(I4B)                                              :: nbnd
 INTEGER(I4B)                                              :: jdum
+INTEGER(I4B)                                              :: jdum2
 INTEGER(I4B)                                              :: jz
 INTEGER(I4B)                                              :: j
 INTEGER(I4B)                                              :: i
@@ -194,9 +205,6 @@ aq_accum = 0.0d0
 jz = 1
 j = (jz-1)*nx*ny + (jy-1)*nx + jx
 
-if (jx==12 .and. jy==1) then
-  continue
-end if
 
 Retardation = 0.001d0*SolidDensity(jinit(jx,jy,jz))*(1.0-por(jx,jy,jz))/por(jx,jy,jz)
 
@@ -236,43 +244,8 @@ ELSE
 !!      MultiplyCell = 1.0
 END IF
 
+fxmax = 0.0d0 
 
-fxmax = 0.0d0
-
-IF (species_diffusion) THEN
-  nbnd = 1
-  CALL bd_diffuse(ncomp,nspec,nbnd,sumchgbd)
-  DO i = 1,ncomp
-    s_dsp(i,0,jy,jz) = sdsp(i)
-    s_chg(i,0,jy,jz) = schg(i)
-  END DO
-  sumwtchg(0,jy,jz) = sumchgbd
-  
-  nbnd = 2
-  CALL bd_diffuse(ncomp,nspec,nbnd,sumchgbd)
-  DO i = 1,ncomp
-    s_dsp(i,nx+1,jy,jz) = sdsp(i)
-    s_chg(i,nx+1,jy,jz) = schg(i)
-  END DO
-  sumwtchg(nx+1,jy,jz) = sumchgbd
-
-  nbnd = 3
-  CALL bd_diffuse(ncomp,nspec,nbnd,sumchgbd)
-  DO i = 1,ncomp
-    s_dsp(i,jx,0,jz) = sdsp(i)
-    s_chg(i,jx,0,jz) = schg(i)
-  END DO
-  sumwtchg(jx,0,jz) = sumchgbd
-
-  nbnd = 4
-  CALL bd_diffuse(ncomp,nspec,nbnd,sumchgbd)
-  DO i = 1,ncomp
-    s_dsp(i,jx,ny+1,jz) = sdsp(i)
-    s_chg(i,jx,ny+1,jz) = schg(i)
-  END DO
-  sumwtchg(jx,ny+1,jz) = sumchgbd
-
-END IF
 
 IF (ierode /= 1) THEN
   IF (nsurf > 0 .OR. nexchange > 0) THEN
@@ -288,20 +261,43 @@ IF (activecell(jx,jy,jz) == 0) GO TO 800
 IF (nx == 1) GO TO 100
 
 IF (jx == 1) THEN
+
   jdum = jx+1
   DO i = 1,ncomp
     sce(i) = s(i,jdum,jy,jz)*xgram(jdum,jy,jz)
   END DO
-  nbnd = 1
-  IF (isaturate == 1) THEN
-    DO i = 1,ncomp
-      sge(i) = sgas(i,jdum,jy,jz)
-    END DO
-    CALL bdgas(ncomp,nspec,nrct,ngas,nbnd,sgw)
+
+  IF (nBoundaryConditionZone > 0) THEN   !! Boundary cells by grid
+
+!!!  BC by grid cells
+
+    jdum2 = 0
+    IF (isaturate == 1) THEN
+      DO i = 1,ncomp
+        sge(i) = sgas(i,jdum,jy,jz)
+      END DO
+      CALL bdgas_by_grid(ncomp,nspec,nrct,ngas,jdum2,jy,jz,sgw)
+    END IF
+
+    IF (jc(1) == 1 .OR. netflowx(jdum2,jy,jz) > 0.0) THEN
+      CALL bdrecalc_by_grid(ncomp,nspec,jdum2,jy,jz,scw)
+    END IF
+
+  ELSE    !!  Conventional face treatment of BC
+
+    nbnd = 1
+    IF (isaturate == 1) THEN
+      DO i = 1,ncomp
+        sge(i) = sgas(i,jdum,jy,jz)
+      END DO
+      CALL bdgas(ncomp,nspec,nrct,ngas,nbnd,sgw)
+    END IF
+    IF (jc(1) == 1 .OR. netflowx(0,jy,jz) > 0.0) THEN
+      CALL bdrecalc(ncomp,nspec,nbnd,scw)
+    END IF
+
   END IF
-  IF (jc(1) == 1 .OR. netflowx(0,jy,jz) > 0.0) THEN
-    CALL bdrecalc(ncomp,nspec,nbnd,scw)
-  END IF
+ 
   IF (ierode == 1) THEN
     DO i = 1,ncomp
       sex_east(i) = sch(i,jdum,jy,jz)
@@ -325,21 +321,45 @@ IF (jx == 1) THEN
       END DO
     END IF
   END IF    !  Block only used if ierode = 1 (erosion or burial)
+
 ELSE IF (jx == nx) THEN
+
   jdum = jx-1
   DO i = 1,ncomp
     scw(i) = s(i,jdum,jy,jz)*xgram(jdum,jy,jz)
   END DO
-  nbnd = 2
-  IF (isaturate == 1) THEN
-    DO i = 1,ncomp
-      sgw(i) = sgas(i,jdum,jy,jz)
-    END DO
-    CALL bdgas(ncomp,nspec,nrct,ngas,nbnd,sge)
+
+  IF (nBoundaryConditionZone > 0) THEN   !! Boundary cells by grid
+
+!!!  BC by grid cells
+
+    jdum2 = nx+1
+    IF (isaturate == 1) THEN
+      DO i = 1,ncomp
+        sgw(i) = sgas(i,jdum,jy,jz)
+      END DO
+      CALL bdgas_by_grid(ncomp,nspec,nrct,ngas,jdum2,jy,jz,sge)
+    END IF
+
+    IF (jc(2) == 1 .OR. netflowx(nx,jy,jz) < 0.0) THEN
+      CALL bdrecalc_by_grid(ncomp,nspec,jdum2,jy,jz,sce)
+    END IF
+
+  ELSE    !!  Conventional face treatment of BC
+
+    nbnd = 2
+    IF (isaturate == 1) THEN
+      DO i = 1,ncomp
+        sgw(i) = sgas(i,jdum,jy,jz)
+      END DO
+      CALL bdgas(ncomp,nspec,nrct,ngas,nbnd,sge)
+    END IF
+    IF (jc(2) == 1 .OR. netflowx(nx,jy,jz) < 0.0) THEN
+      CALL bdrecalc(ncomp,nspec,nbnd,sce)
+    END IF
+
   END IF
-  IF (jc(2) == 1 .OR. netflowx(nx,jy,jz) < 0.0) THEN
-    CALL bdrecalc(ncomp,nspec,nbnd,sce)
-  END IF
+
   IF (ierode == 1) THEN
     DO i = 1,ncomp
       sex_west(i) = sch(i,jdum,jy,jz)
@@ -363,6 +383,7 @@ ELSE IF (jx == nx) THEN
       END DO
     END IF
   END IF    !  Block used only if ierode = 1 (erosion or burial)
+
 ELSE
   jdum = jx+1
   DO i = 1,ncomp
@@ -373,6 +394,7 @@ ELSE
       sge(i) = sgas(i,jdum,jy,jz)
     END DO
   END IF
+
   IF (ierode == 1) THEN
     DO i = 1,ncomp
       sex_east(i) = sch(i,jdum,jy,jz)
@@ -381,6 +403,7 @@ ELSE
       surf_east(is) = ssurf(is,jdum,jy,jz)
     END DO
   END IF    !  Block only used if ierode = 1 (erosion or burial)
+
   jdum = jx-1
   DO i = 1,ncomp
     scw(i) = s(i,jdum,jy,jz)*xgram(jdum,jy,jz)
@@ -390,6 +413,7 @@ ELSE
       sgw(i) = sgas(i,jdum,jy,jz)
     END DO
   END IF
+
   IF (ierode == 1) THEN
     DO i = 1,ncomp
       sex_west(i) = sch(i,jdum,jy,jz)
@@ -398,26 +422,51 @@ ELSE
       surf_west(is) = ssurf(is,jdum,jy,jz)
     END DO
   END IF    !  Block only used if ierode = 1 (erosion or burial)
+
 END IF
 
 100 CONTINUE
 IF (ny == 1) GO TO 200
 
 IF (jy == 1) THEN
+
   jdum = jy+1
   DO i = 1,ncomp
     scn(i) = s(i,jx,jdum,jz)*xgram(jx,jdum,jz)
   END DO
-  nbnd = 3
-  IF (isaturate == 1) THEN
-    DO i = 1,ncomp
-      sgn(i) = sgas(i,jx,jdum,jz)
-    END DO
-    CALL bdgas(ncomp,nspec,nrct,ngas,nbnd,sgs)
+
+ IF (nBoundaryConditionZone > 0) THEN   !! Boundary cells by grid
+
+!!!  BC by grid cells
+
+    jdum2 = 0
+    IF (isaturate == 1) THEN
+      DO i = 1,ncomp
+        sgn(i) = sgas(i,jdum,jy,jz)
+      END DO
+      CALL bdgas_by_grid(ncomp,nspec,nrct,ngas,jx,jdum2,jz,sgs)
+    END IF
+
+    IF (jc(3) == 1 .OR. qy(jx,0,jz) > 0.0) THEN
+      CALL bdrecalc_by_grid(ncomp,nspec,jx,jdum2,jz,scs)
+    END IF
+
+  ELSE    !!  Conventional face treatment of BC
+
+    nbnd = 3
+    IF (isaturate == 1) THEN
+      DO i = 1,ncomp
+        sgn(i) = sgas(i,jx,jdum,jz)
+      END DO
+      CALL bdgas(ncomp,nspec,nrct,ngas,nbnd,sgs)
+    END IF
+    IF (jc(3) == 1 .OR. qy(jx,0,jz) > 0.0) THEN
+      CALL bdrecalc(ncomp,nspec,nbnd,scs)
+    END IF
+
   END IF
-  IF (jc(3) == 1 .OR. qy(jx,0,jz) > 0.0) THEN
-    CALL bdrecalc(ncomp,nspec,nbnd,scs)
-  END IF
+
+
   IF (ierode == 1) THEN
     DO i = 1,ncomp
       sex_north(i) = sch(i,jx,jdum,jz)
@@ -440,21 +489,45 @@ IF (jy == 1) THEN
       END DO
     END IF
   END IF    !   Block only used if ierode = 1 (erosion or burial)
+
 ELSE IF (jy == ny) THEN
+
   jdum = jy-1
   DO i = 1,ncomp
     scs(i) = s(i,jx,jdum,jz)*xgram(jx,jdum,jz)
   END DO
-  nbnd = 4
-  IF (isaturate == 1) THEN
-    DO i = 1,ncomp
-      sgs(i) = sgas(i,jx,jdum,jz)
-    END DO
-    CALL bdgas(ncomp,nspec,nrct,ngas,nbnd,sgn)
+
+IF (nBoundaryConditionZone > 0) THEN   !! Boundary cells by grid
+
+!!!  BC by grid cells
+
+    jdum2 = ny+1
+    IF (isaturate == 1) THEN
+      DO i = 1,ncomp
+        sgs(i) = sgas(i,jdum,jy,jz)
+      END DO
+      CALL bdgas_by_grid(ncomp,nspec,nrct,ngas,jx,jdum2,jz,sgn)
+    END IF
+
+    IF (jc(4) == 1 .OR. qy(jx,ny,jz) < 0.0) THEN
+      CALL bdrecalc_by_grid(ncomp,nspec,jx,jdum2,jz,scn)
+    END IF
+
+  ELSE    !!  Conventional face treatment of BC
+
+    nbnd = 4
+    IF (isaturate == 1) THEN
+      DO i = 1,ncomp
+        sgs(i) = sgas(i,jx,jdum,jz)
+      END DO
+      CALL bdgas(ncomp,nspec,nrct,ngas,nbnd,sgn)
+    END IF
+    IF (jc(4) == 1 .OR. qy(jx,ny,jz) < 0.0) THEN
+      CALL bdrecalc(ncomp,nspec,nbnd,scn)
+    END IF
+
   END IF
-  IF (jc(4) == 1 .OR. qy(jx,ny,jz) < 0.0) THEN
-    CALL bdrecalc(ncomp,nspec,nbnd,scn)
-  END IF
+
   IF (ierode == 1) THEN
     DO i = 1,ncomp
       sex_south(i) = sch(i,jx,jdum,jz)
@@ -477,6 +550,7 @@ ELSE IF (jy == ny) THEN
       END DO
     END IF
   END IF     !  Block only used if ierode = 1 (erosion or burial)
+
 ELSE
   jdum = jy+1
   DO i = 1,ncomp
@@ -495,6 +569,7 @@ ELSE
       surf_north(is) = ssurf(is,jx,jdum,jz)
     END DO
   END IF       !  Block only used if ierode = 1 (erosion or burial)
+
   jdum = jy-1
   DO i = 1,ncomp
     scs(i) = s(i,jx,jdum,jz)*xgram(jx,jdum,jz)
@@ -512,6 +587,7 @@ ELSE
       surf_south(is) = ssurf(is,jx,jdum,jz)
     END DO
   END IF        !  Block only used if ierode = 1 (erosion or burial)
+
 END IF
 
 200 IF (species_diffusion) THEN
@@ -631,44 +707,6 @@ DO i = 1,ncomp
     
   END IF
   
-!!  if ( jx==5 ) then
-!!      TempFlux(i) = DMAX1( DABS(xspecdiffw/dyy(jy)),TempFlux(i) )
-!!  end if
-
-  IF (giambalvo) THEN
-!   **********  Boundary fluxes for 1D system  **********
-
-!   For species-dependent diffusion, calculate boundary diffusive fluxes
-!    (units of mol/m**2/yr)--sign convention is that flux is positive if
-!    down just like everything else
-
-    IF (jx == 1) THEN
-      dflux_x(i,jy,1) = -xspecdiffw/dyy(jy)
-    ELSE IF (jx == nx) THEN
-      dflux_x(i,jy,2) = xspecdiffe/dyy(jy)
-    END IF
-
-!   Calculate advective flux--sign convention is that flux is negative if
-!   upward just like everything else (up happens to be out the sflr)
-!   NOTE:  Only run with dispersivity set to 0
-!   Also note: This will need to be rethought for nonconstant flow and
-!   burial.
-
-    IF (jx == 1) THEN
-      IF (netflowx(0,jy,jz) > 0.0) THEN
-        advflux_x(i,jy,1) = ro(1,jy,jz)*netflowx(0,jy,jz)*scw(i)
-      ELSE
-        advflux_x(i,jy,1) = ro(1,jy,jz)*netflowx(0,jy,jz)*s(i,jx,jy,jz)
-      END IF
-    ELSE IF (jx == nx) THEN
-      IF (netflowx(nx,jy,jz) > 0.0) THEN
-        advflux_x(i,jy,2) = ro(nx,jy,jz)*netflowx(nx,jy,jz)*s(i,jx,jy,jz)
-      ELSE
-        advflux_x(i,jy,2) = ro(nx,jy,jz)*netflowx(nx,jy,jz)*sce(i)
-      END IF
-    END IF
-
-  END IF           !  End of Giambalvo block (only executed if TRUE)
 
 ! ************************
   

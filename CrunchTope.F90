@@ -1,37 +1,46 @@
-!! CrunchTope 
-!! Copyright (c) 2016, Carl Steefel
-!! Copyright (c) 2016, The Regents of the University of California, 
-!! through Lawrence Berkeley National Laboratory (subject to 
-!! receipt of any required approvals from the U.S. Dept. of Energy).  
-!! All rights reserved.
+!!! *** Copyright Notice ***
+!!! “CrunchFlow”, Copyright (c) 2016, The Regents of the University of California, through Lawrence Berkeley National Laboratory 
+!!! (subject to receipt of any required approvals from the U.S. Dept. of Energy).  All rights reserved.
+!!! 
+!!! If you have questions about your rights to use or distribute this software, please contact 
+!!! Berkeley Lab's Innovation & Partnerships Office at  IPO@lbl.gov.
+!!! 
+!!! NOTICE.  This Software was developed under funding from the U.S. Department of Energy and the U.S. Government 
+!!! consequently retains certain rights. As such, the U.S. Government has been granted for itself and others acting 
+!!! on its behalf a paid-up, nonexclusive, irrevocable, worldwide license in the Software to reproduce, distribute copies to the public, 
+!!! prepare derivative works, and perform publicly and display publicly, and to permit other to do so.
+!!!
+!!! *** License Agreement ***
+!!! “CrunchFlow”, Copyright (c) 2016, The Regents of the University of California, through Lawrence Berkeley National Laboratory)
+!!! subject to receipt of any required approvals from the U.S. Dept. of Energy).  All rights reserved."
+!!! 
+!!! Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+!!! 
+!!! (1) Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+!!!
+!!! (2) Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer 
+!!! in the documentation and/or other materials provided with the distribution.
+!!!
+!!! (3) Neither the name of the University of California, Lawrence Berkeley National Laboratory, U.S. Dept. of Energy nor the names of 
+!!! its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+!!!
+!!! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, 
+!!! BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
+!!! SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+!!! DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
+!!! OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+!!! LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF 
+!!! THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+!!!
+!!! You are under no obligation whatsoever to provide any bug fixes, patches, or upgrades to the features, functionality or 
+!!! performance of the source code ("Enhancements") to anyone; however, if you choose to make your
+!!! Enhancements available either publicly, or directly to Lawrence Berkeley National Laboratory, without 
+!!! imposing a separate written license agreement for such 
+!!! Enhancements, then you hereby grant the following license: a  non-exclusive, royalty-free perpetual license to install, use, 
+!!! modify, prepare derivative works, incorporate into other computer software, distribute, and sublicense such enhancements or 
+!!! derivative works thereof, in binary and source code form.
 
-!! Redistribution and use in source and binary forms, with or without
-!! modification, are permitted provided that the following conditions are
-!! met: 
-
-!! (1) Redistributions of source code must retain the above copyright
-!! notice, this list of conditions and the following disclaimer.
-
-!! (2) Redistributions in binary form must reproduce the above copyright
-!! notice, this list of conditions and the following disclaimer in the
-!! documentation and/or other materials provided with the distribution.
-
-!! (3) Neither the name of the University of California, Lawrence
-!! Berkeley National Laboratory, U.S. Dept. of Energy nor the names of    
-!! its contributors may be used to endorse or promote products derived
-!! from this software without specific prior written permission.
-
-!! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-!! "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-!! LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-!! A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-!! OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-!! SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-!! LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-!! DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-!! THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-!! (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-!! OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE   
+!!!      ****************************************
 
 SUBROUTINE CrunchTope(NumInputFiles,InputFileCounter,NewInput)
 USE crunchtype
@@ -364,6 +373,8 @@ REAL(DP)                                                   :: sumCO2
 REAL(DP)                                                   :: sumPlagioclaseArea
 REAL(DP)                                                   :: denominator
 
+INTEGER(I4B)                                               :: nBoundaryConditionZone
+
 ! ******************** PETSC declarations ********************************
 PetscFortranAddr     userC(6),userD(6),userP(6),user(6)
 Mat                  amatpetsc,amatD,amatP
@@ -494,7 +505,7 @@ iprnt = 0
 CALL StartTope(ncomp,nspec,nkin,nrct,ngas,npot,nx,ny,nz,data1,ipath,igamma,  &
     ikmast,ikph,iko2,ltitle,tstep,delt,deltmin,ttol,jpor,ikin,nstop,       &
     corrmax,nseries,nexchange,nexch_sec,nsurf,nsurf_sec,ndecay,str_mon,    &
-    str_day,str_hr,str_min,str_sec,NumInputFiles,InputFileCounter)
+    str_day,str_hr,str_min,str_sec,NumInputFiles,InputFileCounter,nBoundaryConditionZone)
 
 ! ************ Initialize PETSc stuff ***************************************
 if( InputFileCounter == 1) then
@@ -931,6 +942,10 @@ IF ( os3dpetsc) THEN
 
 END IF
 
+!!!  Call timestep-dependent re-speciation routine to check whether initial state should be updated
+
+
+
 !*************************START OF TIME LOOP**************************
 
 iteration_tot = 0
@@ -1279,7 +1294,7 @@ DO WHILE (nn <= nend)
 !  *********  End NUFT block within time stepping  ****************
 
   IF (gimrt) THEN         !  Update dispersivity
-!!    CALL dispersivity(nx,ny,nz)
+    CALL dispersivity(nx,ny,nz)
   END IF
 
 !  **************  OS3D BLOCK    **********************
@@ -1366,7 +1381,7 @@ DO WHILE (nn <= nend)
 
       IF (xflow .OR. yflow .OR. zflow) THEN
         call CourantStepAlt(nx,ny,nz,dtmaxcour)
-!!        CALL dispersivity(nx,ny,nz)
+        CALL dispersivity(nx,ny,nz)
       END IF
 
     END IF
@@ -1758,7 +1773,7 @@ DO WHILE (nn <= nend)
 
 !           Calculate finite difference coefficients
     
-!!    CALL dispersivity(nx,ny,nz)
+    CALL dispersivity(nx,ny,nz)
    
     IF (TortuosityOption /= 'none') THEN
       CALL CalculateTortuosity(nx,ny,nz)
@@ -1927,7 +1942,7 @@ newtonloop:  DO WHILE (icvg == 1 .AND. iterat <= newton)
 
       CALL AssembleGlobal(nx,ny,nz,ncomp,nspec,nkin,nrct,ngas,ikin,                   &
          nexchange,nexch_sec,nsurf,nsurf_sec,npot,ndecay,nn,delt,time, &
-         userC,amatpetsc)
+         userC,amatpetsc,nBoundaryConditionZone)
 
       if ((nn.eq.1) .and. (ne.eq.1) .and. petscon) then
 !!          call MatSetOption(amatpetsc,MAT_NO_NEW_NONZERO_LOCATIONS,ierr)
@@ -2192,6 +2207,7 @@ newtonloop:  DO WHILE (icvg == 1 .AND. iterat <= newton)
       IF (species_diffusion .AND. iterat<=2) icvg = 1
 !!      if (iterat<=1) icvg=1
 
+
     END DO  newtonloop    ! end of Newton iteration loop
     
 !  Halve the timestep if convergence not achieved
@@ -2318,7 +2334,8 @@ DO jz = 1,nz
     END DO
   END DO
 END DO
-  
+
+ 
   time = time + delt                     
   
 !  Check charge balance
@@ -2402,11 +2419,11 @@ END DO
     CALL species(ncomp,nspec,nx,ny,nz) 
     CALL SurfaceComplex(ncomp,nsurf,nsurf_sec,nx,ny,nz)
 
-
     GO TO 6000
   END IF
 
-  CALL ratecheck(nx,ny,nz,nrct,dtmax,delt)
+
+  !!!CALL ratecheck(nx,ny,nz,nrct,dtmax,delt)
   
 !  **********************  START GIMRT BLOCK  *********************************
 
@@ -2440,7 +2457,6 @@ END DO
       jz = 1
       DO jy = ny+1,ny+2
         DO jx = 1,nx
-!fp! set_index({#ident# jz #});
           ctvd(jx,jy,jz) = volb(k,4)
         END DO
       END DO
@@ -2448,7 +2464,6 @@ END DO
       jz = 1
       DO jy = 1,ny
         DO jx = 1,nx
-!fp! set_index({#ident# jz #});
           ctvd(jx,jy,jz) = volfx(k,jx,jy,jz)
         END DO
       END DO
@@ -3262,6 +3277,8 @@ END DO
        ELSE
          NewInput = .FALSE.
        END IF
+       
+       CLOSE(iunit2,status='keep')
 
        IF (nplot > 0) THEN
          DO ll = 1,nseries
