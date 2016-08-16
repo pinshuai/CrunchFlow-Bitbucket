@@ -246,6 +246,7 @@ MODULE mineral
   integer(i4b),dimension(:),allocatable            :: p_cat_min
   integer(i4b),dimension(:),allocatable            :: p_cat_kin
   integer(i4b),dimension(:,:),allocatable          :: biomass_decay ! added for decay
+  integer(i4b),dimension(:),allocatable            :: mintype       ! mintype=0 mineral, mintype=1 biomass
 ! biomass end
 
   REAL(DP), dimension(4,31)                        :: rate0Prime

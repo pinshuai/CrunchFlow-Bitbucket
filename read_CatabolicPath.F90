@@ -44,7 +44,7 @@
 
 !! Written by Sergi Molins, 2014
     
-    subroutine read_CatabolicPath(ncomp,nkin,ikin)
+    subroutine read_CatabolicPath(ncomp,nkin,ikin,data3)
 
     use params
     use concentration, only: ulab, namkin, iaqtype
@@ -67,6 +67,7 @@
     integer(i4b),intent(in)                                       :: ncomp
     integer(i4b),intent(in)                                       :: nkin
     integer(i4b),intent(in)                                       :: ikin
+    character(LEN=mls), intent(in)                                :: data3
 
 !   internal
     integer                                                       :: ios
@@ -155,15 +156,23 @@ LOGICAL(LGT)                                                :: ext
 
 !     open file
 
-      INQUIRE(FILE='CatabolicControl.ant',EXIST=ext)
-      IF (EXT) THEN          !!  Aqueous Control file exists, so read input filename from it rather than prompting user
-        OPEN(113,FILE='CatabolicControl.ant',STATUS='old',ERR=708)
-        READ(113,'(a)') filename
-        CLOSE(113,STATUS='keep')
-      ELSE                   !!  No AqueousControl.ant file, so just use "aqueous.dbs" 
-        filename = 'CatabolicPathways.in'
-      END IF
+      if (data3 == ' ') then
 
+        INQUIRE(FILE='CatabolicControl.ant',EXIST=ext)
+        IF (EXT) THEN          !!  Aqueous Control file exists, so read input filename from it rather than prompting user
+          OPEN(113,FILE='CatabolicControl.ant',STATUS='old',ERR=708)
+          READ(113,'(a)') filename
+          CLOSE(113,STATUS='keep')
+        ELSE                   !!  No AqueousControl.ant file, so just use "aqueous.dbs" 
+          filename = 'CatabolicPathways.in'
+        END IF
+
+      else
+        
+        filename = data3
+
+      end if
+      
       OPEN(UNIT=112,FILE=filename,STATUS='old')
  !!     open(unit=112,file='CatabolicPathways.in',status='unknown')
    

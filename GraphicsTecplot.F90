@@ -691,8 +691,12 @@ IF (nrct > 0) THEN
     DO jx = 1,nx
       CellVolume = dxx(jx)*dyy(jy)*dzz(jx,jy,jz)
       DO k = 1,nrct
-        dvolpr(k) = volfx(k,jx,jy,jz)*1.0
+        if (mintype(k) == 1) then
+          dvolpr(k) = volfx(k,jx,jy,jz)*1.0
+        else if (mintype(k) == 0) then
+          dvolpr(k) = volfx(k,jx,jy,jz)*1.0
         SumVolumeMineral(k) = SumVolumeMineral(k) + volfx(k,jx,jy,jz)*CellVolume
+        end if
       END DO
       WRITE(8,184) x(jx)*OutputDistanceScale,y(jy)*OutputDistanceScale,(dvolpr(k),k=1,nrct)
     END DO
@@ -1284,7 +1288,11 @@ IF (nrct > 0) THEN
   DO jy = 1,ny
     DO jx = 1,nx
       DO k = 1,nrct
-        dvolpr(k) = volfx(k,jx,jy,jz)*1.0
+        if (mintype(k) == 0) then
+          dvolpr(k) = volfx(k,jx,jy,jz)*1.0
+        else if (mintype(k) == 1) then
+          dvolpr(k) = volfx(k,jx,jy,jz)*1.0
+        end if
       END DO
       WRITE(8,184) x(jx)*OutputDistanceScale,z(jz)*OutputDistanceScale,(dvolpr(k),k=1,nrct)
     END DO
@@ -1696,7 +1704,11 @@ IF (nrct > 0) THEN
   DO jy = 1,ny
     DO jx = 1,nx
       DO k = 1,nrct
-        dvolpr(k) = volfx(k,jx,jy,jz)*1.0
+        if (mintype(k) == 0) then
+          dvolpr(k) = volfx(k,jx,jy,jz)*1.0
+        else if (mintype(k) == 1) then
+          dvolpr(k) = volfx(k,jx,jy,jz)*1.0
+        end if
       END DO
       WRITE(8,185) x(jx)*OutputDistanceScale,(dvolpr(k),k=1,nrct)
     END DO

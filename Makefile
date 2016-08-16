@@ -1,6 +1,11 @@
 ALL: CrunchMain
 
-FFLAGS  = -w 
+## for Alquimia, add the -DALQUIMIA flag
+##FFLAGS  = -w -DALQUIMIA
+
+FFLAGS  = -w
+
+%.o: %.mod
 
 SOURCEF = \
           crunchtype.F90\
@@ -620,8 +625,14 @@ LOCDIR   = ${CrunchTope_Dir}
 ## For PETSc 3.0X
 ##include ${PETSC_DIR}/conf/base
 ## For PETSc 3.2X
+##include ${PETSC_DIR}/conf/variables
+##include ${PETSC_DIR}/conf/rules
+## For PETSc >3.6.0
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
 
 CrunchMain : ${OBJSF} chkopts
 	-${FLINKER} -o CrunchTope ${OBJSF} ${PETSC_FORTRAN_LIB} ${PETSC_LIB} ${FFLAGS}
+
+libcrunchchem.a : ${OBJSF}
+	$(AR) $(ARFLAGS) $@ ${OBJSF}

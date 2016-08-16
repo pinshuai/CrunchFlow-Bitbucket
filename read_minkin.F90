@@ -133,12 +133,12 @@ REAL(DP), DIMENSION(:), ALLOCATABLE                         :: halfsat_tmp
 !REAL(DP), DIMENSION(:,:), ALLOCATABLE                       :: yx
 !REAL(DP), DIMENSION(:,:), ALLOCATABLE                       :: indx
 
-character (len=mls) :: biomass
-integer(i4b) :: ios, im, ib
+character (len=mls)                                         :: biomass
+integer(i4b)                                                :: ios, im, ib
+integer(i4b),dimension(:),allocatable                       :: workint
 
-! sergi
- namelist /BiomassDecay/                                    biomass
-! end sergi
+namelist /BiomassDecay/                                        biomass
+
 
 imonod = 0
 kmonod = 0
@@ -159,6 +159,15 @@ IF (ALLOCATED(namAssociate)) THEN
 ELSE
   ALLOCATE(namAssociate(mrct))
 END IF
+
+IF (ALLOCATED(mintype)) THEN
+  DEALLOCATE(mintype)
+  ALLOCATE(mintype(mrct))
+ELSE
+  ALLOCATE(mintype(mrct))
+END IF
+! initialize to 0 (not biomass)
+mintype(:)=0
 
 !ALLOCATE(sto(50))
 !ALLOCATE(ax(mreact*mrct,mreact*mrct))
@@ -616,6 +625,13 @@ IF(ls /= 0) THEN
         STOP
       END IF
     END IF
+  ELSE IF (ssch == '-biomass') THEN
+! label this mineral as biomass
+    id = ids + ls
+    lzs=ls
+    WRITE(*,*) ' Mineral = ',namdum(1:lsave),' is biomass.'
+    WRITE(*,*) ' In the database, specify number of cells per mol of biomass in the molar volume field'
+    mintype(nkin) = 1
   ELSE
     CONTINUE
   END IF
@@ -1782,6 +1798,15 @@ DEALLOCATE(namAssociate)
 ALLOCATE(namAssociate(nkin))
 IF(nkin /= 0) namAssociate(1:nkin) = workchar1(1:nkin)
 DEALLOCATE(workchar1)
+
+! mineral type
+i = size(mintype,1)
+ALLOCATE(workint(i))
+workint = mintype
+DEALLOCATE(mintype)
+ALLOCATE(mintype(nkin+2))
+IF(nkin /= 0) mintype(1:nkin+2) = workint(1:nkin+2)
+DEALLOCATE(workint)
 
 !!  Check that the "associated" minerals are in the list
 

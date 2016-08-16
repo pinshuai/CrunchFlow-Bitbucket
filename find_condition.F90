@@ -544,6 +544,11 @@ IF (found) THEN
           areain(k,nchem) = voltemp(k,nchem)*specific(k,nchem)*wtmin(k)/volmol(k)
         END IF
       ELSE                             !!  Bulk surface area specified
+
+        if (mintype(k) == 1) then ! biomass - convert to mol/m3-bulk from mol/L-H2O
+          volin(k,nchem) = volin(k,nchem) * 1.d3 * porcond(nchem)
+        end if
+
         IF (volin(k,nchem) /= 0.0) THEN
           specific(k,nchem) = areain(k,nchem)*volmol(k)/(volin(k,nchem)*wtmin(k))
         ELSE
@@ -610,17 +615,19 @@ IF (found) THEN
 
     sum = 0.0d0
     DO k = 1,nkin
-      sum = sum + volin(k,nchem)
+      if (mintype(k) == 0) sum = sum + volin(k,nchem)
     END DO
     IF (sum == 0.0d0) THEN 
       SolidDensity(nchem) = 0.0d0
     ELSE
-      TotalVolumeMinerals = 0.0d0
+      TotalVolumeMinerals = 0.0d0      
       DO k = 1,nkin
-        TotalVolumeMinerals = TotalVolumeMinerals + volin(k,nchem)
-        IF (volmol(k) /= 0.0d0) THEN
-          SolidDensity(nchem) = SolidDensity(nchem) + (volin(k,nchem)/sum)*0.001d0*wtmin(k)/volmol(k) 
-        END IF
+        if (mintype(k) == 0) then
+          TotalVolumeMinerals = TotalVolumeMinerals + volin(k,nchem)
+          IF (volmol(k) /= 0.0d0) THEN
+            SolidDensity(nchem) = SolidDensity(nchem) + (volin(k,nchem)/sum)*0.001d0*wtmin(k)/volmol(k) 
+          END IF
+        endif
       END DO
       porcond(nchem) = 1.0d0 - TotalVolumeMinerals
     END IF
