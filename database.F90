@@ -1478,11 +1478,15 @@ IF (icomplete == 1) THEN
     STOP
   END IF
   
-  if (mintype(mm) == 0) then
+  IF (icomplete /= 1) THEN
+    if (mintype(mm) == 0) then
+      vbar(mm) = vbar0*1.d-6  ! Convert to m**3/mole (Changed by Steefel)
+    else if (mintype(mm) == 1) then
+      vbar(mm) = 1.0d0 ! mole biomass/mole biomass  ! obsolete: vbar0 cells/mole
+    end if
+  ELSE
     vbar(mm) = vbar0*1.d-6  ! Convert to m**3/mole (Changed by Steefel)
-  else if (mintype(mm) == 1) then
-    vbar(mm) = 1.0d0 ! mole biomass/mole biomass  ! obsolete: vbar0 cells/mole
-  end if
+  END IF
   wtminfull(mm) = wtt
   
 !  Check to see if there are any logK = 500 in advance of call to subroutine fit
