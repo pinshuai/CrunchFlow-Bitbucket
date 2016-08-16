@@ -737,14 +737,14 @@ IF (nsurf > 0) THEN
   ALLOCATE(zsurf(nsurf+nsurf_sec))
   !!!CLOSE(nout,STATUS='delete')
   OPEN(UNIT=iunit5,FILE=data1,STATUS='old',ERR=334)
-#if !defined(ALQUIMIA)
-  OPEN(UNIT=nout,FILE='CrunchJunk2.out',STATUS='unknown')
-#else
-  call MPI_COMM_RANK(MPI_COMM_WORLD, rank, ierror)
-  write(fn,"(a10,i0,a4)")'CrunchJunk',rank,'.out'
-  write(*,*)fn
-  OPEN(UNIT=nout,FILE=fn,STATUS='unknown')
-#endif 
+!!#if !defined(ALQUIMIA)
+!!  OPEN(UNIT=nout,FILE='CrunchJunk2.out',STATUS='unknown')
+!!#else
+!!  call MPI_COMM_RANK(MPI_COMM_WORLD, rank, ierror)
+!!  write(fn,"(a10,i0,a4)")'CrunchJunk',rank,'.out'
+!!  write(*,*)fn
+!!  OPEN(UNIT=nout,FILE=fn,STATUS='unknown')
+!!#endif 
   REWIND nout
   string1 = 'Begin surface complexation parameters'
   CALL find_string(iunit5,string1,ifind)
