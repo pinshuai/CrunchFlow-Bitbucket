@@ -586,15 +586,16 @@ DO k = 1,nkin
         ELSE
           surf(np,k) = area(k,jx,jy,jz)
         END IF
-        
-       IF (k==1 .and. umin(k) == 'GlassNagaokaCore' .AND. umin(2) == 'SmectiteGlass') THEN
-             
-             InhibitTerm = 1.0d0 * (1.0d0 - ( volfx(2,jx,jy,jz)/volin(2,jinit(jx,jy,jz)) )**0.60)
-             surf(np,k) = area(k,jx,jy,jz) * InhibitTerm
-             TimeHours = time*365.0*24.0     
+
+!!  Armoring  
+!!       IF (k==1 .and. umin(k) == 'GlassNagaokaCore' .AND. umin(2) == 'SmectiteGlass') THEN
+!!             
+!!             InhibitTerm = 1.0d0 * (1.0d0 - ( volfx(2,jx,jy,jz)/volin(2,jinit(jx,jy,jz)) )**0.60)
+!!             surf(np,k) = area(k,jx,jy,jz) * InhibitTerm
+!!             TimeHours = time*365.0*24.0     
 !!             write(*,*) TimeHours, InhibitTerm    
-          
-         END IF
+!!         END IF
+!!  End armoring
 
 !!!        IF (SetSurfaceAreaConstant) THEN
 !!!          surf(np,k) = areain(k,jinit(jx,jy,jz))*porfactor
