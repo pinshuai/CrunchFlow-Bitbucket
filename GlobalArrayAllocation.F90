@@ -1,37 +1,46 @@
-!! CrunchTope 
-!! Copyright (c) 2016, Carl Steefel
-!! Copyright (c) 2016, The Regents of the University of California, 
-!! through Lawrence Berkeley National Laboratory (subject to 
-!! receipt of any required approvals from the U.S. Dept. of Energy).  
-!! All rights reserved.
+!!! *** Copyright Notice ***
+!!! “CrunchFlow”, Copyright (c) 2016, The Regents of the University of California, through Lawrence Berkeley National Laboratory 
+!!! (subject to receipt of any required approvals from the U.S. Dept. of Energy).  All rights reserved.
+!!! 
+!!! If you have questions about your rights to use or distribute this software, please contact 
+!!! Berkeley Lab's Innovation & Partnerships Office at  IPO@lbl.gov.
+!!! 
+!!! NOTICE.  This Software was developed under funding from the U.S. Department of Energy and the U.S. Government 
+!!! consequently retains certain rights. As such, the U.S. Government has been granted for itself and others acting 
+!!! on its behalf a paid-up, nonexclusive, irrevocable, worldwide license in the Software to reproduce, distribute copies to the public, 
+!!! prepare derivative works, and perform publicly and display publicly, and to permit other to do so.
+!!!
+!!! *** License Agreement ***
+!!! “CrunchFlow”, Copyright (c) 2016, The Regents of the University of California, through Lawrence Berkeley National Laboratory)
+!!! subject to receipt of any required approvals from the U.S. Dept. of Energy).  All rights reserved."
+!!! 
+!!! Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+!!! 
+!!! (1) Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+!!!
+!!! (2) Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer 
+!!! in the documentation and/or other materials provided with the distribution.
+!!!
+!!! (3) Neither the name of the University of California, Lawrence Berkeley National Laboratory, U.S. Dept. of Energy nor the names of 
+!!! its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+!!!
+!!! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, 
+!!! BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
+!!! SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+!!! DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
+!!! OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+!!! LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF 
+!!! THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+!!!
+!!! You are under no obligation whatsoever to provide any bug fixes, patches, or upgrades to the features, functionality or 
+!!! performance of the source code ("Enhancements") to anyone; however, if you choose to make your
+!!! Enhancements available either publicly, or directly to Lawrence Berkeley National Laboratory, without 
+!!! imposing a separate written license agreement for such 
+!!! Enhancements, then you hereby grant the following license: a  non-exclusive, royalty-free perpetual license to install, use, 
+!!! modify, prepare derivative works, incorporate into other computer software, distribute, and sublicense such enhancements or 
+!!! derivative works thereof, in binary and source code form.
 
-!! Redistribution and use in source and binary forms, with or without
-!! modification, are permitted provided that the following conditions are
-!! met: 
-
-!! (1) Redistributions of source code must retain the above copyright
-!! notice, this list of conditions and the following disclaimer.
-
-!! (2) Redistributions in binary form must reproduce the above copyright
-!! notice, this list of conditions and the following disclaimer in the
-!! documentation and/or other materials provided with the distribution.
-
-!! (3) Neither the name of the University of California, Lawrence
-!! Berkeley National Laboratory, U.S. Dept. of Energy nor the names of    
-!! its contributors may be used to endorse or promote products derived
-!! from this software without specific prior written permission.
-
-!! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-!! "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-!! LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-!! A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-!! OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-!! SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-!! LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-!! DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-!! THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-!! (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-!! OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE   
+!!!      ****************************************
     
 SUBROUTINE GlobalArrayAllocation(ncomp,nspec,nkin,nrct,ngas,npot,nexchange,nexch_sec,nsurf,nsurf_sec,ikin,nx,ny,nz)
 USE crunchtype
@@ -161,6 +170,12 @@ IF (ALLOCATED(qg)) THEN
 ELSE
   ALLOCATE(qg(nx,ny,nz))
 END IF
+IF (ALLOCATED(pres)) THEN
+  DEALLOCATE(pres)
+  ALLOCATE(pres(0:nx+1,0:ny+1,0:nz+1))
+ELSE
+  ALLOCATE(pres(0:nx+1,0:ny+1,0:nz+1))
+END IF 
 IF (ALLOCATED(activecell)) THEN
   DEALLOCATE(activecell)
   ALLOCATE(activecell(nx,ny,nz))
@@ -185,29 +200,319 @@ IF (ALLOCATED(spnno2)) THEN
 ELSE
   ALLOCATE(spnno2(nx,ny,nz))
 END IF
-IF (ALLOCATED(sp)) THEN
-  DEALLOCATE(sp)
-  ALLOCATE(sp(ncomp+nspec,nx,ny,nz))
-ELSE
-  ALLOCATE(sp(ncomp+nspec,nx,ny,nz))
+
+
+IF (ny == 1 .AND. nz == 1) THEN
+
+  IF (ALLOCATED(s)) THEN
+    DEALLOCATE(s)
+    ALLOCATE(s(ncomp,0:nx+1,0:ny+1,nz))
+  ELSE
+    ALLOCATE(s(ncomp,0:nx+1,0:ny+1,nz))
+  END IF
+  IF (ALLOCATED(sp)) THEN
+    DEALLOCATE(sp)
+    ALLOCATE(sp(ncomp+nspec,0:nx+1,ny,nz))
+  ELSE
+    ALLOCATE(sp(ncomp+nspec,0:nx+1,ny,nz))
+  END IF
+  IF (ALLOCATED(sp10)) THEN
+    DEALLOCATE(sp10)
+    ALLOCATE(sp10(ncomp+nspec,0:nx+1,ny,nz))
+  ELSE
+    ALLOCATE(sp10(ncomp+nspec,0:nx+1,ny,nz))
+  END IF
+  IF (ALLOCATED(spex)) THEN
+    DEALLOCATE(spex)
+    ALLOCATE(spex(nexchange+nexch_sec,0:nx+1,ny,nz))
+  ELSE
+    ALLOCATE(spex(nexchange+nexch_sec,0:nx+1,ny,nz))
+  END IF
+  IF (ALLOCATED(spsurf)) THEN
+    DEALLOCATE(spsurf)
+    ALLOCATE(spsurf(nsurf+nsurf_sec,0:nx+1,ny,nz))
+  ELSE
+    ALLOCATE(spsurf(nsurf+nsurf_sec,0:nx+1,ny,nz))
+  END IF
+  IF (ALLOCATED(spgas)) THEN
+    DEALLOCATE(spgas)
+    ALLOCATE(spgas(ngas,0:nx+1,ny,nz))
+  ELSE
+    ALLOCATE(spgas(ngas,0:nx+1,ny,nz))
+  END IF
+  IF (ALLOCATED(LogPotential)) THEN
+    DEALLOCATE(LogPotential)
+    ALLOCATE(LogPotential(nsurf,0:nx+1,ny,nz))
+  ELSE
+    ALLOCATE(LogPotential(nsurf,0:nx+1,ny,nz))
+  END IF
+  IF (ALLOCATED(spex10)) THEN
+    DEALLOCATE(spex10)
+    ALLOCATE(spex10(nexchange+nexch_sec,0:nx+1,ny,nz))
+  ELSE
+    ALLOCATE(spex10(nexchange+nexch_sec,0:nx+1,ny,nz))
+  END IF
+  IF (ALLOCATED(spsurf10)) THEN
+    DEALLOCATE(spsurf10)
+    ALLOCATE(spsurf10(nsurf+nsurf_sec,0:nx+1,ny,nz))
+  ELSE
+    ALLOCATE(spsurf10(nsurf+nsurf_sec,0:nx+1,ny,nz))
+  END IF
+  IF (ALLOCATED(spgas10)) THEN
+    DEALLOCATE(spgas10)
+    ALLOCATE(spgas10(ngas,0:nx+1,ny,nz))
+  ELSE
+    ALLOCATE(spgas10(ngas,0:nx+1,ny,nz))
+  END IF
+
+  IF (ALLOCATED(t)) THEN
+    DEALLOCATE(t)
+    ALLOCATE(t(0:nx+1,ny,nz))
+  ELSE
+    ALLOCATE(t(0:nx+1,ny,nz))
+  END IF
+!!!  IF (ALLOCATED(por)) THEN
+!!!    DEALLOCATE(por)
+!!!    ALLOCATE(por(0:nx+1,ny,nz))
+!!!  ELSE
+!!!    ALLOCATE(por(0:nx+1,ny,nz))
+!!!  END IF
+
+ELSE IF (nx > 1 .AND. ny > 1 .AND. nz == 1) THEN
+
+  IF (ALLOCATED(s)) THEN
+    DEALLOCATE(s)
+    ALLOCATE(s(ncomp,0:nx+1,0:ny+1,nz))
+  ELSE
+    ALLOCATE(s(ncomp,0:nx+1,0:ny+1,nz))
+  END IF
+  IF (ALLOCATED(sp)) THEN
+    DEALLOCATE(sp)
+    ALLOCATE(sp(ncomp+nspec,0:nx+1,0:ny+1,nz))
+  ELSE
+    ALLOCATE(sp(ncomp+nspec,0:nx+1,0:ny+1,nz))
+  END IF
+  IF (ALLOCATED(sp10)) THEN
+    DEALLOCATE(sp10)
+    ALLOCATE(sp10(ncomp+nspec,0:nx+1,0:ny+1,nz))
+  ELSE
+    ALLOCATE(sp10(ncomp+nspec,0:nx+1,0:ny+1,nz))
+  END IF
+  IF (ALLOCATED(spex)) THEN
+    DEALLOCATE(spex)
+    ALLOCATE(spex(nexchange+nexch_sec,0:nx+1,0:ny+1,nz))
+  ELSE
+    ALLOCATE(spex(nexchange+nexch_sec,0:nx+1,0:ny+1,nz))
+  END IF
+  IF (ALLOCATED(spsurf)) THEN
+    DEALLOCATE(spsurf)
+    ALLOCATE(spsurf(nsurf+nsurf_sec,0:nx+1,0:ny+1,nz))
+  ELSE
+    ALLOCATE(spsurf(nsurf+nsurf_sec,0:nx+1,0:ny+1,nz))
+  END IF
+  IF (ALLOCATED(spgas)) THEN
+    DEALLOCATE(spgas)
+    ALLOCATE(spgas(ngas,0:nx+1,0:ny+1,nz))
+  ELSE
+    ALLOCATE(spgas(ngas,0:nx+1,0:ny+1,nz))
+  END IF
+  IF (ALLOCATED(LogPotential)) THEN
+    DEALLOCATE(LogPotential)
+    ALLOCATE(LogPotential(nsurf,0:nx+1,0:ny+1,nz))
+  ELSE
+    ALLOCATE(LogPotential(nsurf,0:nx+1,0:ny+1,nz))
+  END IF
+  IF (ALLOCATED(spex10)) THEN
+    DEALLOCATE(spex10)
+    ALLOCATE(spex10(nexchange+nexch_sec,0:nx+1,0:ny+1,nz))
+  ELSE
+    ALLOCATE(spex10(nexchange+nexch_sec,0:nx+1,0:ny+1,nz))
+  END IF
+  IF (ALLOCATED(spsurf10)) THEN
+    DEALLOCATE(spsurf10)
+    ALLOCATE(spsurf10(nsurf+nsurf_sec,0:nx+1,0:ny+1,nz))
+  ELSE
+    ALLOCATE(spsurf10(nsurf+nsurf_sec,0:nx+1,0:ny+1,nz))
+  END IF
+  IF (ALLOCATED(spgas10)) THEN
+    DEALLOCATE(spgas10)
+    ALLOCATE(spgas10(ngas,0:nx+1,0:ny+1,nz))
+  ELSE
+    ALLOCATE(spgas10(ngas,0:nx+1,0:ny+1,nz))
+  END IF
+  IF (ALLOCATED(t)) THEN
+    DEALLOCATE(t)
+    ALLOCATE(t(0:nx+1,0:ny+1,nz))
+  ELSE
+    ALLOCATE(t(0:nx+1,0:ny+1,nz))
+  END IF
+!!!  IF (ALLOCATED(por)) THEN
+!!!    DEALLOCATE(por)
+!!!    ALLOCATE(por(0:nx+1,0:ny+1,nz))
+!!!  ELSE
+!!!    ALLOCATE(por(0:nx+1,0:ny+1,nz))
+!!!  END IF
+
+ELSE IF (nx > 1 .AND. ny == 1 .AND. nz > 1) THEN
+
+  IF (ALLOCATED(s)) THEN
+    DEALLOCATE(s)
+    ALLOCATE(s(ncomp,0:nx+1,ny,0:nz+1))
+  ELSE
+    ALLOCATE(s(ncomp,0:nx+1,ny,0:nz+1))
+  END IF
+  IF (ALLOCATED(sp)) THEN
+    DEALLOCATE(sp)
+    ALLOCATE(sp(ncomp+nspec,0:nx+1,ny,0:nz+1))
+  ELSE
+    ALLOCATE(sp(ncomp+nspec,0:nx+1,ny,0:nz+1))
+  END IF
+  IF (ALLOCATED(sp10)) THEN
+    DEALLOCATE(sp10)
+    ALLOCATE(sp10(ncomp+nspec,0:nx+1,ny,0:nz+1))
+  ELSE
+    ALLOCATE(sp10(ncomp+nspec,0:nx+1,ny,0:nz+1))
+  END IF
+  IF (ALLOCATED(spex)) THEN
+    DEALLOCATE(spex)
+    ALLOCATE(spex(nexchange+nexch_sec,0:nx+1,ny,0:nz+1))
+  ELSE
+    ALLOCATE(spex(nexchange+nexch_sec,0:nx+1,ny,0:nz+1))
+  END IF
+  IF (ALLOCATED(spsurf)) THEN
+    DEALLOCATE(spsurf)
+    ALLOCATE(spsurf(nsurf+nsurf_sec,0:nx+1,ny,0:nz+1))
+  ELSE
+    ALLOCATE(spsurf(nsurf+nsurf_sec,0:nx+1,ny,0:nz+1))
+  END IF
+  IF (ALLOCATED(spgas)) THEN
+    DEALLOCATE(spgas)
+    ALLOCATE(spgas(ngas,0:nx+1,ny,0:nz+1))
+  ELSE
+    ALLOCATE(spgas(ngas,0:nx+1,ny,0:nz+1))
+  END IF
+  IF (ALLOCATED(LogPotential)) THEN
+    DEALLOCATE(LogPotential)
+    ALLOCATE(LogPotential(nsurf,0:nx+1,ny,0:nz+1))
+  ELSE
+    ALLOCATE(LogPotential(nsurf,0:nx+1,ny,0:nz+1))
+  END IF
+  IF (ALLOCATED(spex10)) THEN
+    DEALLOCATE(spex10)
+    ALLOCATE(spex10(nexchange+nexch_sec,0:nx+1,ny,0:nz+1))
+  ELSE
+    ALLOCATE(spex10(nexchange+nexch_sec,0:nx+1,ny,0:nz+1))
+  END IF
+  IF (ALLOCATED(spsurf10)) THEN
+    DEALLOCATE(spsurf10)
+    ALLOCATE(spsurf10(nsurf+nsurf_sec,0:nx+1,ny,0:nz+1))
+  ELSE
+    ALLOCATE(spsurf10(nsurf+nsurf_sec,0:nx+1,ny,0:nz+1))
+  END IF
+  IF (ALLOCATED(spgas10)) THEN
+    DEALLOCATE(spgas10)
+    ALLOCATE(spgas10(ngas,0:nx+1,ny,0:nz+1))
+  ELSE
+    ALLOCATE(spgas10(ngas,0:nx+1,ny,0:nz+1))
+  END IF
+  IF (ALLOCATED(t)) THEN
+    DEALLOCATE(t)
+    ALLOCATE(t(0:nx+1,ny,0:nz+1))
+  ELSE
+    ALLOCATE(t(0:nx+1,ny,0:nz+1))
+  END IF
+!!!  IF (ALLOCATED(por)) THEN
+!!!    DEALLOCATE(por)
+!!!    ALLOCATE(por(0:nx+1,ny,0:nz+1))
+!!!  ELSE
+!!!    ALLOCATE(por(0:nx+1,ny,0:nz+1))
+!!!  END IF
+
+
+ELSE IF (nx > 1 .AND. ny > 1 .AND. nz > 1) THEN
+
+  IF (ALLOCATED(s)) THEN
+    DEALLOCATE(s)
+    ALLOCATE(s(ncomp,0:nx+1,0:ny+1,0:nz+1))
+  ELSE
+    ALLOCATE(s(ncomp,0:nx+1,0:ny+1,0:nz+1))
+  END IF
+  IF (ALLOCATED(sp)) THEN
+    DEALLOCATE(sp)
+    ALLOCATE(sp(ncomp+nspec,0:nx+1,0:ny+1,0:nz+1))
+  ELSE
+    ALLOCATE(sp(ncomp+nspec,0:nx+1,0:ny+1,0:nz+1))
+  END IF
+  IF (ALLOCATED(sp10)) THEN
+    DEALLOCATE(sp10)
+    ALLOCATE(sp10(ncomp+nspec,0:nx+1,0:ny+1,0:nz+1))
+  ELSE
+    ALLOCATE(sp10(ncomp+nspec,0:nx+1,0:ny+1,0:nz+1))
+  END IF
+  IF (ALLOCATED(spex)) THEN
+    DEALLOCATE(spex)
+    ALLOCATE(spex(nexchange+nexch_sec,0:nx+1,0:ny+1,0:nz+1))
+  ELSE
+    ALLOCATE(spex(nexchange+nexch_sec,0:nx+1,0:ny+1,0:nz+1))
+  END IF
+  IF (ALLOCATED(spsurf)) THEN
+    DEALLOCATE(spsurf)
+    ALLOCATE(spsurf(nsurf+nsurf_sec,0:nx+1,0:ny+1,0:nz+1))
+  ELSE
+    ALLOCATE(spsurf(nsurf+nsurf_sec,0:nx+1,0:ny+1,0:nz+1))
+  END IF
+  IF (ALLOCATED(spgas)) THEN
+    DEALLOCATE(spgas)
+    ALLOCATE(spgas(ngas,0:nx+1,0:ny+1,0:nz+1))
+  ELSE
+    ALLOCATE(spgas(ngas,0:nx+1,0:ny+1,0:nz+1))
+  END IF
+  IF (ALLOCATED(LogPotential)) THEN
+    DEALLOCATE(LogPotential)
+    ALLOCATE(LogPotential(nsurf,0:nx+1,0:ny+1,0:nz+1))
+  ELSE
+    ALLOCATE(LogPotential(nsurf,0:nx+1,0:ny+1,0:nz+1))
+  END IF
+
+  IF (ALLOCATED(spex10)) THEN
+    DEALLOCATE(spex10)
+    ALLOCATE(spex10(nexchange+nexch_sec,0:nx+1,0:ny+1,0:nz+1))
+  ELSE
+    ALLOCATE(spex10(nexchange+nexch_sec,0:nx+1,0:ny+1,0:nz+1))
+  END IF
+  IF (ALLOCATED(spsurf10)) THEN
+    DEALLOCATE(spsurf10)
+    ALLOCATE(spsurf10(nsurf+nsurf_sec,0:nx+1,0:ny+1,0:nz+1))
+  ELSE
+    ALLOCATE(spsurf10(nsurf+nsurf_sec,0:nx+1,0:ny+1,0:nz+1))
+  END IF
+  IF (ALLOCATED(spgas10)) THEN
+    DEALLOCATE(spgas10)
+    ALLOCATE(spgas10(ngas,0:nx+1,0:ny+1,0:nz+1))
+  ELSE
+    ALLOCATE(spgas10(ngas,0:nx+1,0:ny+1,0:nz+1))
+  END IF
+
+  IF (ALLOCATED(t)) THEN
+    DEALLOCATE(t)
+    ALLOCATE(t(0:nx+1,0:ny+1,0:nz+1))
+  ELSE
+    ALLOCATE(t(0:nx+1,0:ny+1,0:nz+1))
+  END IF
+!!!  IF (ALLOCATED(por)) THEN
+!!!    DEALLOCATE(por)
+!!!    ALLOCATE(por(0:nx+1,0:ny+1,0:nz+1))
+!!!  ELSE
+!!!    ALLOCATE(por(0:nx+1,0:ny+1,0:nz+1))
+!!!  END IF
+
 END IF
-IF (ALLOCATED(s)) THEN
-  DEALLOCATE(s)
-  ALLOCATE(s(ncomp,0:nx+1,0:ny+1,nz))
-ELSE
-  ALLOCATE(s(ncomp,0:nx+1,0:ny+1,nz))
-END IF
+
 IF (ALLOCATED(sn)) THEN
   DEALLOCATE(sn)
   ALLOCATE(sn(ncomp,nx,ny,nz))
 ELSE
   ALLOCATE(sn(ncomp,nx,ny,nz))
-END IF
-IF (ALLOCATED(sp10)) THEN
-  DEALLOCATE(sp10)
-  ALLOCATE(sp10(ncomp+nspec,nx,ny,nz))
-ELSE
-  ALLOCATE(sp10(ncomp+nspec,nx,ny,nz))
 END IF
 IF (ALLOCATED(spold)) THEN
   DEALLOCATE(spold)
@@ -215,60 +520,29 @@ IF (ALLOCATED(spold)) THEN
 ELSE
   ALLOCATE(spold(ncomp+nspec,nx,ny,nz))
 END IF
-IF (ALLOCATED(spex)) THEN
-  DEALLOCATE(spex)
-  ALLOCATE(spex(nexchange+nexch_sec,nx,ny,nz))
-ELSE
-  ALLOCATE(spex(nexchange+nexch_sec,nx,ny,nz))
-END IF
 IF (ALLOCATED(spexold)) THEN
   DEALLOCATE(spexold)
   ALLOCATE(spexold(nexchange+nexch_sec,nx,ny,nz))
 ELSE
   ALLOCATE(spexold(nexchange+nexch_sec,nx,ny,nz))
 END IF
-IF (ALLOCATED(spex10)) THEN
-  DEALLOCATE(spex10)
-  ALLOCATE(spex10(nexchange+nexch_sec,nx,ny,nz))
-ELSE
-  ALLOCATE(spex10(nexchange+nexch_sec,nx,ny,nz))
-END IF
-IF (ALLOCATED(spgas)) THEN
-  DEALLOCATE(spgas)
-  ALLOCATE(spgas(ngas,nx,ny,nz))
-ELSE
-  ALLOCATE(spgas(ngas,nx,ny,nz))
-END IF
-IF (ALLOCATED(spgas10)) THEN
-  DEALLOCATE(spgas10)
-  ALLOCATE(spgas10(ngas,nx,ny,nz))
-ELSE
-  ALLOCATE(spgas10(ngas,nx,ny,nz))
-END IF
+
+
 IF (ALLOCATED(spgasold)) THEN
   DEALLOCATE(spgasold)
   ALLOCATE(spgasold(ngas,nx,ny,nz))
 ELSE
   ALLOCATE(spgasold(ngas,nx,ny,nz))
 END IF
-IF (ALLOCATED(spsurf)) THEN
-  DEALLOCATE(spsurf)
-  ALLOCATE(spsurf(nsurf+nsurf_sec,nx,ny,nz))
-ELSE
-  ALLOCATE(spsurf(nsurf+nsurf_sec,nx,ny,nz))
-END IF
+
 IF (ALLOCATED(spsurfold)) THEN
   DEALLOCATE(spsurfold)
   ALLOCATE(spsurfold(nsurf+nsurf_sec,nx,ny,nz))
 ELSE
   ALLOCATE(spsurfold(nsurf+nsurf_sec,nx,ny,nz))
 END IF
-IF (ALLOCATED(spsurf10)) THEN
-  DEALLOCATE(spsurf10)
-  ALLOCATE(spsurf10(nsurf+nsurf_sec,nx,ny,nz))
-ELSE
-  ALLOCATE(spsurf10(nsurf+nsurf_sec,nx,ny,nz))
-END IF
+
+
 IF (ALLOCATED(volfx)) THEN
   DEALLOCATE(volfx)
   ALLOCATE(volfx(nrct,0:nx,ny,nz))
@@ -356,12 +630,8 @@ IF (ALLOCATED(told)) THEN
 ELSE
   ALLOCATE(told(nx,ny,nz))
 END IF
-IF (ALLOCATED(t)) THEN
-  DEALLOCATE(t)
-  ALLOCATE(t(nx,ny,nz))
-ELSE
-  ALLOCATE(t(nx,ny,nz))
-END IF
+
+
 IF (ALLOCATED(raq_tot)) THEN
   DEALLOCATE(raq_tot)
   ALLOCATE(raq_tot(ikin,nx,ny,nz))

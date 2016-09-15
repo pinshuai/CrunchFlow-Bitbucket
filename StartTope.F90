@@ -1,37 +1,46 @@
-!! CrunchTope 
-!! Copyright (c) 2016, Carl Steefel
-!! Copyright (c) 2016, The Regents of the University of California, 
-!! through Lawrence Berkeley National Laboratory (subject to 
-!! receipt of any required approvals from the U.S. Dept. of Energy).  
-!! All rights reserved.
+!!! *** Copyright Notice ***
+!!! “CrunchFlow”, Copyright (c) 2016, The Regents of the University of California, through Lawrence Berkeley National Laboratory 
+!!! (subject to receipt of any required approvals from the U.S. Dept. of Energy).  All rights reserved.
+!!! 
+!!! If you have questions about your rights to use or distribute this software, please contact 
+!!! Berkeley Lab's Innovation & Partnerships Office at  IPO@lbl.gov.
+!!! 
+!!! NOTICE.  This Software was developed under funding from the U.S. Department of Energy and the U.S. Government 
+!!! consequently retains certain rights. As such, the U.S. Government has been granted for itself and others acting 
+!!! on its behalf a paid-up, nonexclusive, irrevocable, worldwide license in the Software to reproduce, distribute copies to the public, 
+!!! prepare derivative works, and perform publicly and display publicly, and to permit other to do so.
+!!!
+!!! *** License Agreement ***
+!!! “CrunchFlow”, Copyright (c) 2016, The Regents of the University of California, through Lawrence Berkeley National Laboratory)
+!!! subject to receipt of any required approvals from the U.S. Dept. of Energy).  All rights reserved."
+!!! 
+!!! Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+!!! 
+!!! (1) Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+!!!
+!!! (2) Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer 
+!!! in the documentation and/or other materials provided with the distribution.
+!!!
+!!! (3) Neither the name of the University of California, Lawrence Berkeley National Laboratory, U.S. Dept. of Energy nor the names of 
+!!! its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+!!!
+!!! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, 
+!!! BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
+!!! SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+!!! DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
+!!! OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+!!! LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF 
+!!! THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+!!!
+!!! You are under no obligation whatsoever to provide any bug fixes, patches, or upgrades to the features, functionality or 
+!!! performance of the source code ("Enhancements") to anyone; however, if you choose to make your
+!!! Enhancements available either publicly, or directly to Lawrence Berkeley National Laboratory, without 
+!!! imposing a separate written license agreement for such 
+!!! Enhancements, then you hereby grant the following license: a  non-exclusive, royalty-free perpetual license to install, use, 
+!!! modify, prepare derivative works, incorporate into other computer software, distribute, and sublicense such enhancements or 
+!!! derivative works thereof, in binary and source code form.
 
-!! Redistribution and use in source and binary forms, with or without
-!! modification, are permitted provided that the following conditions are
-!! met: 
-
-!! (1) Redistributions of source code must retain the above copyright
-!! notice, this list of conditions and the following disclaimer.
-
-!! (2) Redistributions in binary form must reproduce the above copyright
-!! notice, this list of conditions and the following disclaimer in the
-!! documentation and/or other materials provided with the distribution.
-
-!! (3) Neither the name of the University of California, Lawrence
-!! Berkeley National Laboratory, U.S. Dept. of Energy nor the names of    
-!! its contributors may be used to endorse or promote products derived
-!! from this software without specific prior written permission.
-
-!! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-!! "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-!! LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-!! A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-!! OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-!! SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-!! LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-!! DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-!! THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-!! (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-!! OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE  
+!!!      ****************************************
 
 
 SUBROUTINE StartTope(ncomp,nspec,nkin,nrct,ngas,npot,                   &
@@ -39,7 +48,7 @@ SUBROUTINE StartTope(ncomp,nspec,nkin,nrct,ngas,npot,                   &
     tstep,delt,deltmin,ttol,jpor,ikin,nstop,                          &
     corrmax,nseries,nexchange,nexch_sec,nsurf,nsurf_sec,ndecay,       &
     str_mon,str_day,str_hr,str_min,str_sec,NumInputFiles,             &
-    InputFileCounter)
+    InputFileCounter,nBoundaryConditionZone)
 USE crunchtype
 USE params
 USE runtime
@@ -302,6 +311,9 @@ CHARACTER (LEN=12)                                            :: writeph
 CHARACTER (LEN=mls)                                           :: PorosityFile
 CHARACTER (LEN=mls)                                           :: SaturationFile
 CHARACTER (LEN=mls)                                           :: BurialFile
+CHARACTER (LEN=mls)                                           :: ConditionName
+
+INTEGER(I4B)                                                  :: ConditionNumber
 
 LOGICAL(LGT)                                                  :: CheckDuan
 LOGICAL(LGT)                                                  :: found
@@ -572,7 +584,13 @@ INTEGER(I4B)                                                  :: nucleationpaths
 INTEGER(I4B)                                                  :: kFlag
 INTEGER(I4B)                                                  :: npFlag
 
+INTEGER(I4B)                                                  :: nBoundaryConditionZone
+
+LOGICAL(LGT)                                                  :: ConditionNameFound = .FALSE.
+
 LOGICAL(LGT)                                                  :: NeedNucleationBlock
+
+LOGICAL(LGT)                                                  :: lopen
 
 namelist /Nucleation/                                          NameMineral,        &
                                                                label,              &
@@ -665,11 +683,13 @@ IF (.NOT. ext) THEN
 END IF
 
 OPEN(iunit1,FILE=filename,STATUS='old',ERR=703)
+FileOutput = ' '
 CALL stringlen(filename,lenInput)
 IF (filename(lenInput-1:lenInput) == 'in' .OR. filename(lenInput-1:lenInput) == 'IN') THEN
   FileOutput(1:lenInput-2) = filename(1:lenInput-2)
   FileOutput(lenInput-1:lenInput+1) = 'out'
   OPEN(iunit2,FILE=FileOutput,STATUS='unknown',ERR=704)
+  SaveInputFileName = FileOutput
 ELSE
   FileOutput = 'crunch.out'
 END IF
@@ -684,6 +704,10 @@ str_sec = curr_time(7)
 nin = iunit1
 nout = 4
 #if !defined(ALQUIMIA)
+inquire(file='CrunchJunk2.out',opened=lopen)
+IF (lopen) THEN
+  CLOSE (unit=nout)
+END IF
 OPEN(UNIT=nout,FILE='CrunchJunk2.out',STATUS='unknown')
 #else
 call MPI_COMM_RANK(MPI_COMM_WORLD, rank, ierror)
@@ -5306,21 +5330,11 @@ DO jz = 1,nz
         sn(i,jx,jy,jz) = scond(i,jinit(jx,jy,jz))
       END DO
 
-!!      DO ix = 1,nexchange+nexch_sec
-!!        spex10(ix,jx,jy,jz) = spcondex10(ix,jinit(jx,jy,jz))
-!!        spex(ix,jx,jy,jz) = spcondex(ix,jinit(jx,jy,jz))
-!!      END DO
-!!      DO is = 1,nsurf
-!!        spsurf(is,jx,jy,jz) = spcondsurf(is,jinit(jx,jy,jz))
-!!      END DO
-!!      DO is = 1,nsurf+nsurf_sec
-!!        spsurf10(is,jx,jy,jz) = spcondsurf10(is,jinit(jx,jy,jz))
-!!      END DO
-
       DO kk = 1,ngas
         spgas10(kk,jx,jy,jz) = spcondgas10(kk,jinit(jx,jy,jz))
         spgas(kk,jx,jy,jz) = spcondgas(kk,jinit(jx,jy,jz))
       END DO
+
       sum = 0.0
       DO k = 1,nrct
         IF (.NOT. ReadGautier) THEN
@@ -5382,14 +5396,6 @@ DO jz = 1,nz
         READ(*,*)
         STOP
       END IF
-
-!!CIS      IF (por(jx,jy,jz) > 1.0) THEN
-!!CIS        WRITE(*,*)
-!!CIS        WRITE(*,*) '  You have specified a porosity > 1'
-!!CIS        WRITE(*,*)
-!!CIS        READ(*,*)
-!!CIS        STOP
-!!CIS      END IF
 
       CALL density(jx,jy,jz)
 
@@ -5493,9 +5499,6 @@ END DO
     END IF
 
 
-
-
-
   END IF    !! End of ReadGeochemicalConditions = .TRUE.
 
 IF (ALLOCATED(work3)) then
@@ -5573,44 +5576,10 @@ spsurfold = spsurf
 spnO2(1:nx,1:ny,1:nz) = sp(ikmast,1:nx,1:ny,1:nz)
 spnnO2(1:nx,1:ny,1:nz) = sp(ikmast,1:nx,1:ny,1:nz)
 
-!    ***************BOUNDARY CONDITIONS********************
+!!!    ***************BOUNDARY CONDITIONS********************
 
 section = 'boundary_conditions'
 CALL readblock(nin,nout,section,found,ncount)
-
-DO i = 1,6
-  jc(i) = 2   ! Initialize (and make default) a flux boundary
-END DO
-
-IF (ALLOCATED(spb)) THEN
-  DEALLOCATE(spb)
-  ALLOCATE(spb(ncomp+nspec,6))
-ELSE
-  ALLOCATE(spb(ncomp+nspec,6))
-END IF
-IF (ALLOCATED(spbgas)) THEN
-  DEALLOCATE(spbgas)
-  ALLOCATE(spbgas(ngas,6))
-ELSE
-  ALLOCATE(spbgas(ngas,6))
-END IF
-IF (ALLOCATED(spexb)) THEN
-  DEALLOCATE(spexb)
-  ALLOCATE(spexb(nexchange+nexch_sec,6))
-ELSE
-  ALLOCATE(spexb(nexchange+nexch_sec,6))
-END IF
-IF (ALLOCATED(spsurfb)) THEN
-  DEALLOCATE(spsurfb)
-  ALLOCATE(spsurfb(nsurf+nsurf_sec,6))
-ELSE
-  ALLOCATE(spsurfb(nsurf+nsurf_sec,6))
-END IF
-
-spb = 0.0
-spbgas = 0.0
-spexb = 0.0
-spsurfb = 0.0
 
 IF (found) THEN
   WRITE(*,*) ' Boundary condition block found'
@@ -5620,78 +5589,487 @@ ELSE
   WRITE(*,*)
 END IF
 
-CALL read_bound(nout,nchem,nx,ny,nz,ncomp,nspec,ngas,nkin,nexchange,nexch_sec,  &
-    nsurf,nsurf_sec)
+CALL read_BoundaryConditionByZone(nout,nx,ny,nz,nBoundaryConditionZone)
 
-IF (ALLOCATED(AqueousToBulkCond)) THEN
-  DEALLOCATE(AqueousToBulkCond)
+
+IF (nBoundaryConditionZone > 0) THEN
+
+!!  Initialize concentration at boundaries from various zones
+        
+  DO l = 1,nBoundaryConditionZone
+
+    DO jz = jzzBC_lo(l),jzzBC_hi(l)
+      DO jy = jyyBC_lo(l),jyyBC_hi(l)
+        DO jx = jxxBC_lo(l),jxxBC_hi(l)
+
+          ConditionName = BoundaryConditionName(l)
+          ConditionNameFound = .FALSE.
+          ConditionNumber = 0
+
+          DO nco = 1,nchem
+            IF (ConditionName == CondLabel(nco)) THEN
+              ConditionNameFound = .TRUE.
+              ConditionNumber = nco
+            END IF
+            IF (ConditionNameFound) THEN
+              EXIT
+            END IF
+          END DO
+
+          IF (.NOT. ConditionNameFound) THEN
+            WRITE(*,*)
+            WRITE(*,*) ' Condition block not found for boundary input read'
+            WRITE(*,*) ' Looking for:  ', ConditionName
+            WRITE(*,*)
+            READ(*,*)
+            STOP
+          END IF
+
+          jinit(jx,jy,jz) = ConditionNumber
+
+        END DO
+      END DO
+    END DO
+
+  END DO
+
+
+  jx = 0
+  DO jz = 1,nz
+    DO jy = 1,ny
+
+      ConditionNumber = jinit(jx,jy,jz)
+
+      IF (ConditionNumber == 0) THEN
+        WRITE(*,*)
+        WRITE(*,*) ' Portion of JX = 0 boundary is not initialized'
+        WRITE(*,*) ' Missing initialization at jy = ',jy
+        WRITE(*,*) ' Missing initialization at jz = ',jz
+        WRITE(*,*)
+        READ(*,*)
+        STOP
+      END IF
+
+      DO ik = 1,ncomp+nspec
+        sp10(ik,jx,jy,jz)    = spcond10(ik,ConditionNumber)
+        sp(ik,jx,jy,jz)      = spcond(ik,ConditionNumber)
+      END DO
+
+      DO i = 1,ncomp
+        s(i,jx,jy,jz)        = scond(i,ConditionNumber)
+      END DO
+
+      DO kk = 1,ngas
+        spgas10(kk,jx,jy,jz) = spcondgas10(kk,ConditionNumber)
+        spgas(kk,jx,jy,jz)   = spcondgas(kk,ConditionNumber)
+      END DO
+
+      do ix = 1,nexchange
+        spex(ix,jx,jy,jz)    = spcondex(ix,ConditionNumber)
+      end do
+      DO ix = 1,nexchange+nexch_sec
+        spex10(ix+nexchange,jx,jy,jz) = convert*spcondex10(ix+nexchange,ConditionNumber)  ! Now in eq/m3 por. med.
+      END DO
+
+      DO is = 1,nsurf
+        spsurf(is,jx,jy,jz)   = LOG(convert*spcondsurf10(is,ConditionNumber))
+        IF (iedl(is) == 0) THEN
+          LogPotential(is,jx,jy,jz) = LogPotentialInit(is,ConditionNumber) 
+        END IF
+      END DO
+      DO is = 1,nsurf+nsurf_sec
+        spsurf10(is,jx,jy,jz) = convert*spcondsurf10(is,ConditionNumber)
+      END DO
+
+      t(jx,jy,jz) = tempcond(ConditionNumber)
+      por(jx,jy,jz) = porcond(ConditionNumber)
+
+    END DO
+  END DO
+
+  jx = nx+1
+  DO jz = 1,nz
+    DO jy = 1,ny
+
+      ConditionNumber = jinit(jx,jy,jz)
+
+      IF (ConditionNumber == 0) THEN
+        WRITE(*,*)
+        WRITE(*,*) ' Portion of JX = nx+1 boundary is not initialized'
+        WRITE(*,*) ' Missing initialization at jy = ',jy
+        WRITE(*,*) ' Missing initialization at jz = ',jz
+        WRITE(*,*)
+        READ(*,*)
+        STOP
+      END IF
+
+      DO ik = 1,ncomp+nspec
+        sp10(ik,jx,jy,jz)    = spcond10(ik,ConditionNumber)
+        sp(ik,jx,jy,jz)      = spcond(ik,ConditionNumber)
+      END DO
+
+      DO i = 1,ncomp
+        s(i,jx,jy,jz)        = scond(i,ConditionNumber)
+      END DO
+
+      DO kk = 1,ngas
+        spgas10(kk,jx,jy,jz) = spcondgas10(kk,ConditionNumber)
+        spgas(kk,jx,jy,jz)   = spcondgas(kk,ConditionNumber)
+      END DO
+
+      do ix = 1,nexchange
+        spex(ix,jx,jy,jz)    = spcondex(ix,ConditionNumber)
+      end do
+      DO ix = 1,nexchange+nexch_sec
+        spex10(ix+nexchange,jx,jy,jz) = convert*spcondex10(ix+nexchange,ConditionNumber)  ! Now in eq/m3 por. med.
+      END DO
+
+      DO is = 1,nsurf
+        spsurf(is,jx,jy,jz)   = LOG(convert*spcondsurf10(is,ConditionNumber))
+        IF (iedl(is) == 0) THEN
+          LogPotential(is,jx,jy,jz) = LogPotentialInit(is,ConditionNumber) 
+        END IF
+      END DO
+      DO is = 1,nsurf+nsurf_sec
+        spsurf10(is,jx,jy,jz) = convert*spcondsurf10(is,ConditionNumber)
+      END DO
+
+      t(jx,jy,jz) = tempcond(ConditionNumber)
+      por(jx,jy,jz) = porcond(ConditionNumber)
+
+    END DO
+  END DO
+
+  IF (ny > 1) THEN
+
+    jy = 0
+    DO jz = 1,nz
+      DO jx = 1,nx
+
+        ConditionNumber = jinit(jx,jy,jz)
+
+        IF (ConditionNumber == 0) THEN
+          WRITE(*,*)
+          WRITE(*,*) ' Portion of JY = 0 boundary is not initialized'
+          WRITE(*,*) ' Missing initialization at jx = ',jx
+          WRITE(*,*) ' Missing initialization at jz = ',jz
+          WRITE(*,*)
+          READ(*,*)
+          STOP
+        END IF
+
+        DO ik = 1,ncomp+nspec
+          sp10(ik,jx,jy,jz)    = spcond10(ik,ConditionNumber)
+          sp(ik,jx,jy,jz)      = spcond(ik,ConditionNumber)
+        END DO
+
+        DO i = 1,ncomp
+          s(i,jx,jy,jz)        = scond(i,ConditionNumber)
+        END DO
+
+        DO kk = 1,ngas
+          spgas10(kk,jx,jy,jz) = spcondgas10(kk,ConditionNumber)
+          spgas(kk,jx,jy,jz)   = spcondgas(kk,ConditionNumber)
+        END DO
+
+        do ix = 1,nexchange
+          spex(ix,jx,jy,jz)    = spcondex(ix,ConditionNumber)
+        end do
+        DO ix = 1,nexchange+nexch_sec
+          spex10(ix+nexchange,jx,jy,jz) = convert*spcondex10(ix+nexchange,ConditionNumber)  ! Now in eq/m3 por. med.
+        END DO
+
+        DO is = 1,nsurf
+          spsurf(is,jx,jy,jz)   = LOG(convert*spcondsurf10(is,ConditionNumber))
+          IF (iedl(is) == 0) THEN
+            LogPotential(is,jx,jy,jz) = LogPotentialInit(is,ConditionNumber) 
+          END IF
+        END DO
+        DO is = 1,nsurf+nsurf_sec
+          spsurf10(is,jx,jy,jz) = convert*spcondsurf10(is,ConditionNumber)
+        END DO
+
+        t(jx,jy,jz) = tempcond(ConditionNumber)
+        por(jx,jy,jz) = porcond(ConditionNumber)
+
+      END DO
+    END DO
+
+    jy = ny+1
+    DO jz = 1,nz
+      DO jx = 1,nx
+
+        ConditionNumber = jinit(jx,jy,jz)
+
+        IF (ConditionNumber == 0) THEN
+          WRITE(*,*)
+          WRITE(*,*) ' Portion of JY = ny+1 boundary is not initialized'
+          WRITE(*,*) ' Missing initialization at jx = ',jx
+          WRITE(*,*) ' Missing initialization at jz = ',jz
+          WRITE(*,*)
+          READ(*,*)
+          STOP
+        END IF
+
+        DO ik = 1,ncomp+nspec
+          sp10(ik,jx,jy,jz)    = spcond10(ik,ConditionNumber)
+          sp(ik,jx,jy,jz)      = spcond(ik,ConditionNumber)
+        END DO
+
+        DO i = 1,ncomp
+          s(i,jx,jy,jz)        = scond(i,ConditionNumber)
+        END DO
+
+        DO kk = 1,ngas
+          spgas10(kk,jx,jy,jz) = spcondgas10(kk,ConditionNumber)
+          spgas(kk,jx,jy,jz)   = spcondgas(kk,ConditionNumber)
+        END DO
+
+        do ix = 1,nexchange
+          spex(ix,jx,jy,jz)    = spcondex(ix,ConditionNumber)
+        end do
+        DO ix = 1,nexchange+nexch_sec
+          spex10(ix+nexchange,jx,jy,jz) = convert*spcondex10(ix+nexchange,ConditionNumber)  ! Now in eq/m3 por. med.
+        END DO
+
+        DO is = 1,nsurf
+          spsurf(is,jx,jy,jz)   = LOG(convert*spcondsurf10(is,ConditionNumber))
+          IF (iedl(is) == 0) THEN
+            LogPotential(is,jx,jy,jz) = LogPotentialInit(is,ConditionNumber) 
+          END IF
+        END DO
+        DO is = 1,nsurf+nsurf_sec
+          spsurf10(is,jx,jy,jz) = convert*spcondsurf10(is,ConditionNumber)
+        END DO
+
+        t(jx,jy,jz) = tempcond(ConditionNumber)
+        por(jx,jy,jz) = porcond(ConditionNumber)
+
+
+      END DO
+    END DO
+
+  END IF   !!  End of NY block
+
+  IF (nz > 1) THEN
+
+    jz = 0
+    DO jy = 1,ny
+      DO jx = 1,nx
+
+        ConditionNumber = jinit(jx,jy,jz)
+
+        IF (ConditionNumber == 0) THEN
+          WRITE(*,*)
+          WRITE(*,*) ' Portion of JZ = 0 boundary is not initialized'
+          WRITE(*,*) ' Missing initialization at jx = ',jx
+          WRITE(*,*) ' Missing initialization at jy = ',jy
+          WRITE(*,*)
+          READ(*,*)
+          STOP
+        END IF
+
+        DO ik = 1,ncomp+nspec
+          sp10(ik,jx,jy,jz)    = spcond10(ik,ConditionNumber)
+          sp(ik,jx,jy,jz)      = spcond(ik,ConditionNumber)
+        END DO
+
+        DO i = 1,ncomp
+          s(i,jx,jy,jz)        = scond(i,ConditionNumber)
+        END DO
+
+        DO kk = 1,ngas
+          spgas10(kk,jx,jy,jz) = spcondgas10(kk,ConditionNumber)
+          spgas(kk,jx,jy,jz)   = spcondgas(kk,ConditionNumber)
+        END DO
+
+        do ix = 1,nexchange
+          spex(ix,jx,jy,jz)    = spcondex(ix,ConditionNumber)
+        end do
+        DO ix = 1,nexchange+nexch_sec
+          spex10(ix+nexchange,jx,jy,jz) = convert*spcondex10(ix+nexchange,ConditionNumber)  ! Now in eq/m3 por. med.
+        END DO
+
+        DO is = 1,nsurf
+          spsurf(is,jx,jy,jz)   = LOG(convert*spcondsurf10(is,ConditionNumber))
+          IF (iedl(is) == 0) THEN
+            LogPotential(is,jx,jy,jz) = LogPotentialInit(is,ConditionNumber) 
+          END IF
+        END DO
+        DO is = 1,nsurf+nsurf_sec
+          spsurf10(is,jx,jy,jz) = convert*spcondsurf10(is,ConditionNumber)
+        END DO
+
+        t(jx,jy,jz) = tempcond(ConditionNumber)
+        por(jx,jy,jz) = porcond(ConditionNumber)
+
+
+      END DO
+    END DO
+
+    jz = nz+1
+    DO jy = 1,ny
+      DO jx = 1,nx
+
+        ConditionNumber = jinit(jx,jy,jz)
+
+        IF (ConditionNumber == 0) THEN
+          WRITE(*,*)
+          WRITE(*,*) ' Portion of JZ = nz+1 boundary is not initialized'
+          WRITE(*,*) ' Missing initialization at jx = ',jx
+          WRITE(*,*) ' Missing initialization at jy = ',jy
+          WRITE(*,*)
+          READ(*,*)
+          STOP
+        END IF
+
+        DO ik = 1,ncomp+nspec
+          sp10(ik,jx,jy,jz)    = spcond10(ik,ConditionNumber)
+          sp(ik,jx,jy,jz)      = spcond(ik,ConditionNumber)
+        END DO
+
+        DO i = 1,ncomp
+          s(i,jx,jy,jz)        = scond(i,ConditionNumber)
+        END DO
+
+        DO kk = 1,ngas
+          spgas10(kk,jx,jy,jz) = spcondgas10(kk,ConditionNumber)
+          spgas(kk,jx,jy,jz)   = spcondgas(kk,ConditionNumber)
+        END DO
+
+        do ix = 1,nexchange
+          spex(ix,jx,jy,jz)    = spcondex(ix,ConditionNumber)
+        end do
+        DO ix = 1,nexchange+nexch_sec
+          spex10(ix+nexchange,jx,jy,jz) = convert*spcondex10(ix+nexchange,ConditionNumber)  ! Now in eq/m3 por. med.
+        END DO
+
+        DO is = 1,nsurf
+          spsurf(is,jx,jy,jz)   = LOG(convert*spcondsurf10(is,ConditionNumber))
+          IF (iedl(is) == 0) THEN
+            LogPotential(is,jx,jy,jz) = LogPotentialInit(is,ConditionNumber) 
+          END IF
+        END DO
+        DO is = 1,nsurf+nsurf_sec
+          spsurf10(is,jx,jy,jz) = convert*spcondsurf10(is,ConditionNumber)
+        END DO
+
+        t(jx,jy,jz) = tempcond(ConditionNumber)
+        por(jx,jy,jz) = porcond(ConditionNumber)
+
+
+      END DO
+    END DO
+
+  END IF    !! End of NZ block
+
+
+
+ELSE   !! Conventional treatment of boundaries as corresponding to an entire boundary face
+
+  DO i = 1,6
+    jc(i) = 2   ! Initialize (and make default) a flux boundary
+  END DO
+
+  IF (ALLOCATED(spb)) THEN
+    DEALLOCATE(spb)
+    ALLOCATE(spb(ncomp+nspec,6))
+  ELSE
+    ALLOCATE(spb(ncomp+nspec,6))
+  END IF
+  IF (ALLOCATED(spbgas)) THEN
+    DEALLOCATE(spbgas)
+    ALLOCATE(spbgas(ngas,6))
+  ELSE
+    ALLOCATE(spbgas(ngas,6))
+  END IF
+  IF (ALLOCATED(spexb)) THEN
+    DEALLOCATE(spexb)
+    ALLOCATE(spexb(nexchange+nexch_sec,6))
+  ELSE
+    ALLOCATE(spexb(nexchange+nexch_sec,6))
+  END IF
+  IF (ALLOCATED(spsurfb)) THEN
+    DEALLOCATE(spsurfb)
+    ALLOCATE(spsurfb(nsurf+nsurf_sec,6))
+  ELSE
+    ALLOCATE(spsurfb(nsurf+nsurf_sec,6))
+  END IF
+
+  spb = 0.0
+  spbgas = 0.0
+  spexb = 0.0
+  spsurfb = 0.0
+
+  CALL read_bound(nout,nchem,nx,ny,nz,ncomp,nspec,ngas,nkin,nexchange,nexch_sec,  &
+     nsurf,nsurf_sec)
+
+  IF (ALLOCATED(AqueousToBulkCond)) THEN
+    DEALLOCATE(AqueousToBulkCond)
+  END IF
+
+  IF (ALLOCATED(sbnd)) THEN
+    DEALLOCATE(sbnd)
+    ALLOCATE(sbnd(ncomp,6))
+  ELSE
+    ALLOCATE(sbnd(ncomp,6))
+  END IF
+  IF (ALLOCATED(s_local)) THEN
+    DEALLOCATE(s_local)
+    ALLOCATE(s_local(ncomp))
+  ELSE
+    ALLOCATE(s_local(ncomp))
+  END IF
+
+  sbnd = 0.0
+  s_local = 0.0
+
+  DO nbnd = 1,6
+    CALL bdcalc(ncomp,nspec,nbnd)
+    DO i = 1,ncomp
+      sbnd(i,nbnd) = s_local(i)
+    END DO
+  END DO
+
+!!!  Set the boundaries
+
+  jx = 0
+  DO jz = 1,nz
+    DO jy = 1,ny
+      DO i = 1,ncomp
+        s(i,jx,jy,jz) = sbnd(i,1)
+      END DO
+    END DO
+  END DO
+
+  jx = nx+1
+  DO jz = 1,nz
+    DO jy = 1,ny
+      DO i = 1,ncomp
+        s(i,jx,jy,jz) = sbnd(i,2)
+      END DO
+    END DO
+  END DO
+
+  jy = 0
+  DO jz = 1,nz
+    DO jx = 1,nx
+      DO i = 1,ncomp
+        s(i,jx,jy,jz) = sbnd(i,3)
+      END DO
+    END DO
+  END DO
+
+  jy = ny+1
+  DO jz = 1,nz
+    DO jx = 1,nx
+      DO i = 1,ncomp
+        s(i,jx,jy,jz) = sbnd(i,4)
+      END DO
+    END DO
+  END DO
+
 END IF
-
-IF (ALLOCATED(sbnd)) THEN
-  DEALLOCATE(sbnd)
-  ALLOCATE(sbnd(ncomp,6))
-ELSE
-  ALLOCATE(sbnd(ncomp,6))
-END IF
-IF (ALLOCATED(s_local)) THEN
-  DEALLOCATE(s_local)
-  ALLOCATE(s_local(ncomp))
-ELSE
-  ALLOCATE(s_local(ncomp))
-END IF
-
-sbnd = 0.0
-s_local = 0.0
-
-DO nbnd = 1,6
-  CALL bdcalc(ncomp,nspec,nbnd)
-  DO i = 1,ncomp
-    sbnd(i,nbnd) = s_local(i)
-  END DO
-END DO
-
-
-!  Set the boundaries
-
-jx = 0
-DO jz = 1,nz
-  DO jy = 1,ny
-!fp! set_index({#ident# jx #});
-    DO i = 1,ncomp
-      s(i,jx,jy,jz) = sbnd(i,1)
-    END DO
-  END DO
-END DO
-
-jx = nx+1
-DO jz = 1,nz
-  DO jy = 1,ny
-!fp! set_index({#ident# jx #});
-    DO i = 1,ncomp
-      s(i,jx,jy,jz) = sbnd(i,2)
-    END DO
-  END DO
-END DO
-
-jy = 0
-DO jz = 1,nz
-  DO jx = 1,nx
-!fp! set_index({#ident# jy #});
-    DO i = 1,ncomp
-      s(i,jx,jy,jz) = sbnd(i,3)
-    END DO
-  END DO
-END DO
-
-jy = ny+1
-DO jz = 1,nz
-  DO jx = 1,nx
-!fp! set_index({#ident# jy #});
-    DO i = 1,ncomp
-      s(i,jx,jy,jz) = sbnd(i,4)
-    END DO
-  END DO
-END DO
 
 !  ****************END OF BOUNDARY CONDITIONS*************
 
@@ -6933,12 +7311,12 @@ IF (found) THEN
 !!        STOP
 !!      END IF
 
-      IF (ALLOCATED(pres)) THEN
-        DEALLOCATE(pres)
-        ALLOCATE(pres(0:nx+1,0:ny+1,0:nz+1))
-      ELSE
-        ALLOCATE(pres(0:nx+1,0:ny+1,0:nz+1))
-      END IF 
+!!!      IF (ALLOCATED(pres)) THEN
+!!!        DEALLOCATE(pres)
+!!!        ALLOCATE(pres(0:nx+1,0:ny+1,0:nz+1))
+!!!      ELSE
+!!!        ALLOCATE(pres(0:nx+1,0:ny+1,0:nz+1))
+!!!      END IF 
 
       IF (ALLOCATED(harx)) THEN
         DEALLOCATE(harx)
@@ -8470,11 +8848,13 @@ IF (found) THEN
       CALL read_TortuosityByZone(nout,nx,ny,nz)
 
        IF (TortuosityZone(0) == 0.0d0 .AND. nTortuosityZone==0) THEN
+
 !!        WRITE(*,*)
 !!        WRITE(*,*) ' No default tortuosity given'
 !!        WRITE(*,*) ' Tortuosity should be followed by "default" or blank string'
 !!        WRITE(*,*)
 !!        STOP
+
       ELSE
         MillingtonQuirk = .FALSE.
         WRITE(*,*)
@@ -8799,7 +9179,7 @@ WRITE(iunit2,1111) alfl
 WRITE(iunit2,1112) alft
 WRITE(iunit2,*)
 
-!!CALL dispersivity(nx,ny,nz)
+CALL dispersivity(nx,ny,nz)
 dspx = 0.0
 dspy = 0.0
 dspz = 0.0
@@ -8914,6 +9294,7 @@ IF (ALLOCATED(ZfluxWeightedConcentration)) THEN
 END IF
 ALLOCATE(ZfluxWeightedConcentration(nplotFluxWeightedConcentration))
 ZfluxWeightedConcentration = 0.0d0
+
 
 
 3001 FORMAT('VARIABLES = "Time (yrs)"',                   100(', "',A16,'"'))

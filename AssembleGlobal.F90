@@ -1,41 +1,50 @@
-!! CrunchTope 
-!! Copyright (c) 2016, Carl Steefel
-!! Copyright (c) 2016, The Regents of the University of California, 
-!! through Lawrence Berkeley National Laboratory (subject to 
-!! receipt of any required approvals from the U.S. Dept. of Energy).  
-!! All rights reserved.
+!!! *** Copyright Notice ***
+!!! “CrunchFlow”, Copyright (c) 2016, The Regents of the University of California, through Lawrence Berkeley National Laboratory 
+!!! (subject to receipt of any required approvals from the U.S. Dept. of Energy).  All rights reserved.
+!!! 
+!!! If you have questions about your rights to use or distribute this software, please contact 
+!!! Berkeley Lab's Innovation & Partnerships Office at  IPO@lbl.gov.
+!!! 
+!!! NOTICE.  This Software was developed under funding from the U.S. Department of Energy and the U.S. Government 
+!!! consequently retains certain rights. As such, the U.S. Government has been granted for itself and others acting 
+!!! on its behalf a paid-up, nonexclusive, irrevocable, worldwide license in the Software to reproduce, distribute copies to the public, 
+!!! prepare derivative works, and perform publicly and display publicly, and to permit other to do so.
+!!!
+!!! *** License Agreement ***
+!!! “CrunchFlow”, Copyright (c) 2016, The Regents of the University of California, through Lawrence Berkeley National Laboratory)
+!!! subject to receipt of any required approvals from the U.S. Dept. of Energy).  All rights reserved."
+!!! 
+!!! Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+!!! 
+!!! (1) Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+!!!
+!!! (2) Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer 
+!!! in the documentation and/or other materials provided with the distribution.
+!!!
+!!! (3) Neither the name of the University of California, Lawrence Berkeley National Laboratory, U.S. Dept. of Energy nor the names of 
+!!! its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+!!!
+!!! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, 
+!!! BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
+!!! SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+!!! DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
+!!! OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+!!! LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF 
+!!! THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+!!!
+!!! You are under no obligation whatsoever to provide any bug fixes, patches, or upgrades to the features, functionality or 
+!!! performance of the source code ("Enhancements") to anyone; however, if you choose to make your
+!!! Enhancements available either publicly, or directly to Lawrence Berkeley National Laboratory, without 
+!!! imposing a separate written license agreement for such 
+!!! Enhancements, then you hereby grant the following license: a  non-exclusive, royalty-free perpetual license to install, use, 
+!!! modify, prepare derivative works, incorporate into other computer software, distribute, and sublicense such enhancements or 
+!!! derivative works thereof, in binary and source code form.
 
-!! Redistribution and use in source and binary forms, with or without
-!! modification, are permitted provided that the following conditions are
-!! met: 
-
-!! (1) Redistributions of source code must retain the above copyright
-!! notice, this list of conditions and the following disclaimer.
-
-!! (2) Redistributions in binary form must reproduce the above copyright
-!! notice, this list of conditions and the following disclaimer in the
-!! documentation and/or other materials provided with the distribution.
-
-!! (3) Neither the name of the University of California, Lawrence
-!! Berkeley National Laboratory, U.S. Dept. of Energy nor the names of    
-!! its contributors may be used to endorse or promote products derived
-!! from this software without specific prior written permission.
-
-!! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-!! "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-!! LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-!! A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-!! OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-!! SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-!! LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-!! DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-!! THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-!! (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-!! OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE   
+!!!      ****************************************
     
 SUBROUTINE AssembleGlobal(nx,ny,nz,ncomp,nspec,nkin,nrct,ngas,ikin,  &
     nexchange,nexch_sec,nsurf,nsurf_sec,npot,ndecay,nn,delt,time,&
-    user,amatpetsc)
+    user,amatpetsc,nBoundaryConditionZone)
 USE crunchtype
 USE params
 USE runtime
@@ -91,6 +100,7 @@ REAL(DP)                                      :: wtfactor
 REAL(DP)                                      :: satgas
 REAL(DP)                                      :: df
 
+REAL(DP)                                      :: sumchgbd
 REAL(DP)                                      :: fgradsum
 REAL(DP)                                      :: fjwtchg
 REAL(DP)                                      :: term1
@@ -153,6 +163,9 @@ INTEGER(I4B)                                  :: ns
 INTEGER(I4B)                                  :: nex
 INTEGER(I4B)                                  :: jpoint
 INTEGER(I4B)                                  :: round
+
+INTEGER(I4B)                                  :: nbnd
+INTEGER(I4B)                                  :: nBoundaryConditionZone
 
 REAL(DP)                                      :: sqrt_sion
 REAL(DP)                                      :: sum
@@ -219,6 +232,96 @@ END IF
 
 TempFlux = 0.0d0
 
+!!!  Do the boundaries first
+
+IF (species_diffusion) THEN
+
+  IF (nBoundaryConditionZone > 0) THEN
+
+!!!  Sweep the boundaries, BC by grid cells
+
+    jx = 0
+    jz = 1
+    DO jy = 1,ny
+      CALL bd_diffuse_by_grid(ncomp,nspec,jx,jy,jz,sumchgbd)
+      DO i = 1,ncomp
+        s_dsp(i,jx,jy,jz) = sdsp(i)
+        s_chg(i,jx,jy,jz) = schg(i)
+      END DO
+      sumwtchg(jx,jy,jz) = sumchgbd
+    END DO
+
+    jx = nx+1
+    jz = 1
+    DO jy = 1,ny
+      CALL bd_diffuse_by_grid(ncomp,nspec,jx,jy,jz,sumchgbd)
+      DO i = 1,ncomp
+        s_dsp(i,jx,jy,jz) = sdsp(i)
+        s_chg(i,jx,jy,jz) = schg(i)
+      END DO
+      sumwtchg(jx,jy,jz) = sumchgbd
+    END DO
+
+    jy = 0
+    jz = 1
+    DO jx = 1,nx
+      CALL bd_diffuse_by_grid(ncomp,nspec,jx,jy,jz,sumchgbd)
+      DO i = 1,ncomp
+        s_dsp(i,jx,jy,jz) = sdsp(i)
+        s_chg(i,jx,jy,jz) = schg(i)
+      END DO
+      sumwtchg(jx,jy,jz) = sumchgbd
+    END DO
+
+    jy = ny+1
+    jz = 1
+    DO jx = 1,nx
+      CALL bd_diffuse_by_grid(ncomp,nspec,jx,jy,jz,sumchgbd)
+      DO i = 1,ncomp
+        s_dsp(i,jx,jy,jz) = sdsp(i)
+        s_chg(i,jx,jy,jz) = schg(i)
+      END DO
+      sumwtchg(jx,jy,jz) = sumchgbd
+    END DO
+    
+  ELSE    !! Conventional BC by face
+
+    nbnd = 1
+    CALL bd_diffuse(ncomp,nspec,nbnd,sumchgbd)
+    DO i = 1,ncomp
+      s_dsp(i,0,jy,jz) = sdsp(i)
+      s_chg(i,0,jy,jz) = schg(i)
+    END DO
+    sumwtchg(0,jy,jz) = sumchgbd
+  
+    nbnd = 2
+    CALL bd_diffuse(ncomp,nspec,nbnd,sumchgbd)
+    DO i = 1,ncomp
+      s_dsp(i,nx+1,jy,jz) = sdsp(i)
+      s_chg(i,nx+1,jy,jz) = schg(i)
+    END DO
+    sumwtchg(nx+1,jy,jz) = sumchgbd
+
+    nbnd = 3
+    CALL bd_diffuse(ncomp,nspec,nbnd,sumchgbd)
+    DO i = 1,ncomp
+      s_dsp(i,jx,0,jz) = sdsp(i)
+      s_chg(i,jx,0,jz) = schg(i)
+    END DO
+    sumwtchg(jx,0,jz) = sumchgbd
+
+    nbnd = 4
+    CALL bd_diffuse(ncomp,nspec,nbnd,sumchgbd)
+    DO i = 1,ncomp
+      s_dsp(i,jx,ny+1,jz) = sdsp(i)
+      s_chg(i,jx,ny+1,jz) = schg(i)
+    END DO
+    sumwtchg(jx,ny+1,jz) = sumchgbd
+
+  END IF
+
+END IF
+
 jz = 1
 DO jy = 1,ny
   DO jx = 1,nx
@@ -269,7 +372,7 @@ DO jy = 1,ny
     END IF
     
     CALL FxTopeGlobal(nx,ny,ncomp,nexchange,nexch_sec,nsurf,nsurf_sec,nrct,nspec,  &
-        ngas,neqn,delt,jx,jy,jz)
+        ngas,neqn,delt,jx,jy,jz,nBoundaryConditionZone)
     
     IF (ierode == 1) THEN
       CALL ex_activity(ncomp,nexchange,nexch_sec,jx,jy,jz)

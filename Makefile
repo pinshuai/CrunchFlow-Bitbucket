@@ -41,10 +41,13 @@ SOURCEF = \
           AssembleGlobal.F90\
           AverageRo.F90\
           bd_diffuse.F90\
+          bd_diffuse_by_grid.F90\
           bdcalc.F90\
           bdexchange.F90\
           bdgas.F90\
+          bdgas_by_grid.F90\
           bdrecalc.F90\
+          bdrecalc_by_grid.F90\
           bdsurf.F90\
           breakfind.F90\
           BreakFindPlusCount.F90\
@@ -176,6 +179,7 @@ SOURCEF = \
           reactkin.F90\
           read98.F90\
           read_AqueousFluxSeries.F90\
+          read_BoundaryConditionsByZone.F90\
           read_bound.F90\
           read_burialfile.F90\
           read_CatabolicPath.F90\
@@ -343,10 +347,13 @@ OBJSF  =  crunchtype.o\
           AssembleGlobal.o\
           AverageRo.o\
           bd_diffuse.o\
+          bd_diffuse_by_grid.o\
           bdcalc.o\
           bdexchange.o\
           bdgas.o\
+          bdgas_by_grid.o\
           bdrecalc.o\
+          bdrecalc_by_grid.o\
           bdsurf.o\
           breakfind.o\
           BreakFindPlusCount.o\
@@ -478,6 +485,7 @@ OBJSF  =  crunchtype.o\
           reactkin.o\
           read98.o\
           read_AqueousFluxSeries.o\
+          read_BoundaryConditionsByZone.o\
           read_bound.o\
           read_burialfile.o\
           read_CatabolicPath.o\
@@ -623,7 +631,7 @@ LOCDIR   = ${CrunchTope_Dir}
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
 
-CrunchMain : ${OBJSF} chkopts 
+CrunchMain : ${OBJSF} chkopts
 	-${FLINKER} -o CrunchTope ${OBJSF} ${PETSC_FORTRAN_LIB} ${PETSC_LIB} ${FFLAGS}
 
 libcrunchchem.a : ${OBJSF}
